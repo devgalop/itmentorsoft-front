@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { JwtService } from './jwt.service';
@@ -78,10 +78,18 @@ export class AuthService {
 
   async resetPassword(credentials: ResetPasswordCredentials): Promise<ResetPasswordResponse> {
     try {
+      // El backend (PUT /users/change-password) espera `token` e `id_trx` como
+      // query params; el body solo lleva `new_password`. Mandarlos en el body
+      // provoca un 422 "field required".
+      const params = new HttpParams()
+        .set('token', credentials.token)
+        .set('id_trx', credentials.id_trx);
+
       return await firstValueFrom(
         this.http.put<ResetPasswordResponse>(
           `${environment.apiUrl}/users/change-password`,
-          credentials,
+          { new_password: credentials.new_password },
+          { params },
         ),
       );
     } catch (error) {

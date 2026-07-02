@@ -256,9 +256,13 @@ describe('AuthService', () => {
     it('sends PUT to /users/change-password with correct payload', async () => {
       const resetPromise = service.resetPassword(validResetCredentials);
 
-      const req = httpMock.expectOne(resetUrl);
-      expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual(validResetCredentials);
+      const req = httpMock.expectOne(
+        (r) => r.url === resetUrl && r.method === 'PUT',
+      );
+      // token e id_trx van como query params; el body solo lleva new_password.
+      expect(req.request.params.get('token')).toBe(validResetCredentials.token);
+      expect(req.request.params.get('id_trx')).toBe(validResetCredentials.id_trx);
+      expect(req.request.body).toEqual({ new_password: validResetCredentials.new_password });
       req.flush({ is_success: true, message: 'Password changed successfully' });
 
       const result = await resetPromise;
@@ -268,7 +272,7 @@ describe('AuthService', () => {
     it('returns is_success false with message when token is invalid or expired (200 OK)', async () => {
       const resetPromise = service.resetPassword(validResetCredentials);
 
-      const req = httpMock.expectOne(resetUrl);
+      const req = httpMock.expectOne((r) => r.url === resetUrl && r.method === 'PUT');
       req.flush({ is_success: false, message: 'Invalid or expired token' });
 
       const result = await resetPromise;
@@ -279,7 +283,7 @@ describe('AuthService', () => {
     it('throws validation error message on 422 invalid new_password', async () => {
       const resetPromise = service.resetPassword(validResetCredentials);
 
-      const req = httpMock.expectOne(resetUrl);
+      const req = httpMock.expectOne((r) => r.url === resetUrl && r.method === 'PUT');
       req.flush(
         {
           detail: [
@@ -295,7 +299,7 @@ describe('AuthService', () => {
     it('throws connection error message on network error', async () => {
       const resetPromise = service.resetPassword(validResetCredentials);
 
-      const req = httpMock.expectOne(resetUrl);
+      const req = httpMock.expectOne((r) => r.url === resetUrl && r.method === 'PUT');
       req.error(new ProgressEvent('Network error'));
 
       await expect(resetPromise).rejects.toThrow('Sin conexión al servidor');
