@@ -1,0 +1,40 @@
+<aside class="sidebar" [class.sidebar--collapsed]="isCollapsed()">
+  <div class="sidebar__header">
+    <span class="sidebar__brand">ITMentorSoft</span>
+    <button class="sidebar__toggle" (click)="toggle()" aria-label="Toggle sidebar">
+      @if (isCollapsed()) {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      } @else {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      }
+    </button>
+  </div>
+
+  @if (roleLabel && !isCollapsed()) {
+    <div class="sidebar__role">
+      <span>Rol activo</span>
+      <strong>{{ roleLabel }}</strong>
+    </div>
+  }
+
+  <nav class="sidebar__nav">
+    @for (item of navItems; track item.route) {
+      <a class="sidebar__nav-item" [routerLink]="item.route" routerLinkActive="sidebar__nav-item--active">
+        <span class="sidebar__nav-icon" [attr.data-icon]="item.icon"></span>
+        @if (!isCollapsed()) {
+          <span class="sidebar__nav-label">{{ item.label }}</span>
+        }
+      </a>
+    }
+  </nav>
+
+  <div class="sidebar__footer">
+    <app-button variant="outline" type="button" (buttonClick)="onLogout()">
+      Cerrar sesión
+    </app-button>
+  </div>
+</aside>
