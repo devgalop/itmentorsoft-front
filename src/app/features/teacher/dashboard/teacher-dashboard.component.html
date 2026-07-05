@@ -1,0 +1,53 @@
+<section class="dash">
+  <div class="dash__banner">
+    <div class="dash__banner-text">
+      <h1 class="dash__greeting">Hola, {{ userName() }}</h1>
+      <p class="dash__intro">
+        Gestioná contenido, rúbricas y analizá el progreso de tus estudiantes.
+      </p>
+      <span class="dash__role">Rol: Docente</span>
+    </div>
+    <div class="dash__banner-actions">
+      <a routerLink="/teacher/resources" class="dash__btn dash__btn--solid">Nuevo recurso</a>
+      <a routerLink="/teacher/reports" class="dash__btn dash__btn--ghost">Ver reportes</a>
+    </div>
+  </div>
+
+  <div class="dash__stats">
+    @for (s of stats; track s.label) {
+      <div class="dash__stat">
+        <span class="dash__stat-value">—</span>
+        <span class="dash__stat-label">{{ s.label }}</span>
+        <span class="dash__stat-hint">{{ s.hint }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="dash__grid">
+    <div class="dash__card dash__card--wide">
+      <div class="dash__card-head">
+        <h2 class="dash__card-title">Últimos estudiantes activos</h2>
+      </div>
+      <div class="dash__empty">
+        <p>Sin datos disponibles todavía.</p>
+        <small>Se mostrará cuando el backend exponga la información de estudiantes.</small>
+      </div>
+    </div>
+
+    <div class="dash__side">
+      <div class="dash__card">
+        <h2 class="dash__card-title">Por categoría</h2>
+        <div class="dash__empty">
+          <p>Sin datos disponibles.</p>
+        </div>
+      </div>
+
+      <div class="dash__card">
+        <h2 class="dash__card-title">Alertas</h2>
+        <div class="dash__empty">
+          <p>No hay alertas por ahora.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
