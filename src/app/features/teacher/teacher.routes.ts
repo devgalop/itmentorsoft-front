@@ -25,6 +25,14 @@ export const TEACHER_ROUTES: Routes = [
           import('./questions/question-bank.component').then((m) => m.QuestionBankComponent),
       },
       {
+        path: 'questions/new',
+        data: {
+          title: 'Nueva pregunta',
+          subtitle: 'Próximamente: formulario para crear preguntas técnicas.',
+        },
+        loadComponent: PLACEHOLDER,
+      },
+      {
         path: 'students',
         data: {
           title: 'Mis estudiantes',

@@ -1,23 +1,32 @@
-<section class="bank">
-  <header class="bank__header">
-    <h1 class="bank__title">Cuestionarios técnicos</h1>
-    <p class="bank__subtitle">Filtrá por dificultad o categoría y explorá el detalle de cada pregunta.</p>
+<section class="cuest">
+  <header class="cuest__header">
+    <div>
+      <h1 class="cuest__title">Cuestionarios técnicos</h1>
+      <p class="cuest__subtitle">
+        @if (appliedFilter()) {
+          {{ questions().length }} pregunta(s) · filtro: {{ appliedFilter() }}
+        } @else {
+          Gestioná las preguntas técnicas que conforman las evaluaciones.
+        }
+      </p>
+    </div>
+    <a routerLink="/teacher/questions/new" class="cuest__new">+ Nueva pregunta</a>
   </header>
 
-  <div class="bank__filters">
-    <div class="bank__tabs" role="tablist">
+  <div class="cuest__toolbar">
+    <div class="cuest__tabs" role="tablist">
       <button
         type="button"
-        class="bank__tab"
-        [class.bank__tab--active]="mode() === 'level'"
+        class="cuest__tab"
+        [class.cuest__tab--active]="mode() === 'level'"
         (click)="setMode('level')"
       >
         Por dificultad
       </button>
       <button
         type="button"
-        class="bank__tab"
-        [class.bank__tab--active]="mode() === 'category'"
+        class="cuest__tab"
+        [class.cuest__tab--active]="mode() === 'category'"
         (click)="setMode('category')"
       >
         Por categoría
@@ -25,7 +34,7 @@
     </div>
 
     <select
-      class="bank__select"
+      class="cuest__select"
       [value]="selectedValue()"
       (change)="onValueChange($any($event.target).value)"
       aria-label="Valor del filtro"
@@ -41,48 +50,62 @@
       }
     </select>
 
-    <button type="button" class="bank__search" (click)="search()" [disabled]="isLoadingList()">
-      {{ isLoadingList() ? 'Buscando…' : 'Buscar' }}
+    <button type="button" class="cuest__filter" (click)="search()" [disabled]="isLoadingList()">
+      {{ isLoadingList() ? 'Filtrando…' : 'Filtrar' }}
     </button>
   </div>
 
-  <div class="bank__body">
-    <div class="bank__list">
-      @if (isLoadingList()) {
-        <p class="bank__hint">Cargando preguntas…</p>
-      } @else if (listError()) {
-        <p class="bank__error" role="alert">{{ listError() }}</p>
-      } @else if (hasSearched() && questions().length === 0) {
-        <p class="bank__hint">No hay preguntas para este filtro.</p>
-      } @else if (!hasSearched()) {
-        <p class="bank__hint">Elegí un filtro y presioná “Buscar”.</p>
-      } @else {
-        <ul class="bank__items">
+  <div class="cuest__panel">
+    @if (isLoadingList()) {
+      <p class="cuest__hint">Cargando preguntas…</p>
+    } @else if (listError()) {
+      <p class="cuest__error" role="alert">{{ listError() }}</p>
+    } @else if (!hasSearched()) {
+      <p class="cuest__hint">Elegí un filtro y presioná “Filtrar” para ver las preguntas.</p>
+    } @else if (questions().length === 0) {
+      <p class="cuest__hint">No hay preguntas para este filtro.</p>
+    } @else {
+      <table class="cuest__table">
+        <thead>
+          <tr>
+            <th class="cuest__th cuest__th--id">ID</th>
+            <th class="cuest__th">Pregunta</th>
+            <th class="cuest__th">Filtro</th>
+            <th class="cuest__th cuest__th--actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
           @for (q of questions(); track q.question_id) {
-            <li>
-              <button
-                type="button"
-                class="bank__item"
-                [class.bank__item--active]="selectedId() === q.question_id"
-                (click)="selectQuestion(q.question_id)"
-              >
-                {{ q.text_to_evaluate }}
-              </button>
-            </li>
+            <tr class="cuest__row">
+              <td class="cuest__id">{{ q.question_id.slice(0, 8) }}</td>
+              <td class="cuest__text">{{ q.text_to_evaluate }}</td>
+              <td><span class="cuest__badge">{{ appliedFilter() }}</span></td>
+              <td class="cuest__actions">
+                <button type="button" class="cuest__action" (click)="selectQuestion(q.question_id)">
+                  Ver
+                </button>
+              </td>
+            </tr>
           }
-        </ul>
-      }
-    </div>
+        </tbody>
+      </table>
+    }
+  </div>
+</section>
 
-    <div class="bank__detail">
+@if (isDetailOpen()) {
+  <div class="modal" (click)="closeDetail()">
+    <div class="modal__box" (click)="$event.stopPropagation()">
+      <button type="button" class="modal__close" (click)="closeDetail()" aria-label="Cerrar">×</button>
+
       @if (isLoadingDetail()) {
-        <p class="bank__hint">Cargando detalle…</p>
+        <p class="cuest__hint">Cargando detalle…</p>
       } @else if (detailError()) {
-        <p class="bank__error" role="alert">{{ detailError() }}</p>
+        <p class="cuest__error" role="alert">{{ detailError() }}</p>
       } @else if (detail(); as q) {
         <article class="detail">
           <div class="detail__row">
-            <span class="detail__badge">{{ q.status }}</span>
+            <span class="detail__status">{{ q.status }}</span>
             <h2 class="detail__concept">{{ q.concept }}</h2>
           </div>
           <p class="detail__text">{{ q.text }}</p>
@@ -125,9 +148,7 @@
             }
           </div>
         </article>
-      } @else {
-        <p class="bank__hint">Seleccioná una pregunta para ver su detalle.</p>
       }
     </div>
   </div>
-</section>
+}

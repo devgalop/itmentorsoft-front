@@ -41,7 +41,7 @@ describe('QuestionBankComponent', () => {
   });
 
   describe('search', () => {
-    it('calls getQuestionsByLevel in level mode and stores the list', async () => {
+    it('calls getQuestionsByLevel in level mode, stores list and applied filter', async () => {
       serviceMock.getQuestionsByLevel.mockResolvedValue([
         { question_id: 'q1', text_to_evaluate: 'texto' },
       ]);
@@ -50,6 +50,7 @@ describe('QuestionBankComponent', () => {
 
       expect(serviceMock.getQuestionsByLevel).toHaveBeenCalledWith('básico');
       expect(component.questions()).toHaveLength(1);
+      expect(component.appliedFilter()).toBe('básico');
       expect(component.hasSearched()).toBe(true);
     });
 
@@ -61,20 +62,24 @@ describe('QuestionBankComponent', () => {
       await component.search();
 
       expect(serviceMock.getQuestionsByCategory).toHaveBeenCalledWith('Fundamentos y paradigmas');
+      expect(component.appliedFilter()).toBe('Fundamentos y paradigmas');
     });
 
     it('captures the error message and clears the list on failure', async () => {
-      serviceMock.getQuestionsByLevel.mockRejectedValue(new Error('No tenés permisos para ver este contenido'));
+      serviceMock.getQuestionsByLevel.mockRejectedValue(
+        new Error('No tenés permisos para ver este contenido'),
+      );
 
       await component.search();
 
       expect(component.questions()).toEqual([]);
+      expect(component.appliedFilter()).toBeNull();
       expect(component.listError()).toBe('No tenés permisos para ver este contenido');
     });
   });
 
-  describe('selectQuestion', () => {
-    it('loads and stores the detail for the selected question', async () => {
+  describe('selectQuestion / detail modal', () => {
+    it('opens the modal and loads the detail for the selected question', async () => {
       const detail = {
         question_id: 'q1',
         text: 't',
@@ -95,6 +100,7 @@ describe('QuestionBankComponent', () => {
       expect(serviceMock.getQuestionById).toHaveBeenCalledWith('q1');
       expect(component.selectedId()).toBe('q1');
       expect(component.detail()).toEqual(detail);
+      expect(component.isDetailOpen()).toBe(true);
     });
 
     it('sets a detail error when the question is not found', async () => {
@@ -106,13 +112,23 @@ describe('QuestionBankComponent', () => {
       expect(component.detailError()).toBe('No se encontró el detalle de la pregunta');
     });
 
-    it('does not refetch when the same question is already selected', async () => {
+    it('does not refetch when the same question is reopened', async () => {
       serviceMock.getQuestionById.mockResolvedValue(null);
       await component.selectQuestion('q1');
       serviceMock.getQuestionById.mockClear();
 
       await component.selectQuestion('q1');
       expect(serviceMock.getQuestionById).not.toHaveBeenCalled();
+      expect(component.isDetailOpen()).toBe(true);
+    });
+
+    it('closeDetail hides the modal', async () => {
+      serviceMock.getQuestionById.mockResolvedValue(null);
+      await component.selectQuestion('q1');
+      expect(component.isDetailOpen()).toBe(true);
+
+      component.closeDetail();
+      expect(component.isDetailOpen()).toBe(false);
     });
   });
 });
