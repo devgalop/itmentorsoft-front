@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AssessmentsService } from '@core/assessments/assessments.service';
 import {
   EvaluativeQuestion,
@@ -12,6 +13,7 @@ type FilterMode = 'level' | 'category';
 @Component({
   selector: 'app-question-bank',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './question-bank.component.html',
   styleUrl: './question-bank.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,6 +26,8 @@ export class QuestionBankComponent {
 
   readonly mode = signal<FilterMode>('level');
   readonly selectedValue = signal<string>(QUESTION_DIFFICULTIES[0]);
+  /** Filtro aplicado en la última búsqueda (para el badge de las filas). */
+  readonly appliedFilter = signal<string | null>(null);
 
   readonly questions = signal<EvaluativeQuestion[]>([]);
   readonly isLoadingList = signal(false);
@@ -34,6 +38,7 @@ export class QuestionBankComponent {
   readonly detail = signal<QuestionDetail | null>(null);
   readonly isLoadingDetail = signal(false);
   readonly detailError = signal<string | null>(null);
+  readonly isDetailOpen = signal(false);
 
   setMode(mode: FilterMode): void {
     if (this.mode() === mode) {
@@ -49,8 +54,6 @@ export class QuestionBankComponent {
 
   async search(): Promise<void> {
     this.listError.set(null);
-    this.detail.set(null);
-    this.selectedId.set(null);
     this.isLoadingList.set(true);
     this.hasSearched.set(true);
 
@@ -61,8 +64,10 @@ export class QuestionBankComponent {
           ? await this.assessments.getQuestionsByLevel(value)
           : await this.assessments.getQuestionsByCategory(value);
       this.questions.set(result);
+      this.appliedFilter.set(value);
     } catch (error) {
       this.questions.set([]);
+      this.appliedFilter.set(null);
       this.listError.set(error instanceof Error ? error.message : 'Error inesperado');
     } finally {
       this.isLoadingList.set(false);
@@ -70,6 +75,8 @@ export class QuestionBankComponent {
   }
 
   async selectQuestion(id: string): Promise<void> {
+    // Siempre abrimos el modal; solo evitamos re-pedir el detalle si ya es el mismo.
+    this.isDetailOpen.set(true);
     if (this.selectedId() === id) {
       return;
     }
@@ -89,5 +96,9 @@ export class QuestionBankComponent {
     } finally {
       this.isLoadingDetail.set(false);
     }
+  }
+
+  closeDetail(): void {
+    this.isDetailOpen.set(false);
   }
 }
