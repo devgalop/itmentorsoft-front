@@ -34,6 +34,12 @@ export const routes: Routes = [
       import('@features/student/student.routes').then((m) => m.STUDENT_ROUTES),
   },
   {
+    path: 'teacher',
+    canActivate: [authGuard, roleGuard('teacher')],
+    loadChildren: () =>
+      import('@features/teacher/teacher.routes').then((m) => m.TEACHER_ROUTES),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>
