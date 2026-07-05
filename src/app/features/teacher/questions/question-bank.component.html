@@ -1,0 +1,133 @@
+<section class="bank">
+  <header class="bank__header">
+    <h1 class="bank__title">Banco de preguntas</h1>
+    <p class="bank__subtitle">Filtrá por dificultad o categoría y explorá el detalle de cada pregunta.</p>
+  </header>
+
+  <div class="bank__filters">
+    <div class="bank__tabs" role="tablist">
+      <button
+        type="button"
+        class="bank__tab"
+        [class.bank__tab--active]="mode() === 'level'"
+        (click)="setMode('level')"
+      >
+        Por dificultad
+      </button>
+      <button
+        type="button"
+        class="bank__tab"
+        [class.bank__tab--active]="mode() === 'category'"
+        (click)="setMode('category')"
+      >
+        Por categoría
+      </button>
+    </div>
+
+    <select
+      class="bank__select"
+      [value]="selectedValue()"
+      (change)="onValueChange($any($event.target).value)"
+      aria-label="Valor del filtro"
+    >
+      @if (mode() === 'level') {
+        @for (d of difficulties; track d) {
+          <option [value]="d">{{ d }}</option>
+        }
+      } @else {
+        @for (c of categories; track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      }
+    </select>
+
+    <button type="button" class="bank__search" (click)="search()" [disabled]="isLoadingList()">
+      {{ isLoadingList() ? 'Buscando…' : 'Buscar' }}
+    </button>
+  </div>
+
+  <div class="bank__body">
+    <div class="bank__list">
+      @if (isLoadingList()) {
+        <p class="bank__hint">Cargando preguntas…</p>
+      } @else if (listError()) {
+        <p class="bank__error" role="alert">{{ listError() }}</p>
+      } @else if (hasSearched() && questions().length === 0) {
+        <p class="bank__hint">No hay preguntas para este filtro.</p>
+      } @else if (!hasSearched()) {
+        <p class="bank__hint">Elegí un filtro y presioná “Buscar”.</p>
+      } @else {
+        <ul class="bank__items">
+          @for (q of questions(); track q.question_id) {
+            <li>
+              <button
+                type="button"
+                class="bank__item"
+                [class.bank__item--active]="selectedId() === q.question_id"
+                (click)="selectQuestion(q.question_id)"
+              >
+                {{ q.text_to_evaluate }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="bank__detail">
+      @if (isLoadingDetail()) {
+        <p class="bank__hint">Cargando detalle…</p>
+      } @else if (detailError()) {
+        <p class="bank__error" role="alert">{{ detailError() }}</p>
+      } @else if (detail(); as q) {
+        <article class="detail">
+          <div class="detail__row">
+            <span class="detail__badge">{{ q.status }}</span>
+            <h2 class="detail__concept">{{ q.concept }}</h2>
+          </div>
+          <p class="detail__text">{{ q.text }}</p>
+
+          <h3 class="detail__label">Definición</h3>
+          <p>{{ q.definition }}</p>
+
+          <h3 class="detail__label">Explicación simple</h3>
+          <p>{{ q.simple_explanation }}</p>
+
+          <div class="detail__samples">
+            <div class="detail__sample detail__sample--ok">
+              <h3 class="detail__label">Ejemplo correcto</h3>
+              <p>{{ q.correct_sample }}</p>
+            </div>
+            <div class="detail__sample detail__sample--bad">
+              <h3 class="detail__label">Ejemplo incorrecto</h3>
+              <p>{{ q.wrong_sample }}</p>
+            </div>
+          </div>
+
+          <h3 class="detail__label">Errores comunes</h3>
+          <ul class="detail__bullets">
+            @for (m of q.common_misconception; track m) {
+              <li>{{ m }}</li>
+            }
+          </ul>
+
+          <h3 class="detail__label">Rúbrica</h3>
+          <ul class="detail__rubric">
+            @for (r of q.rubric; track r.score) {
+              <li><span class="detail__score">{{ r.score }}</span> {{ r.explanation }}</li>
+            }
+          </ul>
+
+          <h3 class="detail__label">Palabras clave</h3>
+          <div class="detail__keywords">
+            @for (k of q.semantic_keywords; track k) {
+              <span class="detail__keyword">{{ k }}</span>
+            }
+          </div>
+        </article>
+      } @else {
+        <p class="bank__hint">Seleccioná una pregunta para ver su detalle.</p>
+      }
+    </div>
+  </div>
+</section>

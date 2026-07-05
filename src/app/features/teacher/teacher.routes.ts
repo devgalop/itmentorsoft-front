@@ -14,6 +14,13 @@ export const TEACHER_ROUTES: Routes = [
             (m) => m.TeacherDashboardComponent,
           ),
       },
+      {
+        path: 'questions',
+        loadComponent: () =>
+          import('./questions/question-bank.component').then(
+            (m) => m.QuestionBankComponent,
+          ),
+      },
     ],
   },
 ];
