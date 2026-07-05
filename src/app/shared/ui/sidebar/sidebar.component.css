@@ -142,3 +142,12 @@
   background-color: var(--color-accent);
   color: var(--color-white);
 }
+.sidebar__group-title {
+  padding: 0 1rem;
+  margin: 1rem 0 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-white) 55%, transparent);
+}

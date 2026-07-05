@@ -1,5 +1,10 @@
 import { Routes } from '@angular/router';
 
+const PLACEHOLDER = () =>
+  import('./placeholder/teacher-placeholder.component').then(
+    (m) => m.TeacherPlaceholderComponent,
+  );
+
 export const TEACHER_ROUTES: Routes = [
   {
     path: '',
@@ -17,9 +22,47 @@ export const TEACHER_ROUTES: Routes = [
       {
         path: 'questions',
         loadComponent: () =>
-          import('./questions/question-bank.component').then(
-            (m) => m.QuestionBankComponent,
-          ),
+          import('./questions/question-bank.component').then((m) => m.QuestionBankComponent),
+      },
+      {
+        path: 'students',
+        data: {
+          title: 'Mis estudiantes',
+          subtitle: 'Próximamente: listado y progreso de tus estudiantes.',
+        },
+        loadComponent: PLACEHOLDER,
+      },
+      {
+        path: 'reports',
+        data: {
+          title: 'Reportes',
+          subtitle: 'Próximamente: métricas y reportes de desempeño del grupo.',
+        },
+        loadComponent: PLACEHOLDER,
+      },
+      {
+        path: 'resources',
+        data: {
+          title: 'Recursos',
+          subtitle: 'Próximamente: gestión de recursos educativos (videos, documentos, ejercicios).',
+        },
+        loadComponent: PLACEHOLDER,
+      },
+      {
+        path: 'rubrics',
+        data: {
+          title: 'Rúbricas',
+          subtitle: 'Próximamente: creación y gestión de rúbricas de evaluación.',
+        },
+        loadComponent: PLACEHOLDER,
+      },
+      {
+        path: 'routes',
+        data: {
+          title: 'Rutas',
+          subtitle: 'Próximamente: configuración de rutas de aprendizaje por categoría.',
+        },
+        loadComponent: PLACEHOLDER,
       },
     ],
   },

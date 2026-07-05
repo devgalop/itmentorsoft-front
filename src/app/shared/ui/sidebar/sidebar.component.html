@@ -22,13 +22,18 @@
   }
 
   <nav class="sidebar__nav">
-    @for (item of navItems; track item.route) {
-      <a class="sidebar__nav-item" [routerLink]="item.route" routerLinkActive="sidebar__nav-item--active">
-        <span class="sidebar__nav-icon" [attr.data-icon]="item.icon"></span>
-        @if (!isCollapsed()) {
-          <span class="sidebar__nav-label">{{ item.label }}</span>
-        }
-      </a>
+    @for (group of navGroups; track group.title) {
+      @if (group.title && !isCollapsed()) {
+        <p class="sidebar__group-title">{{ group.title }}</p>
+      }
+      @for (item of group.items; track item.route) {
+        <a class="sidebar__nav-item" [routerLink]="item.route" routerLinkActive="sidebar__nav-item--active">
+          <span class="sidebar__nav-icon" [attr.data-icon]="item.icon"></span>
+          @if (!isCollapsed()) {
+            <span class="sidebar__nav-label">{{ item.label }}</span>
+          }
+        </a>
+      }
     }
   </nav>
 

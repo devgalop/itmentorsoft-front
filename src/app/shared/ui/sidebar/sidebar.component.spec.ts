@@ -17,6 +17,12 @@ describe('SidebarComponent', () => {
     { label: 'Mi ruta', route: '/student/route', icon: 'route' },
   ];
 
+  const groupedNavItems: NavItem[] = [
+    { label: 'Dashboard', route: '/teacher/dashboard', icon: 'home', group: 'Principal' },
+    { label: 'Reportes', route: '/teacher/reports', icon: 'chart', group: 'Principal' },
+    { label: 'Cuestionarios', route: '/teacher/questions', icon: 'book', group: 'Contenido' },
+  ];
+
   beforeEach(async () => {
     authServiceMock = { logout: vi.fn() };
     sidebarServiceMock = {
@@ -68,6 +74,27 @@ describe('SidebarComponent', () => {
     expect(links.length).toBe(0);
   });
 
+  it('does not render group titles when items have no group', () => {
+    fixture.componentRef.setInput('navItems', mockNavItems);
+    fixture.detectChanges();
+
+    const titles = fixture.nativeElement.querySelectorAll('.sidebar__group-title');
+    expect(titles.length).toBe(0);
+  });
+
+  it('renders one group title per distinct group, preserving order', () => {
+    fixture.componentRef.setInput('navItems', groupedNavItems);
+    fixture.detectChanges();
+
+    const titles = Array.from(
+      fixture.nativeElement.querySelectorAll('.sidebar__group-title'),
+    ).map((el) => (el as HTMLElement).textContent?.trim());
+
+    expect(titles).toEqual(['Principal', 'Contenido']);
+    const links = fixture.nativeElement.querySelectorAll('.sidebar__nav-item');
+    expect(links.length).toBe(3);
+  });
+
   it('shows roleLabel when provided and sidebar is expanded', () => {
     fixture.componentRef.setInput('roleLabel', 'Estudiante');
     fixture.detectChanges();
@@ -91,6 +118,15 @@ describe('SidebarComponent', () => {
 
     const labels = fixture.nativeElement.querySelectorAll('.sidebar__nav-label');
     expect(labels.length).toBe(0);
+  });
+
+  it('does not show group titles when sidebar is collapsed', () => {
+    sidebarServiceMock.isCollapsed.mockReturnValue(true);
+    fixture.componentRef.setInput('navItems', groupedNavItems);
+    fixture.detectChanges();
+
+    const titles = fixture.nativeElement.querySelectorAll('.sidebar__group-title');
+    expect(titles.length).toBe(0);
   });
 
   it('applies sidebar--collapsed class when isCollapsed is true', () => {
