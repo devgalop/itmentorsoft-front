@@ -1,0 +1,49 @@
+<section class="dash">
+  <div class="dash__banner">
+    <div class="dash__banner-text">
+      <h1 class="dash__greeting">¡Hola, {{ userName() }}!</h1>
+      <p class="dash__intro">
+        Completá tu evaluación inicial para recibir tu ruta personalizada.
+      </p>
+      <span class="dash__badge">Sin categoría asignada aún</span>
+    </div>
+    <div class="dash__banner-actions">
+      <button type="button" class="dash__btn dash__btn--solid">Iniciar evaluación</button>
+      <span class="dash__banner-note">~20 min · Fundamentos + CT</span>
+    </div>
+  </div>
+
+  <div class="dash__stats">
+    @for (s of stats; track s.label) {
+      <div class="dash__stat">
+        <span class="dash__stat-value">{{ s.value }}</span>
+        <span class="dash__stat-label">{{ s.label }}</span>
+        <span class="dash__stat-hint">{{ s.hint }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="dash__grid">
+    <div class="dash__card">
+      <h2 class="dash__card-title">¿Cómo funciona ITMentorSoft?</h2>
+      <ol class="dash__steps">
+        @for (step of steps; track step.title; let i = $index) {
+          <li class="dash__step">
+            <span class="dash__step-num">{{ i + 1 }}</span>
+            <div>
+              <p class="dash__step-title">{{ step.title }}</p>
+              <p class="dash__step-desc">{{ step.description }}</p>
+            </div>
+          </li>
+        }
+      </ol>
+    </div>
+
+    <div class="dash__card dash__card--cta">
+      <div class="dash__cta-circle"></div>
+      <h2 class="dash__card-title">Aún sin categoría</h2>
+      <p class="dash__cta-text">Completá la evaluación inicial para conocer tu nivel.</p>
+      <button type="button" class="dash__btn dash__btn--solid">Comenzar ahora</button>
+    </div>
+  </div>
+</section>
