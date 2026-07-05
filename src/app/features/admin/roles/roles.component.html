@@ -1,0 +1,80 @@
+<section class="roles">
+  <header class="roles__header">
+    <h1 class="roles__title">Gestión de roles</h1>
+    <p class="roles__subtitle">
+      Buscá un usuario por su ID y asignale un rol del sistema.
+    </p>
+  </header>
+
+  @if (rolesError()) {
+    <div class="roles__banner-error" role="alert">{{ rolesError() }}</div>
+  }
+
+  <div class="roles__card">
+    <label class="roles__label" for="userId">ID de usuario</label>
+    <div class="roles__search-row">
+      <input
+        id="userId"
+        type="text"
+        class="roles__input"
+        placeholder="Ej: 942bd1dbbc5b488fa2d62ba16c27e9e0"
+        [formControl]="userIdControl"
+      />
+      <button type="button" class="roles__btn roles__btn--primary" (click)="searchUser()" [disabled]="isSearching()">
+        {{ isSearching() ? 'Buscando…' : 'Buscar usuario' }}
+      </button>
+    </div>
+    @if (getUserIdError(); as err) {
+      <p class="roles__field-error">{{ err }}</p>
+    }
+    @if (searchError()) {
+      <p class="roles__field-error" role="alert">{{ searchError() }}</p>
+    }
+  </div>
+
+  @if (foundUser(); as user) {
+    <div class="roles__card">
+      <div class="roles__user">
+        <div>
+          <p class="roles__user-name">{{ user.username }}</p>
+          <p class="roles__user-email">{{ user.email }}</p>
+        </div>
+        <div class="roles__user-role">
+          <span class="roles__role-label">Rol actual</span>
+          <span class="roles__role-badge">{{ user.role }}</span>
+        </div>
+      </div>
+
+      <hr class="roles__divider" />
+
+      <label class="roles__label" for="role">Asignar nuevo rol</label>
+      <div class="roles__assign-row">
+        <select
+          id="role"
+          class="roles__select"
+          [value]="selectedRole()"
+          (change)="onRoleChange($any($event.target).value)"
+        >
+          @for (r of availableRoles(); track r) {
+            <option [value]="r">{{ r }}</option>
+          }
+        </select>
+        <button
+          type="button"
+          class="roles__btn roles__btn--accent"
+          (click)="assign()"
+          [disabled]="isAssigning() || availableRoles().length === 0"
+        >
+          {{ isAssigning() ? 'Asignando…' : 'Asignar rol' }}
+        </button>
+      </div>
+
+      @if (assignSuccess()) {
+        <p class="roles__success" role="status">{{ assignSuccess() }}</p>
+      }
+      @if (assignError()) {
+        <p class="roles__field-error" role="alert">{{ assignError() }}</p>
+      }
+    </div>
+  }
+</section>
