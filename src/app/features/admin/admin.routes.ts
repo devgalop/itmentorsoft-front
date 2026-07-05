@@ -24,8 +24,8 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'roles',
-        data: { title: 'Roles', subtitle: 'Próximamente: asignación de roles a usuarios.' },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./roles/roles.component').then((m) => m.RolesComponent),
       },
       {
         path: 'content-approval',
