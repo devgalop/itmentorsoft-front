@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import {
   EvaluativeQuestion,
+  GetCategoriesResponse,
   GetQuestionByIdResponse,
   GetQuestionsResponse,
   QuestionDetail,
@@ -47,6 +48,17 @@ export class AssessmentsService {
         ),
       );
       return response.question ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  async getCategories(): Promise<string[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetCategoriesResponse>(`${environment.apiUrl}/assessments/categories`),
+      );
+      return response.categories ?? [];
     } catch (error) {
       throw this.mapHttpError(error);
     }

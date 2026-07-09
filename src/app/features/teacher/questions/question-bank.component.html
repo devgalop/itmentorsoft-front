@@ -44,7 +44,7 @@
           <option [value]="d">{{ d }}</option>
         }
       } @else {
-        @for (c of categories; track c) {
+        @for (c of categories(); track c) {
           <option [value]="c">{{ c }}</option>
         }
       }

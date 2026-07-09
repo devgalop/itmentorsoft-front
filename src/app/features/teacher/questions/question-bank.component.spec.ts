@@ -9,6 +9,7 @@ describe('QuestionBankComponent', () => {
     getQuestionsByLevel: ReturnType<typeof vi.fn>;
     getQuestionsByCategory: ReturnType<typeof vi.fn>;
     getQuestionById: ReturnType<typeof vi.fn>;
+    getCategories: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -16,6 +17,7 @@ describe('QuestionBankComponent', () => {
       getQuestionsByLevel: vi.fn(),
       getQuestionsByCategory: vi.fn(),
       getQuestionById: vi.fn(),
+      getCategories: vi.fn().mockResolvedValue([]),
     };
 
     TestBed.configureTestingModule({
@@ -131,4 +133,35 @@ describe('QuestionBankComponent', () => {
       expect(component.isDetailOpen()).toBe(false);
     });
   });
+
+  describe('categorías dinámicas', () => {
+    function createWith(getCategories: ReturnType<typeof vi.fn>): QuestionBankComponent {
+      TestBed.resetTestingModule();
+      const mock = {
+        getQuestionsByLevel: vi.fn(),
+        getQuestionsByCategory: vi.fn(),
+        getQuestionById: vi.fn(),
+        getCategories,
+      };
+      TestBed.configureTestingModule({
+        providers: [QuestionBankComponent, { provide: AssessmentsService, useValue: mock }],
+      });
+      return TestBed.inject(QuestionBankComponent);
+    }
+
+    it('carga las categorías del backend al crearse', async () => {
+      const comp = createWith(vi.fn().mockResolvedValue(['Cat A', 'Cat B']));
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(comp.categories()).toEqual(['Cat A', 'Cat B']);
+    });
+
+    it('mantiene el fallback si getCategories falla', async () => {
+      const comp = createWith(vi.fn().mockRejectedValue(new Error('boom')));
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(comp.categories()).toContain('APIs y sistemas distribuidos');
+    });
+  });
+
 });
