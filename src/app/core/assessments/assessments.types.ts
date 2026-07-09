@@ -52,3 +52,26 @@ export interface GetCategoriesResponse {
   message: string;
   categories: string[];
 }
+
+export interface RubricCriterion {
+  score: number;
+  criteria: string;
+}
+
+export interface RegisterQuestionPayload {
+  text: string;
+  concept: string;
+  definition: string;
+  simple_explanation: string;
+  correct_sample: string;
+  wrong_sample: string;
+  common_misconception: string[];
+  rubric: RubricCriterion[];
+  semantic_keywords: string[];
+}
+
+export interface RegisterQuestionResponse {
+  is_success: boolean;
+  message: string;
+  question_id?: string | null;
+}

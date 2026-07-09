@@ -1,0 +1,143 @@
+<section class="qform">
+  <header class="qform__header">
+    <div>
+      <h1 class="qform__title">Nueva pregunta</h1>
+      <p class="qform__subtitle">Completá todos los campos. Se validan igual que en el backend.</p>
+    </div>
+    <a routerLink="/teacher/questions" class="qform__back">← Volver a Cuestionarios</a>
+  </header>
+
+  @if (submitSuccess()) {
+    <div class="qform__banner qform__banner--ok" role="status">{{ submitSuccess() }}</div>
+  }
+  @if (submitError()) {
+    <div class="qform__banner qform__banner--error" role="alert">{{ submitError() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="qform__form">
+    <!-- Campos de texto -->
+    <div class="qform__field">
+      <label for="text">Pregunta <span class="qform__hint">(20–500)</span></label>
+      <textarea id="text" formControlName="text" rows="2"></textarea>
+      @if (fieldError(form.get('text')); as err) {
+        <p class="qform__error">{{ err }}</p>
+      }
+    </div>
+
+    <div class="qform__field">
+      <label for="concept">Concepto <span class="qform__hint">(10–150)</span></label>
+      <input id="concept" type="text" formControlName="concept" />
+      @if (fieldError(form.get('concept')); as err) {
+        <p class="qform__error">{{ err }}</p>
+      }
+    </div>
+
+    <div class="qform__field">
+      <label for="definition">Definición <span class="qform__hint">(20–500)</span></label>
+      <textarea id="definition" formControlName="definition" rows="2"></textarea>
+      @if (fieldError(form.get('definition')); as err) {
+        <p class="qform__error">{{ err }}</p>
+      }
+    </div>
+
+    <div class="qform__field">
+      <label for="simple_explanation">Explicación simple <span class="qform__hint">(20–300)</span></label>
+      <textarea id="simple_explanation" formControlName="simple_explanation" rows="2"></textarea>
+      @if (fieldError(form.get('simple_explanation')); as err) {
+        <p class="qform__error">{{ err }}</p>
+      }
+    </div>
+
+    <div class="qform__grid2">
+      <div class="qform__field">
+        <label for="correct_sample">Ejemplo correcto <span class="qform__hint">(20–300)</span></label>
+        <textarea id="correct_sample" formControlName="correct_sample" rows="2"></textarea>
+        @if (fieldError(form.get('correct_sample')); as err) {
+          <p class="qform__error">{{ err }}</p>
+        }
+      </div>
+      <div class="qform__field">
+        <label for="wrong_sample">Ejemplo incorrecto <span class="qform__hint">(20–300)</span></label>
+        <textarea id="wrong_sample" formControlName="wrong_sample" rows="2"></textarea>
+        @if (fieldError(form.get('wrong_sample')); as err) {
+          <p class="qform__error">{{ err }}</p>
+        }
+      </div>
+    </div>
+
+    <!-- Errores comunes (mín. 2) -->
+    <fieldset class="qform__array" formArrayName="common_misconception">
+      <legend>Errores comunes <span class="qform__hint">(mín. 2 · cada uno 20–300)</span></legend>
+      @for (ctrl of misconceptions.controls; track $index) {
+        <div class="qform__array-row">
+          <textarea [formControlName]="$index" rows="2"></textarea>
+          <button
+            type="button"
+            class="qform__remove"
+            (click)="removeMisconception($index)"
+            [disabled]="misconceptions.length <= 2"
+            aria-label="Quitar"
+          >×</button>
+          @if (fieldError(misconceptions.at($index)); as err) {
+            <p class="qform__error">{{ err }}</p>
+          }
+        </div>
+      }
+      <button type="button" class="qform__add" (click)="addMisconception()">+ Agregar error común</button>
+    </fieldset>
+
+    <!-- Palabras clave (mín. 1) -->
+    <fieldset class="qform__array" formArrayName="semantic_keywords">
+      <legend>Palabras clave <span class="qform__hint">(mín. 1 · cada una 2–100)</span></legend>
+      @for (ctrl of keywords.controls; track $index) {
+        <div class="qform__array-row">
+          <input type="text" [formControlName]="$index" />
+          <button
+            type="button"
+            class="qform__remove"
+            (click)="removeKeyword($index)"
+            [disabled]="keywords.length <= 1"
+            aria-label="Quitar"
+          >×</button>
+          @if (fieldError(keywords.at($index)); as err) {
+            <p class="qform__error">{{ err }}</p>
+          }
+        </div>
+      }
+      <button type="button" class="qform__add" (click)="addKeyword()">+ Agregar palabra clave</button>
+    </fieldset>
+
+    <!-- Rúbrica (mín. 1) -->
+    <fieldset class="qform__array" formArrayName="rubric">
+      <legend>Rúbrica <span class="qform__hint">(score 0–3 · criterio 10–300)</span></legend>
+      @for (group of rubric.controls; track $index) {
+        <div class="qform__rubric-row" [formGroupName]="$index">
+          <select formControlName="score" class="qform__score" aria-label="Puntaje">
+            <option [value]="0">0</option>
+            <option [value]="1">1</option>
+            <option [value]="2">2</option>
+            <option [value]="3">3</option>
+          </select>
+          <textarea formControlName="criteria" rows="2" placeholder="Criterio de evaluación"></textarea>
+          <button
+            type="button"
+            class="qform__remove"
+            (click)="removeRubric($index)"
+            [disabled]="rubric.length <= 1"
+            aria-label="Quitar"
+          >×</button>
+          @if (fieldError(rubric.at($index).get('criteria')); as err) {
+            <p class="qform__error qform__error--rubric">{{ err }}</p>
+          }
+        </div>
+      }
+      <button type="button" class="qform__add" (click)="addRubric()">+ Agregar criterio</button>
+    </fieldset>
+
+    <div class="qform__actions">
+      <button type="submit" class="qform__submit" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Guardando…' : 'Crear pregunta' }}
+      </button>
+    </div>
+  </form>
+</section>

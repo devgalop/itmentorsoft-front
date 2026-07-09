@@ -127,4 +127,38 @@ describe('AssessmentsService', () => {
     });
   });
 
+
+  describe('registerQuestion', () => {
+    const payload = {
+      text: 'x'.repeat(25),
+      concept: 'concepto ok',
+      definition: 'y'.repeat(25),
+      simple_explanation: 'z'.repeat(25),
+      correct_sample: 'a'.repeat(25),
+      wrong_sample: 'b'.repeat(25),
+      common_misconception: ['m'.repeat(25), 'n'.repeat(25)],
+      rubric: [{ score: 3, criteria: 'criterio valido' }],
+      semantic_keywords: ['kw'],
+    };
+
+    it('POSTs the payload to /assessments/questions/register', async () => {
+      const promise = service.registerQuestion(payload);
+      const req = httpMock.expectOne('/assessments/questions/register');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'Question registered', question_id: 'q-1' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+      expect(res.question_id).toBe('q-1');
+    });
+
+    it('maps a 422 into a validation error', async () => {
+      const promise = service.registerQuestion(payload);
+      httpMock
+        .expectOne('/assessments/questions/register')
+        .flush({ detail: 'invalid' }, { status: 422, statusText: 'Unprocessable Entity' });
+      await expect(promise).rejects.toThrow();
+    });
+  });
+
 });

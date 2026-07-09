@@ -8,6 +8,8 @@ import {
   GetQuestionByIdResponse,
   GetQuestionsResponse,
   QuestionDetail,
+  RegisterQuestionPayload,
+  RegisterQuestionResponse,
 } from './assessments.types';
 
 @Injectable({ providedIn: 'root' })
@@ -59,6 +61,19 @@ export class AssessmentsService {
         this.http.get<GetCategoriesResponse>(`${environment.apiUrl}/assessments/categories`),
       );
       return response.categories ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  async registerQuestion(payload: RegisterQuestionPayload): Promise<RegisterQuestionResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.post<RegisterQuestionResponse>(
+          `${environment.apiUrl}/assessments/questions/register`,
+          payload,
+        ),
+      );
     } catch (error) {
       throw this.mapHttpError(error);
     }

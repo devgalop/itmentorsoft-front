@@ -1,0 +1,182 @@
+:host {
+  display: block;
+}
+
+.qform__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.qform__title {
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.qform__subtitle {
+  color: var(--color-mid-2);
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+.qform__back {
+  color: var(--color-secondary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.qform__banner {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.qform__banner--ok {
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-white));
+  border: 1px solid var(--color-success);
+  color: color-mix(in srgb, var(--color-success) 80%, black);
+}
+
+.qform__banner--error {
+  background: color-mix(in srgb, var(--color-error) 8%, var(--color-white));
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+}
+
+.qform__form {
+  margin-top: 1.25rem;
+  max-width: 760px;
+}
+
+.qform__field {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.qform__field label,
+.qform__array legend {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-dark);
+  margin-bottom: 0.35rem;
+}
+
+.qform__hint {
+  color: var(--color-mid-2);
+  font-weight: 500;
+}
+
+.qform__field input,
+.qform__field textarea,
+.qform__array input,
+.qform__array textarea,
+.qform__score {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-dark);
+  font-family: inherit;
+  resize: vertical;
+}
+
+.qform__grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.qform__error {
+  color: var(--color-error);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.qform__array {
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.6rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.qform__array-row,
+.qform__rubric-row {
+  display: grid;
+  gap: 0.5rem;
+  align-items: start;
+  margin-bottom: 0.6rem;
+}
+
+.qform__array-row {
+  grid-template-columns: 1fr auto;
+}
+
+.qform__rubric-row {
+  grid-template-columns: 70px 1fr auto;
+}
+
+.qform__error--rubric {
+  grid-column: 1 / -1;
+}
+
+.qform__remove {
+  border: 1px solid var(--color-light-1);
+  background: var(--color-white);
+  color: var(--color-error);
+  font-size: 1.1rem;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.qform__remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qform__add {
+  border: 1px dashed var(--color-secondary);
+  background: transparent;
+  color: var(--color-secondary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.qform__actions {
+  margin-top: 0.5rem;
+}
+
+.qform__submit {
+  background: var(--color-accent);
+  color: var(--color-white);
+  border: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.7rem 1.6rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.qform__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .qform__grid2 {
+    grid-template-columns: 1fr;
+  }
+}
