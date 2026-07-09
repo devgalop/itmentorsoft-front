@@ -114,7 +114,9 @@ describe('AssessmentsService', () => {
   describe('getCategories', () => {
     it('GETs /assessments/categories and returns the categories array', async () => {
       const promise = service.getCategories();
-      const req = httpMock.expectOne('/assessments/categories');
+      const req = httpMock.expectOne(
+        (r) => r.url === '/assessments/categories' && r.params.get('version') === '1',
+      );
       expect(req.request.method).toBe('GET');
       req.flush({ is_success: true, message: 'ok', categories: ['Fundamentos', 'SOLID'] });
       expect(await promise).toEqual(['Fundamentos', 'SOLID']);
@@ -122,7 +124,9 @@ describe('AssessmentsService', () => {
 
     it('returns an empty array when categories is missing', async () => {
       const promise = service.getCategories();
-      httpMock.expectOne('/assessments/categories').flush({ is_success: true, message: 'ok' });
+      httpMock
+        .expectOne((r) => r.url === '/assessments/categories' && r.params.get('version') === '1')
+        .flush({ is_success: true, message: 'ok' });
       expect(await promise).toEqual([]);
     });
   });

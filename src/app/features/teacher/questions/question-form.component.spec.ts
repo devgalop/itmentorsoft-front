@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { QuestionFormComponent } from './question-form.component';
 import { AssessmentsService } from '../../../core/assessments/assessments.service';
@@ -13,7 +14,7 @@ describe('QuestionFormComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [QuestionFormComponent],
-      providers: [{ provide: AssessmentsService, useValue: serviceMock }],
+      providers: [provideRouter([]), { provide: AssessmentsService, useValue: serviceMock }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(QuestionFormComponent);

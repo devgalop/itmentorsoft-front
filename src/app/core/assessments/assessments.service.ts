@@ -55,10 +55,12 @@ export class AssessmentsService {
     }
   }
 
-  async getCategories(): Promise<string[]> {
+  async getCategories(version = 1): Promise<string[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetCategoriesResponse>(`${environment.apiUrl}/assessments/categories`),
+        this.http.get<GetCategoriesResponse>(`${environment.apiUrl}/assessments/categories`, {
+          params: { version },
+        }),
       );
       return response.categories ?? [];
     } catch (error) {
