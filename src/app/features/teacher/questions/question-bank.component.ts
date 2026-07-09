@@ -22,7 +22,8 @@ export class QuestionBankComponent {
   private readonly assessments = inject(AssessmentsService);
 
   readonly difficulties = QUESTION_DIFFICULTIES;
-  readonly categories = QUESTION_CATEGORIES;
+  /** Categorías del backend; arranca con las conocidas como fallback. */
+  readonly categories = signal<readonly string[]>(QUESTION_CATEGORIES);
 
   readonly mode = signal<FilterMode>('level');
   readonly selectedValue = signal<string>(QUESTION_DIFFICULTIES[0]);
@@ -40,12 +41,31 @@ export class QuestionBankComponent {
   readonly detailError = signal<string | null>(null);
   readonly isDetailOpen = signal(false);
 
+  constructor() {
+    void this.loadCategories();
+  }
+
+  /** Carga las categorías del backend; si falla, conserva el fallback local. */
+  private async loadCategories(): Promise<void> {
+    try {
+      const categories = await this.assessments.getCategories();
+      if (categories.length > 0) {
+        this.categories.set(categories);
+        if (this.mode() === 'category') {
+          this.selectedValue.set(categories[0] ?? '');
+        }
+      }
+    } catch {
+      // Silencioso: se mantiene el fallback (QUESTION_CATEGORIES).
+    }
+  }
+
   setMode(mode: FilterMode): void {
     if (this.mode() === mode) {
       return;
     }
     this.mode.set(mode);
-    this.selectedValue.set(mode === 'level' ? this.difficulties[0] : this.categories[0]);
+    this.selectedValue.set(mode === 'level' ? this.difficulties[0] : (this.categories()[0] ?? ''));
   }
 
   onValueChange(value: string): void {

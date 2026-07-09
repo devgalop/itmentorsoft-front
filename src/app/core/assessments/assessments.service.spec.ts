@@ -110,4 +110,21 @@ describe('AssessmentsService', () => {
       await expect(promise).rejects.toThrow('No se encontraron resultados');
     });
   });
+
+  describe('getCategories', () => {
+    it('GETs /assessments/categories and returns the categories array', async () => {
+      const promise = service.getCategories();
+      const req = httpMock.expectOne('/assessments/categories');
+      expect(req.request.method).toBe('GET');
+      req.flush({ is_success: true, message: 'ok', categories: ['Fundamentos', 'SOLID'] });
+      expect(await promise).toEqual(['Fundamentos', 'SOLID']);
+    });
+
+    it('returns an empty array when categories is missing', async () => {
+      const promise = service.getCategories();
+      httpMock.expectOne('/assessments/categories').flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
 });

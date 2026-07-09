@@ -46,3 +46,9 @@ export interface GetQuestionByIdResponse {
   message: string;
   question: QuestionDetail | null;
 }
+
+export interface GetCategoriesResponse {
+  is_success: boolean;
+  message: string;
+  categories: string[];
+}
