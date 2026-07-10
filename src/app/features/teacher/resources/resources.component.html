@@ -1,0 +1,124 @@
+<section class="res">
+  <header class="res__header">
+    <div>
+      <h1 class="res__title">Recursos</h1>
+      <p class="res__subtitle">Gestioná los recursos educativos disponibles para los estudiantes.</p>
+    </div>
+    <button type="button" class="res__new" (click)="openModal()">+ Nuevo recurso</button>
+  </header>
+
+  @if (submitSuccess()) {
+    <div class="res__banner res__banner--ok" role="status">{{ submitSuccess() }}</div>
+  }
+
+  <div class="res__panel">
+    @if (isLoading()) {
+      <p class="res__hint">Cargando recursos…</p>
+    } @else if (loadError()) {
+      <p class="res__error" role="alert">{{ loadError() }}</p>
+    } @else if (resources().length === 0) {
+      <p class="res__hint">No hay recursos todavía. Creá el primero con “Nuevo recurso”.</p>
+    } @else {
+      <table class="res__table">
+        <thead>
+          <tr>
+            <th class="res__th">Título</th>
+            <th class="res__th">Categoría</th>
+            <th class="res__th">Temas</th>
+            <th class="res__th">Enlace</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of resources(); track r.content_id) {
+            <tr class="res__row">
+              <td class="res__cell">
+                <span class="res__name">{{ r.title }}</span>
+                <span class="res__summary">{{ r.summary }}</span>
+              </td>
+              <td class="res__cell"><span class="res__badge">{{ r.category }}</span></td>
+              <td class="res__cell res__topics">
+                @for (t of r.related_topics; track t) {
+                  <span class="res__topic">{{ t }}</span>
+                }
+              </td>
+              <td class="res__cell">
+                <a class="res__link" [href]="r.url" target="_blank" rel="noopener">Abrir ↗</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</section>
+
+@if (isModalOpen()) {
+  <div class="modal" (click)="closeModal()">
+    <div class="modal__box" (click)="$event.stopPropagation()">
+      <button type="button" class="modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
+      <h2 class="modal__title">Nuevo recurso</h2>
+
+      @if (submitError()) {
+        <div class="res__banner res__banner--error" role="alert">{{ submitError() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="res__form">
+        <div class="res__field">
+          <label for="title">Título <span class="res__hintlabel">(5–150)</span></label>
+          <input id="title" type="text" formControlName="title" />
+          @if (fieldError(form.get('title')); as err) {
+            <p class="res__field-error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="res__field">
+          <label for="description">Descripción <span class="res__hintlabel">(10–300)</span></label>
+          <textarea id="description" rows="3" formControlName="description"></textarea>
+          @if (fieldError(form.get('description')); as err) {
+            <p class="res__field-error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="res__field">
+          <label for="url">URL <span class="res__hintlabel">(https://…)</span></label>
+          <input id="url" type="text" formControlName="url" placeholder="https://" />
+          @if (fieldError(form.get('url')); as err) {
+            <p class="res__field-error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="res__field">
+          <label for="category">Categoría</label>
+          <select id="category" formControlName="category">
+            @for (c of categories; track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </div>
+
+        <fieldset class="res__array" formArrayName="related_topic">
+          <legend>Temas relacionados <span class="res__hintlabel">(mín. 1)</span></legend>
+          @for (ctrl of topics.controls; track $index) {
+            <div class="res__array-row">
+              <input type="text" [formControlName]="$index" />
+              <button
+                type="button"
+                class="res__remove"
+                (click)="removeTopic($index)"
+                [disabled]="topics.length <= 1"
+                aria-label="Quitar"
+              >×</button>
+            </div>
+          }
+          <button type="button" class="res__add" (click)="addTopic()">+ Agregar tema</button>
+        </fieldset>
+
+        <div class="res__actions">
+          <button type="submit" class="res__submit" [disabled]="isSubmitting()">
+            {{ isSubmitting() ? 'Guardando…' : 'Crear recurso' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

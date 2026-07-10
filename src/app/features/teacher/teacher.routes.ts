@@ -52,11 +52,8 @@ export const TEACHER_ROUTES: Routes = [
       },
       {
         path: 'resources',
-        data: {
-          title: 'Recursos',
-          subtitle: 'Próximamente: gestión de recursos educativos (videos, documentos, ejercicios).',
-        },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./resources/resources.component').then((m) => m.ResourcesComponent),
       },
       {
         path: 'rubrics',
