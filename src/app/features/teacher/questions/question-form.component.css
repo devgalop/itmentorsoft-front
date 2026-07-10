@@ -180,3 +180,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.qform__loading {
+  color: var(--color-mid-2);
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
