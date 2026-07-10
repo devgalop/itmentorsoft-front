@@ -9,9 +9,9 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AssessmentsService } from '@core/assessments/assessments.service';
-import { RegisterQuestionPayload } from '@core/assessments/assessments.types';
+import { QuestionDetail, RegisterQuestionPayload } from '@core/assessments/assessments.types';
 
 /** Valida que un FormArray tenga al menos `min` elementos. */
 function minItems(min: number) {
@@ -32,6 +32,13 @@ function minItems(min: number) {
 export class QuestionFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly assessments = inject(AssessmentsService);
+  private readonly route = inject(ActivatedRoute);
+
+  private questionId: string | null = null;
+
+  readonly isEditMode = signal(false);
+  readonly isLoading = signal(false);
+  readonly loadError = signal<string | null>(null);
 
   readonly isSubmitting = signal(false);
   readonly submitError = signal<string | null>(null);
@@ -58,6 +65,15 @@ export class QuestionFormComponent {
     rubric: this.fb.array([this.newRubric()], minItems(1)),
   });
 
+  constructor() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.questionId = id;
+      this.isEditMode.set(true);
+      void this.loadQuestion(id);
+    }
+  }
+
   get misconceptions(): FormArray {
     return this.form.get('common_misconception') as FormArray;
   }
@@ -70,27 +86,80 @@ export class QuestionFormComponent {
     return this.form.get('rubric') as FormArray;
   }
 
-  private newMisconception(): FormControl {
-    return this.fb.nonNullable.control('', [
+  private newMisconception(value = ''): FormControl {
+    return this.fb.nonNullable.control(value, [
       Validators.required,
       Validators.minLength(20),
       Validators.maxLength(300),
     ]);
   }
 
-  private newKeyword(): FormControl {
-    return this.fb.nonNullable.control('', [
+  private newKeyword(value = ''): FormControl {
+    return this.fb.nonNullable.control(value, [
       Validators.required,
       Validators.minLength(2),
       Validators.maxLength(100),
     ]);
   }
 
-  private newRubric(): FormGroup {
+  private newRubric(score = 0, criteria = ''): FormGroup {
     return this.fb.nonNullable.group({
-      score: [0, [Validators.required, Validators.min(0), Validators.max(3)]],
-      criteria: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(300)]],
+      score: [score, [Validators.required, Validators.min(0), Validators.max(3)]],
+      criteria: [
+        criteria,
+        [Validators.required, Validators.minLength(10), Validators.maxLength(300)],
+      ],
     });
+  }
+
+  private async loadQuestion(id: string): Promise<void> {
+    this.isLoading.set(true);
+    this.loadError.set(null);
+    try {
+      const question = await this.assessments.getQuestionById(id);
+      if (!question) {
+        this.loadError.set('No se encontró la pregunta que querés editar.');
+        return;
+      }
+      this.patchForm(question);
+    } catch (error) {
+      this.loadError.set(error instanceof Error ? error.message : 'Error al cargar la pregunta.');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  /** Pre-carga el formulario con el detalle, mapeando rubric.explanation -> criteria. */
+  private patchForm(q: QuestionDetail): void {
+    this.form.patchValue({
+      text: q.text,
+      concept: q.concept,
+      definition: q.definition,
+      simple_explanation: q.simple_explanation,
+      correct_sample: q.correct_sample,
+      wrong_sample: q.wrong_sample,
+    });
+
+    const misconceptions = q.common_misconception ?? [];
+    this.misconceptions.clear();
+    misconceptions.forEach((m) => this.misconceptions.push(this.newMisconception(m)));
+    while (this.misconceptions.length < 2) {
+      this.misconceptions.push(this.newMisconception());
+    }
+
+    const keywords = q.semantic_keywords ?? [];
+    this.keywords.clear();
+    keywords.forEach((k) => this.keywords.push(this.newKeyword(k)));
+    if (this.keywords.length < 1) {
+      this.keywords.push(this.newKeyword());
+    }
+
+    const rubric = q.rubric ?? [];
+    this.rubric.clear();
+    rubric.forEach((r) => this.rubric.push(this.newRubric(r.score, r.explanation)));
+    if (this.rubric.length < 1) {
+      this.rubric.push(this.newRubric());
+    }
   }
 
   addMisconception(): void {
@@ -150,12 +219,20 @@ export class QuestionFormComponent {
     const payload = this.form.getRawValue() as RegisterQuestionPayload;
 
     try {
-      const response = await this.assessments.registerQuestion(payload);
+      const response =
+        this.isEditMode() && this.questionId
+          ? await this.assessments.updateQuestion(this.questionId, payload)
+          : await this.assessments.registerQuestion(payload);
+
       if (response.is_success) {
-        this.submitSuccess.set(response.message || 'Pregunta creada correctamente');
-        this.resetForm();
+        if (this.isEditMode()) {
+          this.submitSuccess.set(response.message || 'Pregunta actualizada correctamente');
+        } else {
+          this.submitSuccess.set(response.message || 'Pregunta creada correctamente');
+          this.resetForm();
+        }
       } else {
-        this.submitError.set(response.message || 'No se pudo crear la pregunta');
+        this.submitError.set(response.message || 'No se pudo guardar la pregunta');
       }
     } catch (error) {
       this.submitError.set(error instanceof Error ? error.message : 'Error inesperado');

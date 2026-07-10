@@ -328,3 +328,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+.detail__edit {
+  margin-left: auto;
+  background: var(--color-secondary);
+  color: var(--color-white);
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 0.4rem;
+  text-decoration: none;
+}
+
+.detail__edit:hover {
+  filter: brightness(0.95);
+}

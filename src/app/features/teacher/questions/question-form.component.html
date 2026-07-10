@@ -1,11 +1,18 @@
 <section class="qform">
   <header class="qform__header">
     <div>
-      <h1 class="qform__title">Nueva pregunta</h1>
+      <h1 class="qform__title">{{ isEditMode() ? 'Editar pregunta' : 'Nueva pregunta' }}</h1>
       <p class="qform__subtitle">Completá todos los campos. Se validan igual que en el backend.</p>
     </div>
     <a routerLink="/teacher/questions" class="qform__back">← Volver a Cuestionarios</a>
   </header>
+
+  @if (isLoading()) {
+    <p class="qform__loading">Cargando pregunta…</p>
+  }
+  @if (loadError()) {
+    <div class="qform__banner qform__banner--error" role="alert">{{ loadError() }}</div>
+  }
 
   @if (submitSuccess()) {
     <div class="qform__banner qform__banner--ok" role="status">{{ submitSuccess() }}</div>
@@ -136,7 +143,13 @@
 
     <div class="qform__actions">
       <button type="submit" class="qform__submit" [disabled]="isSubmitting()">
-        {{ isSubmitting() ? 'Guardando…' : 'Crear pregunta' }}
+        {{
+          isSubmitting()
+            ? 'Guardando…'
+            : isEditMode()
+              ? 'Guardar cambios'
+              : 'Crear pregunta'
+        }}
       </button>
     </div>
   </form>

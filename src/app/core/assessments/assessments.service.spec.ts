@@ -165,4 +165,37 @@ describe('AssessmentsService', () => {
     });
   });
 
+
+  describe('updateQuestion', () => {
+    const payload = {
+      text: 'x'.repeat(25),
+      concept: 'concepto ok',
+      definition: 'y'.repeat(25),
+      simple_explanation: 'z'.repeat(25),
+      correct_sample: 'a'.repeat(25),
+      wrong_sample: 'b'.repeat(25),
+      common_misconception: ['m'.repeat(25), 'n'.repeat(25)],
+      rubric: [{ score: 2, criteria: 'criterio valido' }],
+      semantic_keywords: ['kw'],
+    };
+
+    it('PUTs the payload to /assessments/questions/{id}', async () => {
+      const promise = service.updateQuestion('q-9', payload);
+      const req = httpMock.expectOne('/assessments/questions/q-9');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'Question updated' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+    });
+
+    it('encodes the question id in the URL', async () => {
+      const promise = service.updateQuestion('a/b', payload);
+      const req = httpMock.expectOne('/assessments/questions/a%2Fb');
+      req.flush({ is_success: true, message: 'ok' });
+      await promise;
+      expect(req.request.method).toBe('PUT');
+    });
+  });
+
 });

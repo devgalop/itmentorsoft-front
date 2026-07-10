@@ -30,6 +30,11 @@ export const TEACHER_ROUTES: Routes = [
           import('./questions/question-form.component').then((m) => m.QuestionFormComponent),
       },
       {
+        path: 'questions/:id/edit',
+        loadComponent: () =>
+          import('./questions/question-form.component').then((m) => m.QuestionFormComponent),
+      },
+      {
         path: 'students',
         data: {
           title: 'Mis estudiantes',

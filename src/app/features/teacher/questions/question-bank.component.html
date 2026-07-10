@@ -107,6 +107,11 @@
           <div class="detail__row">
             <span class="detail__status">{{ q.status }}</span>
             <h2 class="detail__concept">{{ q.concept }}</h2>
+            <a
+              class="detail__edit"
+              [routerLink]="['/teacher/questions', q.question_id, 'edit']"
+              (click)="closeDetail()"
+            >Editar</a>
           </div>
           <p class="detail__text">{{ q.text }}</p>
 

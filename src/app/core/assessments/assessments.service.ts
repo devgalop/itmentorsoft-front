@@ -10,6 +10,7 @@ import {
   QuestionDetail,
   RegisterQuestionPayload,
   RegisterQuestionResponse,
+  UpdateQuestionResponse,
 } from './assessments.types';
 
 @Injectable({ providedIn: 'root' })
@@ -73,6 +74,22 @@ export class AssessmentsService {
       return await firstValueFrom(
         this.http.post<RegisterQuestionResponse>(
           `${environment.apiUrl}/assessments/questions/register`,
+          payload,
+        ),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  async updateQuestion(
+    questionId: string,
+    payload: RegisterQuestionPayload,
+  ): Promise<UpdateQuestionResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.put<UpdateQuestionResponse>(
+          `${environment.apiUrl}/assessments/questions/${encodeURIComponent(questionId)}`,
           payload,
         ),
       );

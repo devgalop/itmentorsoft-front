@@ -75,3 +75,8 @@ export interface RegisterQuestionResponse {
   message: string;
   question_id?: string | null;
 }
+
+export interface UpdateQuestionResponse {
+  is_success: boolean;
+  message: string;
+}
