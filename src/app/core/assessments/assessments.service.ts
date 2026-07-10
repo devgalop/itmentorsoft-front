@@ -8,6 +8,8 @@ import {
   GetQuestionByIdResponse,
   GetQuestionsResponse,
   QuestionDetail,
+  RegisterQuestionPayload,
+  RegisterQuestionResponse,
 } from './assessments.types';
 
 @Injectable({ providedIn: 'root' })
@@ -53,12 +55,27 @@ export class AssessmentsService {
     }
   }
 
-  async getCategories(): Promise<string[]> {
+  async getCategories(version = 1): Promise<string[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetCategoriesResponse>(`${environment.apiUrl}/assessments/categories`),
+        this.http.get<GetCategoriesResponse>(`${environment.apiUrl}/assessments/categories`, {
+          params: { version },
+        }),
       );
       return response.categories ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  async registerQuestion(payload: RegisterQuestionPayload): Promise<RegisterQuestionResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.post<RegisterQuestionResponse>(
+          `${environment.apiUrl}/assessments/questions/register`,
+          payload,
+        ),
+      );
     } catch (error) {
       throw this.mapHttpError(error);
     }

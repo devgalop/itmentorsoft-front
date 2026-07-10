@@ -26,11 +26,8 @@ export const TEACHER_ROUTES: Routes = [
       },
       {
         path: 'questions/new',
-        data: {
-          title: 'Nueva pregunta',
-          subtitle: 'Próximamente: formulario para crear preguntas técnicas.',
-        },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./questions/question-form.component').then((m) => m.QuestionFormComponent),
       },
       {
         path: 'students',
