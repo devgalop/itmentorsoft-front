@@ -7,16 +7,20 @@ import {
   GetAllContentsResponse,
   RegisterContentPayload,
   RegisterContentResponse,
+  UpdateContentResponse,
 } from './content.types';
 
 @Injectable({ providedIn: 'root' })
 export class ContentService {
   private readonly http = inject(HttpClient);
 
-  async getAllContents(): Promise<ContentItem[]> {
+  /** Listado paginado de recursos (page arranca en 0; el backend exige ambos params). */
+  async getAllContents(page = 0, pageSize = 50): Promise<ContentItem[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetAllContentsResponse>(`${environment.apiUrl}/content/`),
+        this.http.get<GetAllContentsResponse>(`${environment.apiUrl}/content/`, {
+          params: { page, page_size: pageSize },
+        }),
       );
       return response.items ?? [];
     } catch (error) {
@@ -28,6 +32,22 @@ export class ContentService {
     try {
       return await firstValueFrom(
         this.http.post<RegisterContentResponse>(`${environment.apiUrl}/content/`, payload),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  async updateContent(
+    contentId: string,
+    payload: RegisterContentPayload,
+  ): Promise<UpdateContentResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.put<UpdateContentResponse>(
+          `${environment.apiUrl}/content/${encodeURIComponent(contentId)}`,
+          payload,
+        ),
       );
     } catch (error) {
       throw this.mapHttpError(error);

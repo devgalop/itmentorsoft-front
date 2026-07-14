@@ -20,7 +20,12 @@ describe('ContentService', () => {
   describe('getAllContents', () => {
     it('GETs /content/ and returns the items', async () => {
       const promise = service.getAllContents();
-      const req = httpMock.expectOne('/content/');
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === '/content/' &&
+          r.params.get('page') === '0' &&
+          r.params.get('page_size') === '50',
+      );
       expect(req.request.method).toBe('GET');
       const items = [
         {
@@ -38,13 +43,17 @@ describe('ContentService', () => {
 
     it('returns an empty array when items is missing', async () => {
       const promise = service.getAllContents();
-      httpMock.expectOne('/content/').flush({ is_success: true, message: 'ok' });
+      httpMock
+        .expectOne((r) => r.url === '/content/' && r.params.has('page'))
+        .flush({ is_success: true, message: 'ok' });
       expect(await promise).toEqual([]);
     });
 
     it('maps a 403 into a permissions error', async () => {
       const promise = service.getAllContents();
-      httpMock.expectOne('/content/').flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      httpMock
+        .expectOne((r) => r.url === '/content/' && r.params.has('page'))
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
       await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
     });
   });
@@ -75,4 +84,33 @@ describe('ContentService', () => {
       await expect(promise).rejects.toThrow('Datos inválidos');
     });
   });
+
+  describe('updateContent', () => {
+    const payload = {
+      title: 'Un recurso',
+      description: 'descripción válida',
+      url: 'https://ejemplo.com',
+      category: 'novice',
+      related_topic: ['APIs'],
+    };
+
+    it('PUTs the payload to /content/{id}', async () => {
+      const promise = service.updateContent('c-1', payload);
+      const req = httpMock.expectOne('/content/c-1');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'actualizado' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+    });
+
+    it('encodes the content id in the URL', async () => {
+      const promise = service.updateContent('a/b', payload);
+      const req = httpMock.expectOne('/content/a%2Fb');
+      req.flush({ is_success: true, message: 'ok' });
+      await promise;
+      expect(req.request.method).toBe('PUT');
+    });
+  });
+
 });
