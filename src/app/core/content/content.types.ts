@@ -36,3 +36,13 @@ export interface RegisterContentResponse {
   content_id?: string | null;
   message: string;
 }
+
+export interface UpdateContentResponse {
+  is_success: boolean;
+  message: string;
+}
+
+export interface PagedContents {
+  items: ContentItem[];
+  total: number;
+}

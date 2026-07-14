@@ -51,6 +51,9 @@ export class ResourcesComponent {
   readonly submitError = signal<string | null>(null);
   readonly submitSuccess = signal<string | null>(null);
 
+  /** Id del recurso en edición; null = creando. */
+  readonly editingId = signal<string | null>(null);
+
   readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(150)]],
     description: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(300)]],
@@ -93,8 +96,34 @@ export class ResourcesComponent {
     }
   }
 
-  openModal(): void {
+  openCreate(): void {
+    this.editingId.set(null);
     this.submitError.set(null);
+    this.submitSuccess.set(null);
+    this.resetForm();
+    this.isModalOpen.set(true);
+  }
+
+  /** Abre el modal en modo edición, precargando el recurso (summary -> description). */
+  openEdit(resource: ContentItem): void {
+    this.editingId.set(resource.content_id);
+    this.submitError.set(null);
+    this.submitSuccess.set(null);
+
+    this.form.patchValue({
+      title: resource.title,
+      description: resource.summary,
+      url: resource.url,
+      category: resource.category,
+    });
+
+    this.topics.clear();
+    const topics = resource.related_topics ?? [];
+    topics.forEach((t) => this.topics.push(this.newTopic(t)));
+    if (this.topics.length === 0) {
+      this.topics.push(this.newTopic());
+    }
+
     this.isModalOpen.set(true);
   }
 
@@ -125,16 +154,23 @@ export class ResourcesComponent {
 
     this.isSubmitting.set(true);
     const payload = this.form.getRawValue() as RegisterContentPayload;
+    const editingId = this.editingId();
 
     try {
-      const response = await this.content.registerContent(payload);
+      const response = editingId
+        ? await this.content.updateContent(editingId, payload)
+        : await this.content.registerContent(payload);
+
       if (response.is_success) {
-        this.submitSuccess.set(response.message || 'Recurso creado correctamente');
+        this.submitSuccess.set(
+          response.message || (editingId ? 'Recurso actualizado' : 'Recurso creado'),
+        );
         this.resetForm();
+        this.editingId.set(null);
         this.closeModal();
         await this.loadResources();
       } else {
-        this.submitError.set(response.message || 'No se pudo crear el recurso');
+        this.submitError.set(response.message || 'No se pudo guardar el recurso');
       }
     } catch (error) {
       this.submitError.set(error instanceof Error ? error.message : 'Error inesperado');
