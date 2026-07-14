@@ -3,10 +3,10 @@
     <div>
       <h1 class="cuest__title">Cuestionarios técnicos</h1>
       <p class="cuest__subtitle">
-        @if (appliedFilter()) {
-          {{ questions().length }} pregunta(s) · filtro: {{ appliedFilter() }}
+        @if (mode() === 'all') {
+          {{ total() }} pregunta(s) registrada(s)
         } @else {
-          Gestioná las preguntas técnicas que conforman las evaluaciones.
+          {{ rows().length }} pregunta(s) · filtro: {{ selectedValue() }}
         }
       </p>
     </div>
@@ -15,6 +15,14 @@
 
   <div class="cuest__toolbar">
     <div class="cuest__tabs" role="tablist">
+      <button
+        type="button"
+        class="cuest__tab"
+        [class.cuest__tab--active]="mode() === 'all'"
+        (click)="setMode('all')"
+      >
+        Todas
+      </button>
       <button
         type="button"
         class="cuest__tab"
@@ -33,26 +41,28 @@
       </button>
     </div>
 
-    <select
-      class="cuest__select"
-      [value]="selectedValue()"
-      (change)="onValueChange($any($event.target).value)"
-      aria-label="Valor del filtro"
-    >
-      @if (mode() === 'level') {
-        @for (d of difficulties; track d) {
-          <option [value]="d">{{ d }}</option>
+    @if (mode() !== 'all') {
+      <select
+        class="cuest__select"
+        [value]="selectedValue()"
+        (change)="onValueChange($any($event.target).value)"
+        aria-label="Valor del filtro"
+      >
+        @if (mode() === 'level') {
+          @for (d of difficulties; track d) {
+            <option [value]="d">{{ d }}</option>
+          }
+        } @else {
+          @for (c of categories(); track c) {
+            <option [value]="c">{{ c }}</option>
+          }
         }
-      } @else {
-        @for (c of categories(); track c) {
-          <option [value]="c">{{ c }}</option>
-        }
-      }
-    </select>
+      </select>
 
-    <button type="button" class="cuest__filter" (click)="search()" [disabled]="isLoadingList()">
-      {{ isLoadingList() ? 'Filtrando…' : 'Filtrar' }}
-    </button>
+      <button type="button" class="cuest__filter" (click)="search()" [disabled]="isLoadingList()">
+        {{ isLoadingList() ? 'Filtrando…' : 'Filtrar' }}
+      </button>
+    }
   </div>
 
   <div class="cuest__panel">
@@ -60,26 +70,38 @@
       <p class="cuest__hint">Cargando preguntas…</p>
     } @else if (listError()) {
       <p class="cuest__error" role="alert">{{ listError() }}</p>
-    } @else if (!hasSearched()) {
-      <p class="cuest__hint">Elegí un filtro y presioná “Filtrar” para ver las preguntas.</p>
-    } @else if (questions().length === 0) {
-      <p class="cuest__hint">No hay preguntas para este filtro.</p>
+    } @else if (rows().length === 0) {
+      <p class="cuest__hint">No hay preguntas para mostrar.</p>
     } @else {
       <table class="cuest__table">
         <thead>
           <tr>
             <th class="cuest__th cuest__th--id">ID</th>
             <th class="cuest__th">Pregunta</th>
-            <th class="cuest__th">Filtro</th>
+            <th class="cuest__th">Dificultad</th>
+            <th class="cuest__th">Categoría</th>
             <th class="cuest__th cuest__th--actions">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          @for (q of questions(); track q.question_id) {
+          @for (q of rows(); track q.question_id) {
             <tr class="cuest__row">
               <td class="cuest__id">{{ q.question_id.slice(0, 8) }}</td>
-              <td class="cuest__text">{{ q.text_to_evaluate }}</td>
-              <td><span class="cuest__badge">{{ appliedFilter() }}</span></td>
+              <td class="cuest__text">{{ q.text }}</td>
+              <td>
+                @if (q.difficulty) {
+                  <span class="cuest__badge cuest__badge--diff">{{ q.difficulty }}</span>
+                } @else {
+                  <span class="cuest__dash">—</span>
+                }
+              </td>
+              <td>
+                @if (q.category) {
+                  <span class="cuest__badge">{{ q.category }}</span>
+                } @else {
+                  <span class="cuest__dash">—</span>
+                }
+              </td>
               <td class="cuest__actions">
                 <button type="button" class="cuest__action" (click)="selectQuestion(q.question_id)">
                   Ver
@@ -89,6 +111,23 @@
           }
         </tbody>
       </table>
+
+      @if (mode() === 'all' && totalPages() > 1) {
+        <div class="cuest__pager">
+          <button type="button" class="cuest__page-btn" (click)="prevPage()" [disabled]="page() === 0">
+            ← Anterior
+          </button>
+          <span class="cuest__page-info">Página {{ page() + 1 }} de {{ totalPages() }}</span>
+          <button
+            type="button"
+            class="cuest__page-btn"
+            (click)="nextPage()"
+            [disabled]="page() + 1 >= totalPages()"
+          >
+            Siguiente →
+          </button>
+        </div>
+      }
     }
   </div>
 </section>

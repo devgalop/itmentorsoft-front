@@ -80,3 +80,33 @@ export interface UpdateQuestionResponse {
   is_success: boolean;
   message: string;
 }
+
+/** Pregunta completa devuelta por GET /assessments/questions (listado paginado). */
+export interface QuestionListItem {
+  question_id: string;
+  text_to_evaluate: string;
+  concept: string;
+  definition: string;
+  simple_explanation: string;
+  correct_sample: string;
+  wrong_sample: string;
+  common_misconceptions: string[];
+  rubric: QuestionRubricScore[];
+  semantic_keywords: string[];
+  status: string;
+  difficulty: string;
+  classification: string;
+  version: number;
+}
+
+export interface GetAllQuestionsResponse {
+  is_success: boolean;
+  message: string;
+  questions: QuestionListItem[];
+  total: number;
+}
+
+export interface PagedQuestions {
+  questions: QuestionListItem[];
+  total: number;
+}
