@@ -4,164 +4,177 @@ import { QuestionBankComponent } from './question-bank.component';
 import { AssessmentsService } from '../../../core/assessments/assessments.service';
 
 describe('QuestionBankComponent', () => {
-  let component: QuestionBankComponent;
   let serviceMock: {
+    getAllQuestions: ReturnType<typeof vi.fn>;
     getQuestionsByLevel: ReturnType<typeof vi.fn>;
     getQuestionsByCategory: ReturnType<typeof vi.fn>;
     getQuestionById: ReturnType<typeof vi.fn>;
     getCategories: ReturnType<typeof vi.fn>;
   };
 
+  function listItem(id: string) {
+    return {
+      question_id: id,
+      text_to_evaluate: 'texto ' + id,
+      difficulty: 'básico',
+      classification: 'Fundamentos y paradigmas',
+      status: 'published',
+    };
+  }
+
+  function createComponent(): QuestionBankComponent {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [QuestionBankComponent, { provide: AssessmentsService, useValue: serviceMock }],
+    });
+    return TestBed.inject(QuestionBankComponent);
+  }
+
   beforeEach(() => {
     serviceMock = {
+      getAllQuestions: vi.fn().mockResolvedValue({ questions: [], total: 0 }),
       getQuestionsByLevel: vi.fn(),
       getQuestionsByCategory: vi.fn(),
       getQuestionById: vi.fn(),
       getCategories: vi.fn().mockResolvedValue([]),
     };
-
-    TestBed.configureTestingModule({
-      providers: [
-        QuestionBankComponent,
-        { provide: AssessmentsService, useValue: serviceMock },
-      ],
-    });
-
-    component = TestBed.inject(QuestionBankComponent);
   });
 
-  it('creates with level mode and the first difficulty selected', () => {
-    expect(component).toBeTruthy();
-    expect(component.mode()).toBe('level');
-    expect(component.selectedValue()).toBe('básico');
+  it('starts in "all" mode and loads the paginated list', async () => {
+    serviceMock.getAllQuestions.mockResolvedValue({ questions: [listItem('q1')], total: 1 });
+    const component = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(component.mode()).toBe('all');
+    expect(serviceMock.getAllQuestions).toHaveBeenCalledWith(0, 10);
+    expect(component.rows()).toHaveLength(1);
+    expect(component.total()).toBe(1);
   });
 
-  it('switching to category mode resets the selected value to the first category', () => {
-    component.setMode('category');
-    expect(component.mode()).toBe('category');
-    expect(component.selectedValue()).toBe('APIs y sistemas distribuidos');
+  it('maps difficulty and classification into the row', async () => {
+    serviceMock.getAllQuestions.mockResolvedValue({ questions: [listItem('q1')], total: 1 });
+    const component = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const row = component.rows()[0]!;
+    expect(row.difficulty).toBe('básico');
+    expect(row.category).toBe('Fundamentos y paradigmas');
   });
 
-  describe('search', () => {
-    it('calls getQuestionsByLevel in level mode, stores list and applied filter', async () => {
-      serviceMock.getQuestionsByLevel.mockResolvedValue([
-        { question_id: 'q1', text_to_evaluate: 'texto' },
-      ]);
+  it('computes totalPages from total and page size', async () => {
+    serviceMock.getAllQuestions.mockResolvedValue({ questions: [listItem('q1')], total: 25 });
+    const component = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
 
-      await component.search();
-
-      expect(serviceMock.getQuestionsByLevel).toHaveBeenCalledWith('básico');
-      expect(component.questions()).toHaveLength(1);
-      expect(component.appliedFilter()).toBe('básico');
-      expect(component.hasSearched()).toBe(true);
-    });
-
-    it('calls getQuestionsByCategory in category mode', async () => {
-      serviceMock.getQuestionsByCategory.mockResolvedValue([]);
-      component.setMode('category');
-      component.onValueChange('Fundamentos y paradigmas');
-
-      await component.search();
-
-      expect(serviceMock.getQuestionsByCategory).toHaveBeenCalledWith('Fundamentos y paradigmas');
-      expect(component.appliedFilter()).toBe('Fundamentos y paradigmas');
-    });
-
-    it('captures the error message and clears the list on failure', async () => {
-      serviceMock.getQuestionsByLevel.mockRejectedValue(
-        new Error('No tenés permisos para ver este contenido'),
-      );
-
-      await component.search();
-
-      expect(component.questions()).toEqual([]);
-      expect(component.appliedFilter()).toBeNull();
-      expect(component.listError()).toBe('No tenés permisos para ver este contenido');
-    });
+    expect(component.totalPages()).toBe(3);
   });
 
-  describe('selectQuestion / detail modal', () => {
-    it('opens the modal and loads the detail for the selected question', async () => {
-      const detail = {
-        question_id: 'q1',
-        text: 't',
-        concept: 'c',
-        definition: 'd',
-        simple_explanation: 's',
-        correct_sample: 'ok',
-        wrong_sample: 'bad',
-        common_misconception: ['a', 'b'],
-        rubric: [{ score: 3, explanation: 'e' }],
-        semantic_keywords: ['k'],
-        status: 'published',
-      };
-      serviceMock.getQuestionById.mockResolvedValue(detail);
+  it('nextPage loads the following page', async () => {
+    serviceMock.getAllQuestions.mockResolvedValue({ questions: [listItem('q1')], total: 25 });
+    const component = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
 
-      await component.selectQuestion('q1');
+    await component.nextPage();
 
-      expect(serviceMock.getQuestionById).toHaveBeenCalledWith('q1');
-      expect(component.selectedId()).toBe('q1');
-      expect(component.detail()).toEqual(detail);
-      expect(component.isDetailOpen()).toBe(true);
-    });
-
-    it('sets a detail error when the question is not found', async () => {
-      serviceMock.getQuestionById.mockResolvedValue(null);
-
-      await component.selectQuestion('missing');
-
-      expect(component.detail()).toBeNull();
-      expect(component.detailError()).toBe('No se encontró el detalle de la pregunta');
-    });
-
-    it('does not refetch when the same question is reopened', async () => {
-      serviceMock.getQuestionById.mockResolvedValue(null);
-      await component.selectQuestion('q1');
-      serviceMock.getQuestionById.mockClear();
-
-      await component.selectQuestion('q1');
-      expect(serviceMock.getQuestionById).not.toHaveBeenCalled();
-      expect(component.isDetailOpen()).toBe(true);
-    });
-
-    it('closeDetail hides the modal', async () => {
-      serviceMock.getQuestionById.mockResolvedValue(null);
-      await component.selectQuestion('q1');
-      expect(component.isDetailOpen()).toBe(true);
-
-      component.closeDetail();
-      expect(component.isDetailOpen()).toBe(false);
-    });
+    expect(serviceMock.getAllQuestions).toHaveBeenLastCalledWith(1, 10);
+    expect(component.page()).toBe(1);
   });
 
-  describe('categorías dinámicas', () => {
-    function createWith(getCategories: ReturnType<typeof vi.fn>): QuestionBankComponent {
-      TestBed.resetTestingModule();
-      const mock = {
-        getQuestionsByLevel: vi.fn(),
-        getQuestionsByCategory: vi.fn(),
-        getQuestionById: vi.fn(),
-        getCategories,
-      };
-      TestBed.configureTestingModule({
-        providers: [QuestionBankComponent, { provide: AssessmentsService, useValue: mock }],
-      });
-      return TestBed.inject(QuestionBankComponent);
-    }
+  it('prevPage does nothing on the first page', async () => {
+    serviceMock.getAllQuestions.mockResolvedValue({ questions: [], total: 5 });
+    const component = createComponent();
+    await Promise.resolve();
+    serviceMock.getAllQuestions.mockClear();
 
-    it('carga las categorías del backend al crearse', async () => {
-      const comp = createWith(vi.fn().mockResolvedValue(['Cat A', 'Cat B']));
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(comp.categories()).toEqual(['Cat A', 'Cat B']);
-    });
+    await component.prevPage();
 
-    it('mantiene el fallback si getCategories falla', async () => {
-      const comp = createWith(vi.fn().mockRejectedValue(new Error('boom')));
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(comp.categories()).toContain('APIs y sistemas distribuidos');
-    });
+    expect(serviceMock.getAllQuestions).not.toHaveBeenCalled();
   });
 
+  it('switching to level mode and searching calls getQuestionsByLevel', async () => {
+    const component = createComponent();
+    await Promise.resolve();
+    serviceMock.getQuestionsByLevel.mockResolvedValue([
+      { question_id: 'q9', text_to_evaluate: 'texto' },
+    ]);
+
+    component.setMode('level');
+    await component.search();
+
+    expect(serviceMock.getQuestionsByLevel).toHaveBeenCalledWith('básico');
+    expect(component.rows()[0]?.difficulty).toBe('básico');
+    expect(component.rows()[0]?.category).toBeNull();
+  });
+
+  it('switching back to "all" reloads the full list', async () => {
+    const component = createComponent();
+    await Promise.resolve();
+    component.setMode('level');
+    serviceMock.getAllQuestions.mockClear();
+
+    component.setMode('all');
+    await Promise.resolve();
+
+    expect(component.mode()).toBe('all');
+    expect(serviceMock.getAllQuestions).toHaveBeenCalledWith(0, 10);
+  });
+
+  it('captures the error and clears the list on failure', async () => {
+    serviceMock.getAllQuestions.mockRejectedValue(new Error('No tenés permisos'));
+    const component = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(component.rows()).toEqual([]);
+    expect(component.listError()).toBe('No tenés permisos');
+  });
+
+  it('opens the modal and loads the question detail', async () => {
+    const detail = {
+      question_id: 'q1',
+      text: 't',
+      concept: 'c',
+      definition: 'd',
+      simple_explanation: 's',
+      correct_sample: 'ok',
+      wrong_sample: 'bad',
+      common_misconception: ['a', 'b'],
+      rubric: [{ score: 3, explanation: 'e' }],
+      semantic_keywords: ['k'],
+      status: 'published',
+    };
+    serviceMock.getQuestionById.mockResolvedValue(detail);
+    const component = createComponent();
+    await Promise.resolve();
+
+    await component.selectQuestion('q1');
+
+    expect(serviceMock.getQuestionById).toHaveBeenCalledWith('q1');
+    expect(component.detail()).toEqual(detail);
+    expect(component.isDetailOpen()).toBe(true);
+  });
+
+  it('closeDetail hides the modal', async () => {
+    serviceMock.getQuestionById.mockResolvedValue(null);
+    const component = createComponent();
+    await Promise.resolve();
+    await component.selectQuestion('q1');
+
+    component.closeDetail();
+
+    expect(component.isDetailOpen()).toBe(false);
+  });
+
+  it('loads categories from the backend', async () => {
+    serviceMock.getCategories.mockResolvedValue(['Cat A', 'Cat B']);
+    const component = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(component.categories()).toEqual(['Cat A', 'Cat B']);
+  });
 });

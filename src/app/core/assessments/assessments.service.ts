@@ -4,9 +4,11 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import {
   EvaluativeQuestion,
+  GetAllQuestionsResponse,
   GetCategoriesResponse,
   GetQuestionByIdResponse,
   GetQuestionsResponse,
+  PagedQuestions,
   QuestionDetail,
   RegisterQuestionPayload,
   RegisterQuestionResponse,
@@ -51,6 +53,20 @@ export class AssessmentsService {
         ),
       );
       return response.question ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Listado paginado de todas las preguntas (page arranca en 0). */
+  async getAllQuestions(page = 0, pageSize = 10): Promise<PagedQuestions> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetAllQuestionsResponse>(`${environment.apiUrl}/assessments/questions`, {
+          params: { page, page_size: pageSize },
+        }),
+      );
+      return { questions: response.questions ?? [], total: response.total ?? 0 };
     } catch (error) {
       throw this.mapHttpError(error);
     }

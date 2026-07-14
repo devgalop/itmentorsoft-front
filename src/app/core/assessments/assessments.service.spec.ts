@@ -198,4 +198,37 @@ describe('AssessmentsService', () => {
     });
   });
 
+
+  describe('getAllQuestions', () => {
+    it('GETs the paginated list with page and page_size', async () => {
+      const promise = service.getAllQuestions(0, 10);
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === '/assessments/questions' &&
+          r.params.get('page') === '0' &&
+          r.params.get('page_size') === '10',
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        is_success: true,
+        message: 'ok',
+        questions: [{ question_id: 'q1', text_to_evaluate: 't', difficulty: 'básico', classification: 'Cat' }],
+        total: 1,
+      });
+      const res = await promise;
+      expect(res.total).toBe(1);
+      expect(res.questions).toHaveLength(1);
+    });
+
+    it('returns empty results when the payload has no questions', async () => {
+      const promise = service.getAllQuestions(2, 5);
+      httpMock
+        .expectOne((r) => r.params.get('page') === '2' && r.params.get('page_size') === '5')
+        .flush({ is_success: true, message: 'ok' });
+      const res = await promise;
+      expect(res.questions).toEqual([]);
+      expect(res.total).toBe(0);
+    });
+  });
+
 });
