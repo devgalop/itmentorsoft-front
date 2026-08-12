@@ -9,37 +9,80 @@
     </div>
     <div class="dash__banner-actions">
       <a routerLink="/teacher/resources" class="dash__btn dash__btn--solid">Nuevo recurso</a>
-      <a routerLink="/teacher/reports" class="dash__btn dash__btn--ghost">Ver reportes</a>
+      <a routerLink="/teacher/students" class="dash__btn dash__btn--ghost">Ver estudiantes</a>
     </div>
   </div>
 
   <div class="dash__stats">
-    @for (s of stats; track s.label) {
-      <div class="dash__stat">
-        <span class="dash__stat-value">—</span>
-        <span class="dash__stat-label">{{ s.label }}</span>
-        <span class="dash__stat-hint">{{ s.hint }}</span>
-      </div>
-    }
+    <div class="dash__stat">
+      <span class="dash__stat-value">{{ studentsTotal() ?? '—' }}</span>
+      <span class="dash__stat-label">Estudiantes activos</span>
+      <span class="dash__stat-hint">{{ studentsTotal() === null ? 'Sin datos' : 'Registrados' }}</span>
+    </div>
+    <div class="dash__stat">
+      <span class="dash__stat-value">{{ categoriesTotal() ?? '—' }}</span>
+      <span class="dash__stat-label">Categorías activas</span>
+      <span class="dash__stat-hint">{{ categoriesTotal() === null ? 'Sin datos' : 'De preguntas' }}</span>
+    </div>
+    <div class="dash__stat">
+      <span class="dash__stat-value">{{ resourcesTotal() ?? '—' }}</span>
+      <span class="dash__stat-label">Recursos activos</span>
+      <span class="dash__stat-hint">{{ resourcesTotal() === null ? 'Sin datos' : 'Publicados' }}</span>
+    </div>
+    <div class="dash__stat">
+      <span class="dash__stat-value">—</span>
+      <span class="dash__stat-label">Rúbricas pendientes</span>
+      <span class="dash__stat-hint">Sin backend</span>
+    </div>
   </div>
 
   <div class="dash__grid">
     <div class="dash__card dash__card--wide">
       <div class="dash__card-head">
         <h2 class="dash__card-title">Últimos estudiantes activos</h2>
+        <a routerLink="/teacher/students" class="dash__see-all">Ver todos →</a>
       </div>
-      <div class="dash__empty">
-        <p>Sin datos disponibles todavía.</p>
-        <small>Se mostrará cuando el backend exponga la información de estudiantes.</small>
-      </div>
+
+      @if (isLoading()) {
+        <div class="dash__empty"><p>Cargando…</p></div>
+      } @else if (recentStudents().length === 0) {
+        <div class="dash__empty"><p>Sin estudiantes registrados todavía.</p></div>
+      } @else {
+        <table class="dash__mini-table">
+          <tbody>
+            @for (s of recentStudents(); track s.student_id) {
+              <tr>
+                <td class="dash__mini-cell">
+                  <span class="dash__avatar">{{ initials(s.student_name) }}</span>
+                  <span class="dash__mini-name">{{ s.student_name }}</span>
+                </td>
+                <td class="dash__mini-cell">
+                  <span class="dash__badge">{{ s.knowledge_classification }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
     </div>
 
     <div class="dash__side">
       <div class="dash__card">
         <h2 class="dash__card-title">Por categoría</h2>
-        <div class="dash__empty">
-          <p>Sin datos disponibles.</p>
-        </div>
+        @if (isLoading()) {
+          <div class="dash__empty"><p>Cargando…</p></div>
+        } @else if (byCategory().length === 0) {
+          <div class="dash__empty"><p>Sin datos.</p></div>
+        } @else {
+          <ul class="dash__cat-list">
+            @for (c of byCategory(); track c.category) {
+              <li class="dash__cat-row">
+                <span class="dash__cat-name">{{ c.category }}</span>
+                <span class="dash__cat-val">{{ c.pct }}% · {{ c.count }}</span>
+              </li>
+            }
+          </ul>
+        }
       </div>
 
       <div class="dash__card">

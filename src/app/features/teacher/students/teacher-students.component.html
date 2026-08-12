@@ -1,0 +1,61 @@
+<section class="stu">
+  <header class="stu__header">
+    <h1 class="stu__title">Mis estudiantes</h1>
+    <p class="stu__subtitle">
+      @if (total() > 0) {
+        {{ total() }} estudiante(s) · clasificados por el modelo de conocimiento
+      } @else {
+        Estudiantes y su clasificación de conocimiento.
+      }
+    </p>
+  </header>
+
+  <div class="stu__panel">
+    @if (isLoading()) {
+      <p class="stu__hint">Cargando estudiantes…</p>
+    } @else if (loadError()) {
+      <p class="stu__error" role="alert">{{ loadError() }}</p>
+    } @else if (students().length === 0) {
+      <p class="stu__hint">No hay estudiantes para mostrar todavía.</p>
+    } @else {
+      <table class="stu__table">
+        <thead>
+          <tr>
+            <th class="stu__th">Estudiante</th>
+            <th class="stu__th">Clasificación</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of students(); track s.student_id) {
+            <tr class="stu__row">
+              <td class="stu__cell">
+                <span class="stu__avatar">{{ initials(s.student_name) }}</span>
+                <span class="stu__name">{{ s.student_name }}</span>
+              </td>
+              <td class="stu__cell">
+                <span class="stu__badge">{{ s.knowledge_classification }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (totalPages() > 1) {
+        <div class="stu__pager">
+          <button type="button" class="stu__page-btn" (click)="prevPage()" [disabled]="page() === 0">
+            ← Anterior
+          </button>
+          <span class="stu__page-info">Página {{ page() + 1 }} de {{ totalPages() }}</span>
+          <button
+            type="button"
+            class="stu__page-btn"
+            (click)="nextPage()"
+            [disabled]="page() + 1 >= totalPages()"
+          >
+            Siguiente →
+          </button>
+        </div>
+      }
+    }
+  </div>
+</section>

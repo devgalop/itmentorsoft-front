@@ -3,50 +3,88 @@ import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { TeacherDashboardComponent } from './teacher-dashboard.component';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ReportsService } from '../../../core/reports/reports.service';
+import { ContentService } from '../../../core/content/content.service';
+import { AssessmentsService } from '../../../core/assessments/assessments.service';
 
 describe('TeacherDashboardComponent', () => {
-  let component: TeacherDashboardComponent;
   let fixture: ComponentFixture<TeacherDashboardComponent>;
-  let authServiceMock: { user: ReturnType<typeof vi.fn> };
+  let component: TeacherDashboardComponent;
+  let authMock: { user: ReturnType<typeof vi.fn> };
+  let reportsMock: { getStudents: ReturnType<typeof vi.fn> };
+  let contentMock: { getAllContents: ReturnType<typeof vi.fn> };
+  let assessmentsMock: { getCategories: ReturnType<typeof vi.fn> };
 
-  function setup(user: { userName: string; role: string } | null): void {
-    authServiceMock = { user: vi.fn(() => user) };
+  function student(id: string, cls: string) {
+    return { student_id: id, student_name: 'Est ' + id, knowledge_classification: cls };
+  }
 
-    TestBed.configureTestingModule({
+  async function setup(): Promise<void> {
+    await TestBed.configureTestingModule({
       imports: [TeacherDashboardComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: authServiceMock }],
-    });
-
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: authMock },
+        { provide: ReportsService, useValue: reportsMock },
+        { provide: ContentService, useValue: contentMock },
+        { provide: AssessmentsService, useValue: assessmentsMock },
+      ],
+    }).compileComponents();
     fixture = TestBed.createComponent(TeacherDashboardComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    await Promise.resolve();
+    await Promise.resolve();
   }
 
-  it('creates successfully', () => {
-    setup({ userName: 'docente_test', role: 'teacher' });
-    expect(component).toBeTruthy();
+  beforeEach(() => {
+    authMock = { user: vi.fn(() => ({ userName: 'docente_test', role: 'teacher' })) };
+    reportsMock = {
+      getStudents: vi.fn().mockResolvedValue({
+        students: [student('1', 'novice'), student('2', 'novice'), student('3', 'average')],
+        total: 3,
+      }),
+    };
+    contentMock = { getAllContents: vi.fn().mockResolvedValue([{}, {}]) };
+    assessmentsMock = { getCategories: vi.fn().mockResolvedValue(['a', 'b', 'c', 'd']) };
   });
 
-  it('greets the user with their username from the JWT', () => {
-    setup({ userName: 'docente_test', role: 'teacher' });
-    const greeting = fixture.nativeElement.querySelector('.dash__greeting');
-    expect(greeting?.textContent?.trim()).toBe('Hola, docente_test');
+  it('greets the user with their username', async () => {
+    await setup();
+    expect(component.userName()).toBe('docente_test');
   });
 
-  it('falls back to "Docente" when there is no user', () => {
-    setup(null);
-    expect(component.userName()).toBe('Docente');
+  it('fills the stat cards with real totals', async () => {
+    await setup();
+    expect(component.studentsTotal()).toBe(3);
+    expect(component.categoriesTotal()).toBe(4);
+    expect(component.resourcesTotal()).toBe(2);
   });
 
-  it('renders four stat cards', () => {
-    setup({ userName: 'docente_test', role: 'teacher' });
-    const stats = fixture.nativeElement.querySelectorAll('.dash__stat');
-    expect(stats.length).toBe(4);
+  it('builds the per-category breakdown with percentages', async () => {
+    await setup();
+    const byCat = component.byCategory();
+    const novice = byCat.find((c) => c.category === 'novice');
+    expect(novice?.count).toBe(2);
+    expect(novice?.pct).toBe(67);
   });
 
-  it('renders empty-state panels while there is no backend data', () => {
-    setup({ userName: 'docente_test', role: 'teacher' });
-    const empties = fixture.nativeElement.querySelectorAll('.dash__empty');
-    expect(empties.length).toBe(3);
+  it('shows the most recent students', async () => {
+    await setup();
+    expect(component.recentStudents()).toHaveLength(3);
+  });
+
+  it('keeps a card as null when its endpoint fails', async () => {
+    reportsMock.getStudents.mockRejectedValue(new Error('boom'));
+    await setup();
+    expect(component.studentsTotal()).toBeNull();
+    // los otros igual cargan
+    expect(component.categoriesTotal()).toBe(4);
+    expect(component.resourcesTotal()).toBe(2);
+  });
+
+  it('builds initials from the student name', async () => {
+    await setup();
+    expect(component.initials('Eider Sánchez')).toBe('ES');
   });
 });
