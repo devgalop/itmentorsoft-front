@@ -36,11 +36,8 @@ export const TEACHER_ROUTES: Routes = [
       },
       {
         path: 'students',
-        data: {
-          title: 'Mis estudiantes',
-          subtitle: 'Próximamente: listado y progreso de tus estudiantes.',
-        },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./students/teacher-students.component').then((m) => m.TeacherStudentsComponent),
       },
       {
         path: 'reports',
