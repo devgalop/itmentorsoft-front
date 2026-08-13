@@ -1,8 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { UsersService } from './users.service';
 
@@ -78,6 +75,29 @@ describe('UsersService', () => {
         .expectOne('/users/assign-role')
         .flush({ detail: 'forbidden' }, { status: 403, statusText: 'Forbidden' });
       await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+    });
+  });
+
+  describe('createUser', () => {
+    const payload = { email: 'nuevo@itm.co', username: 'nuevo_user', role: 'teacher' };
+
+    it('POSTs the payload to create_user_from_admin', async () => {
+      const promise = service.createUser(payload);
+      const req = httpMock.expectOne('/users/create_user_from_admin');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'creado', user_id: 'u-1' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+      expect(res.user_id).toBe('u-1');
+    });
+
+    it('maps a 400 into a validation error', async () => {
+      const promise = service.createUser(payload);
+      httpMock
+        .expectOne('/users/create_user_from_admin')
+        .flush({ detail: 'bad' }, { status: 400, statusText: 'Bad Request' });
+      await expect(promise).rejects.toThrow('Datos inválidos');
     });
   });
 });

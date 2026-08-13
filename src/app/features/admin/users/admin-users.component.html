@@ -1,0 +1,57 @@
+<section class="usr">
+  <header class="usr__header">
+    <h1 class="usr__title">Usuarios</h1>
+    <p class="usr__subtitle">Creá nuevos usuarios y asignales un rol.</p>
+  </header>
+
+  @if (submitSuccess()) {
+    <div class="usr__banner usr__banner--ok" role="status">{{ submitSuccess() }}</div>
+  }
+
+  <div class="usr__panel">
+    <h2 class="usr__panel-title">Crear usuario</h2>
+
+    @if (submitError()) {
+      <div class="usr__banner usr__banner--error" role="alert">{{ submitError() }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="usr__form">
+      <div class="usr__field">
+        <label for="email">Email</label>
+        <input id="email" type="email" formControlName="email" placeholder="usuario@dominio.com" />
+        @if (fieldError(form.get('email')); as err) {
+          <p class="usr__error">{{ err }}</p>
+        }
+      </div>
+
+      <div class="usr__field">
+        <label for="username">Usuario <span class="usr__hint">(3–20, letras/números/_)</span></label>
+        <input id="username" type="text" formControlName="username" />
+        @if (fieldError(form.get('username')); as err) {
+          <p class="usr__error">{{ err }}</p>
+        }
+      </div>
+
+      <div class="usr__field">
+        <label for="role">Rol</label>
+        <select id="role" formControlName="role">
+          @if (roles().length === 0) {
+            <option value="" disabled>{{ isLoadingRoles() ? 'Cargando roles…' : 'Sin roles' }}</option>
+          }
+          @for (r of roles(); track r) {
+            <option [value]="r">{{ r }}</option>
+          }
+        </select>
+        @if (fieldError(form.get('role')); as err) {
+          <p class="usr__error">{{ err }}</p>
+        }
+      </div>
+
+      <div class="usr__actions">
+        <button type="submit" class="usr__submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Creando…' : 'Crear usuario' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>

@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import {
   AssignRoleResponse,
+  CreateUserPayload,
+  CreateUserResponse,
   GetAvailableRolesResponse,
   GetUserResponse,
   UserInfo,
@@ -50,11 +52,26 @@ export class UsersService {
     }
   }
 
+  async createUser(payload: CreateUserPayload): Promise<CreateUserResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.post<CreateUserResponse>(
+          `${environment.apiUrl}/users/create_user_from_admin`,
+          payload,
+        ),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
   private mapHttpError(error: unknown): Error {
     if (error instanceof HttpErrorResponse) {
       switch (error.status) {
         case 0:
           return new Error('Sin conexión al servidor');
+        case 400:
+          return new Error('Datos inválidos');
         case 401:
           return new Error('Sesión expirada, iniciá sesión de nuevo');
         case 403:

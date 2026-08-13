@@ -20,3 +20,15 @@ export interface AssignRoleResponse {
   is_success: boolean;
   message: string;
 }
+
+export interface CreateUserPayload {
+  email: string;
+  username: string;
+  role: string;
+}
+
+export interface CreateUserResponse {
+  is_success: boolean;
+  message: string;
+  user_id?: string | null;
+}
