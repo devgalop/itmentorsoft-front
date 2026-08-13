@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ReportsService } from '@core/reports/reports.service';
 import { StudentClassification } from '@core/reports/reports.types';
 
@@ -7,6 +8,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-teacher-students',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './teacher-students.component.html',
   styleUrl: './teacher-students.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
