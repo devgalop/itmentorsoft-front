@@ -9,44 +9,81 @@
     </div>
     <div class="dash__banner-actions">
       <a routerLink="/admin/users" class="dash__btn dash__btn--solid">Crear usuario</a>
-      <a routerLink="/admin/config" class="dash__btn dash__btn--ghost">Configuración</a>
+      <a routerLink="/admin/roles" class="dash__btn dash__btn--ghost">Roles</a>
     </div>
   </div>
 
   <div class="dash__stats">
-    @for (s of stats; track s.label) {
-      <div class="dash__stat">
-        <span class="dash__stat-value">—</span>
-        <span class="dash__stat-label">{{ s.label }}</span>
-        <span class="dash__stat-hint">{{ s.hint }}</span>
-      </div>
-    }
+    <div class="dash__stat">
+      <span class="dash__stat-value">{{ studentsTotal() ?? '—' }}</span>
+      <span class="dash__stat-label">Estudiantes</span>
+      <span class="dash__stat-hint">{{ studentsTotal() === null ? 'Sin datos' : 'Registrados' }}</span>
+    </div>
+    <div class="dash__stat">
+      <span class="dash__stat-value">{{ rolesTotal() ?? '—' }}</span>
+      <span class="dash__stat-label">Roles configurados</span>
+      <span class="dash__stat-hint">{{ rolesTotal() === null ? 'Sin datos' : 'Disponibles' }}</span>
+    </div>
+    <div class="dash__stat">
+      <span class="dash__stat-value">{{ resourcesTotal() ?? '—' }}</span>
+      <span class="dash__stat-label">Recursos activos</span>
+      <span class="dash__stat-hint">{{ resourcesTotal() === null ? 'Sin datos' : 'Publicados' }}</span>
+    </div>
+    <div class="dash__stat">
+      <span class="dash__stat-value">{{ pendingTotal() ?? '—' }}</span>
+      <span class="dash__stat-label">Pendientes aprobación</span>
+      <span class="dash__stat-hint">
+        @if (pendingTotal() === null) {
+          Sin datos
+        } @else if (pendingTotal()! > 0) {
+          Requiere acción
+        } @else {
+          Al día
+        }
+      </span>
+    </div>
   </div>
 
   <div class="dash__grid">
     <div class="dash__card dash__card--wide">
       <div class="dash__card-head">
         <h2 class="dash__card-title">Gestión de usuarios</h2>
+        <a routerLink="/admin/users" class="dash__see-all">Ver todos →</a>
       </div>
-      <div class="dash__empty">
-        <p>Sin datos disponibles todavía.</p>
-        <small>El backend no expone un listado de usuarios por ahora.</small>
-      </div>
+
+      @if (isLoading()) {
+        <div class="dash__empty"><p>Cargando…</p></div>
+      } @else if (recentStudents().length === 0) {
+        <div class="dash__empty"><p>Sin usuarios registrados todavía.</p></div>
+      } @else {
+        <table class="dash__mini-table">
+          <tbody>
+            @for (s of recentStudents(); track s.student_id) {
+              <tr>
+                <td class="dash__mini-cell">
+                  <span class="dash__avatar">{{ initials(s.student_name) }}</span>
+                  <span class="dash__mini-name">{{ s.student_name }}</span>
+                </td>
+                <td class="dash__mini-cell"><span class="dash__badge">Estudiante</span></td>
+                <td class="dash__mini-cell">
+                  <span class="dash__badge dash__badge--alt">{{ s.knowledge_classification }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
     </div>
 
     <div class="dash__side">
       <div class="dash__card">
         <h2 class="dash__card-title">Alertas del sistema</h2>
-        <div class="dash__empty">
-          <p>No hay alertas por ahora.</p>
-        </div>
+        <div class="dash__empty"><p>No hay alertas por ahora.</p></div>
       </div>
 
       <div class="dash__card">
         <h2 class="dash__card-title">Estado del sistema</h2>
-        <div class="dash__empty">
-          <p>Sin datos disponibles.</p>
-        </div>
+        <div class="dash__empty"><p>Sin datos disponibles.</p></div>
       </div>
     </div>
   </div>
