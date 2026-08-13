@@ -23,6 +23,7 @@
           <tr>
             <th class="stu__th">Estudiante</th>
             <th class="stu__th">Clasificación</th>
+            <th class="stu__th stu__th--actions">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -34,6 +35,9 @@
               </td>
               <td class="stu__cell">
                 <span class="stu__badge">{{ s.knowledge_classification }}</span>
+              </td>
+              <td class="stu__cell stu__cell--actions">
+                <a class="stu__action" [routerLink]="['/teacher/students', s.student_id]">Ver reporte</a>
               </td>
             </tr>
           }

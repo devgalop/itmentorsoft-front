@@ -1,0 +1,142 @@
+:host {
+  display: block;
+}
+
+.det__back {
+  color: var(--color-secondary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.det__hint {
+  color: var(--color-mid-2);
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+.det__error {
+  color: var(--color-error);
+  margin-top: 1rem;
+}
+
+.det__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.det__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-secondary);
+  color: var(--color-white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.det__name {
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.det__badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  background: var(--color-accent-pale);
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+}
+
+.det__grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.det__card {
+  background: var(--color-white);
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.det__card-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-dark);
+  margin-bottom: 1rem;
+}
+
+.det__empty {
+  border: 1px dashed var(--color-light-1);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+
+.det__empty p {
+  color: var(--color-mid-1);
+  font-size: 0.9rem;
+}
+
+.det__profile {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.det__profile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.det__topic {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-dark);
+}
+
+.det__score {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.det__bar {
+  height: 8px;
+  background: var(--color-light-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.det__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-secondary), var(--color-accent));
+  border-radius: 999px;
+}
+
+.det__feedback {
+  color: var(--color-dark);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 800px) {
+  .det__grid {
+    grid-template-columns: 1fr;
+  }
+}

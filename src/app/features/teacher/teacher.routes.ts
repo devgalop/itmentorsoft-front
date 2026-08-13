@@ -40,6 +40,11 @@ export const TEACHER_ROUTES: Routes = [
           import('./students/teacher-students.component').then((m) => m.TeacherStudentsComponent),
       },
       {
+        path: 'students/:id',
+        loadComponent: () =>
+          import('./students/student-detail.component').then((m) => m.StudentDetailComponent),
+      },
+      {
         path: 'reports',
         data: {
           title: 'Reportes',

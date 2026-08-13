@@ -2,7 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
-import { GetAllStudentsResponse, PagedStudents } from './reports.types';
+import {
+  GetAllStudentsResponse,
+  GetStudentProgressResponse,
+  GetStudentSummaryResponse,
+  PagedStudents,
+  StudentProgress,
+  StudentSummary,
+} from './reports.types';
 
 @Injectable({ providedIn: 'root' })
 export class ReportsService {
@@ -26,6 +33,32 @@ export class ReportsService {
     }
   }
 
+  async getStudentProgress(id: string): Promise<StudentProgress | null> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetStudentProgressResponse>(`${environment.apiUrl}/reports/student_progress`, {
+          params: { id },
+        }),
+      );
+      return response.progress ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  async getStudentSummary(id: string): Promise<StudentSummary | null> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetStudentSummaryResponse>(`${environment.apiUrl}/reports/student_summary`, {
+          params: { id },
+        }),
+      );
+      return response.summary ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
   private mapHttpError(error: unknown): Error {
     if (error instanceof HttpErrorResponse) {
       switch (error.status) {
@@ -35,6 +68,8 @@ export class ReportsService {
           return new Error('Sesión expirada, iniciá sesión de nuevo');
         case 403:
           return new Error('No tenés permisos para esta acción');
+        case 404:
+          return new Error('No se encontró el estudiante');
         case 422:
           return new Error('Parámetros inválidos');
         default:

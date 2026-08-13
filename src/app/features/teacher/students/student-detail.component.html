@@ -1,0 +1,49 @@
+<section class="det">
+  <a routerLink="/teacher/students" class="det__back">← Volver a Mis estudiantes</a>
+
+  @if (isLoading()) {
+    <p class="det__hint">Cargando reporte…</p>
+  } @else if (loadError()) {
+    <p class="det__error" role="alert">{{ loadError() }}</p>
+  } @else if (summary(); as s) {
+    <header class="det__header">
+      <span class="det__avatar">{{ s.name.slice(0, 2).toUpperCase() }}</span>
+      <div>
+        <h1 class="det__name">{{ s.name }}</h1>
+        <span class="det__badge">{{ s.knowledge_classification }}</span>
+      </div>
+    </header>
+
+    <div class="det__grid">
+      <div class="det__card">
+        <h2 class="det__card-title">Perfil de conocimiento</h2>
+        @if (s.profile.length === 0) {
+          <div class="det__empty"><p>Sin datos de perfil todavía.</p></div>
+        } @else {
+          <ul class="det__profile">
+            @for (p of s.profile; track p.topic) {
+              <li class="det__profile-row">
+                <div class="det__profile-head">
+                  <span class="det__topic">{{ p.topic }}</span>
+                  <span class="det__score">{{ scorePct(p.score) }}%</span>
+                </div>
+                <div class="det__bar">
+                  <div class="det__bar-fill" [style.width.%]="scorePct(p.score)"></div>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="det__card">
+        <h2 class="det__card-title">Feedback</h2>
+        @if (s.feedback) {
+          <p class="det__feedback">{{ s.feedback }}</p>
+        } @else {
+          <div class="det__empty"><p>Sin feedback generado.</p></div>
+        }
+      </div>
+    </div>
+  }
+</section>
