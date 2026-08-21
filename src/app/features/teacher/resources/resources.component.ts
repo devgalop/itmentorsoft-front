@@ -11,6 +11,7 @@ import {
 import { ContentService } from '@core/content/content.service';
 import {
   CONTENT_CATEGORIES,
+  contentCategoryLabel,
   ContentItem,
   RegisterContentPayload,
 } from '@core/content/content.types';
@@ -41,6 +42,10 @@ export class ResourcesComponent {
   private readonly content = inject(ContentService);
 
   readonly categories = CONTENT_CATEGORIES;
+
+  categoryLabel(value: string): string {
+    return contentCategoryLabel(value);
+  }
 
   readonly resources = signal<ContentItem[]>([]);
   readonly isLoading = signal(false);
@@ -162,9 +167,7 @@ export class ResourcesComponent {
         : await this.content.registerContent(payload);
 
       if (response.is_success) {
-        this.submitSuccess.set(
-          response.message || (editingId ? 'Recurso actualizado' : 'Recurso creado'),
-        );
+        this.submitSuccess.set(editingId ? 'Recurso actualizado correctamente' : 'Recurso creado correctamente');
         this.resetForm();
         this.editingId.set(null);
         this.closeModal();

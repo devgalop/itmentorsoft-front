@@ -33,7 +33,7 @@ describe('ContentService', () => {
           title: 'Recurso',
           summary: 'resumen',
           url: 'https://x.com',
-          category: 'novice',
+          category: 'principiante',
           related_topics: ['t1'],
         },
       ];
@@ -63,7 +63,7 @@ describe('ContentService', () => {
       title: 'Un recurso',
       description: 'descripción válida',
       url: 'https://ejemplo.com',
-      category: 'novice',
+      category: 'principiante',
       related_topic: ['APIs'],
     };
 
@@ -90,7 +90,7 @@ describe('ContentService', () => {
       title: 'Un recurso',
       description: 'descripción válida',
       url: 'https://ejemplo.com',
-      category: 'novice',
+      category: 'principiante',
       related_topic: ['APIs'],
     };
 

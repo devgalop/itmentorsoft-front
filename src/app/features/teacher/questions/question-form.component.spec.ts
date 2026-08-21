@@ -105,7 +105,7 @@ describe('QuestionFormComponent', () => {
 
       expect(serviceMock.registerQuestion).toHaveBeenCalledTimes(1);
       expect(serviceMock.updateQuestion).not.toHaveBeenCalled();
-      expect(component.submitSuccess()).toBe('Pregunta creada');
+      expect(component.submitSuccess()).toBe('Pregunta creada correctamente');
       expect(component.misconceptions.length).toBe(2);
       expect(component.form.get('text')?.value).toBe('');
     });
@@ -167,7 +167,7 @@ describe('QuestionFormComponent', () => {
       expect(serviceMock.updateQuestion).toHaveBeenCalledTimes(1);
       expect(serviceMock.updateQuestion.mock.calls[0][0]).toBe('q-1');
       expect(serviceMock.registerQuestion).not.toHaveBeenCalled();
-      expect(component.submitSuccess()).toBe('Actualizada');
+      expect(component.submitSuccess()).toBe('Pregunta actualizada correctamente');
     });
 
     it('shows a load error when the question is not found', async () => {

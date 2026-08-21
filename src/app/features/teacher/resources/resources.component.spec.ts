@@ -8,7 +8,7 @@ const existing = {
   title: 'Recurso existente',
   summary: 'Resumen del recurso',
   url: 'https://viejo.com',
-  category: 'average',
+  category: 'intermedio',
   related_topics: ['SOLID', 'Patrones'],
 };
 
@@ -40,7 +40,7 @@ describe('ResourcesComponent', () => {
       title: 'Recurso de prueba',
       description: 'Una descripción válida',
       url: 'https://ejemplo.com',
-      category: 'novice',
+      category: 'principiante',
     });
     component.topics.at(0).setValue('APIs');
   }
@@ -89,7 +89,7 @@ describe('ResourcesComponent', () => {
 
     expect(serviceMock.registerContent).toHaveBeenCalledTimes(1);
     expect(serviceMock.updateContent).not.toHaveBeenCalled();
-    expect(component.submitSuccess()).toBe('Creado');
+    expect(component.submitSuccess()).toBe('Recurso creado correctamente');
     expect(component.isModalOpen()).toBe(false);
     expect(serviceMock.getAllContents).toHaveBeenCalledTimes(2);
   });
@@ -103,7 +103,7 @@ describe('ResourcesComponent', () => {
     expect(component.isModalOpen()).toBe(true);
     expect(component.form.get('title')?.value).toBe('Recurso existente');
     expect(component.form.get('description')?.value).toBe('Resumen del recurso');
-    expect(component.form.get('category')?.value).toBe('average');
+    expect(component.form.get('category')?.value).toBe('intermedio');
     expect(component.topics.length).toBe(2);
     expect(component.topics.at(0).value).toBe('SOLID');
   });
@@ -119,7 +119,7 @@ describe('ResourcesComponent', () => {
     expect(serviceMock.updateContent).toHaveBeenCalledTimes(1);
     expect(serviceMock.updateContent.mock.calls[0][0]).toBe('c1');
     expect(serviceMock.registerContent).not.toHaveBeenCalled();
-    expect(component.submitSuccess()).toBe('Actualizado');
+    expect(component.submitSuccess()).toBe('Recurso actualizado correctamente');
     expect(component.editingId()).toBeNull();
   });
 

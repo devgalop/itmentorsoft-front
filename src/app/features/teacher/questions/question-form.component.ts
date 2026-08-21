@@ -226,9 +226,9 @@ export class QuestionFormComponent {
 
       if (response.is_success) {
         if (this.isEditMode()) {
-          this.submitSuccess.set(response.message || 'Pregunta actualizada correctamente');
+          this.submitSuccess.set('Pregunta actualizada correctamente');
         } else {
-          this.submitSuccess.set(response.message || 'Pregunta creada correctamente');
+          this.submitSuccess.set('Pregunta creada correctamente');
           this.resetForm();
         }
       } else {

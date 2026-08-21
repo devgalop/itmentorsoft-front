@@ -36,7 +36,7 @@
                 <span class="res__name">{{ r.title }}</span>
                 <span class="res__summary">{{ r.summary }}</span>
               </td>
-              <td class="res__cell"><span class="res__badge">{{ r.category }}</span></td>
+              <td class="res__cell"><span class="res__badge">{{ categoryLabel(r.category) }}</span></td>
               <td class="res__cell res__topics">
                 @for (t of r.related_topics; track t) {
                   <span class="res__topic">{{ t }}</span>
@@ -95,7 +95,7 @@
           <label for="category">Categoría</label>
           <select id="category" formControlName="category">
             @for (c of categories; track c) {
-              <option [value]="c">{{ c }}</option>
+              <option [value]="c">{{ categoryLabel(c) }}</option>
             }
           </select>
         </div>

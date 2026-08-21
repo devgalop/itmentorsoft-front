@@ -1,11 +1,23 @@
-export type ContentCategory = 'novice' | 'emerging' | 'average' | 'proficient';
+export type ContentCategory = 'principiante' | 'básico' | 'intermedio' | 'avanzado';
 
 export const CONTENT_CATEGORIES: ContentCategory[] = [
-  'novice',
-  'emerging',
-  'average',
-  'proficient',
+  'principiante',
+  'básico',
+  'intermedio',
+  'avanzado',
 ];
+
+/** Etiqueta legible para mostrar en la UI (capitalizada). */
+export const CONTENT_CATEGORY_LABELS: Record<string, string> = {
+  principiante: 'Principiante',
+  básico: 'Básico',
+  intermedio: 'Intermedio',
+  avanzado: 'Avanzado',
+};
+
+export function contentCategoryLabel(value: string): string {
+  return CONTENT_CATEGORY_LABELS[value] ?? value;
+}
 
 export interface ContentItem {
   content_id: string;
