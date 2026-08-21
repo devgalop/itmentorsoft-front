@@ -10,7 +10,7 @@
       <span class="det__avatar">{{ s.name.slice(0, 2).toUpperCase() }}</span>
       <div>
         <h1 class="det__name">{{ s.name }}</h1>
-        <span class="det__badge">{{ s.knowledge_classification }}</span>
+        <span class="det__badge">{{ classificationLabel(s.knowledge_classification) }}</span>
       </div>
     </header>
 
@@ -38,10 +38,10 @@
 
       <div class="det__card">
         <h2 class="det__card-title">Feedback</h2>
-        @if (s.feedback) {
-          <p class="det__feedback">{{ s.feedback }}</p>
+        @if (feedbackText(s.feedback); as fb) {
+          <p class="det__feedback">{{ fb }}</p>
         } @else {
-          <div class="det__empty"><p>Sin feedback generado.</p></div>
+          <div class="det__empty"><p>Sin feedback generado aún.</p></div>
         }
       </div>
     </div>

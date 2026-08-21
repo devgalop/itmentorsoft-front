@@ -89,18 +89,10 @@
               <td class="cuest__id">{{ q.question_id.slice(0, 8) }}</td>
               <td class="cuest__text">{{ q.text }}</td>
               <td>
-                @if (q.difficulty) {
-                  <span class="cuest__badge cuest__badge--diff">{{ q.difficulty }}</span>
-                } @else {
-                  <span class="cuest__dash">—</span>
-                }
+                <span class="cuest__badge cuest__badge--diff">{{ difficultyLabel(q.difficulty) }}</span>
               </td>
               <td>
-                @if (q.category) {
-                  <span class="cuest__badge">{{ q.category }}</span>
-                } @else {
-                  <span class="cuest__dash">—</span>
-                }
+                <span class="cuest__badge" [class.cuest__badge--muted]="!q.category">{{ categoryLabel(q.category) }}</span>
               </td>
               <td class="cuest__actions">
                 <button type="button" class="cuest__action" (click)="selectQuestion(q.question_id)">
@@ -144,7 +136,7 @@
       } @else if (detail(); as q) {
         <article class="detail">
           <div class="detail__row">
-            <span class="detail__status">{{ q.status }}</span>
+            <span class="detail__status">{{ statusLabel(q.status) }}</span>
             <h2 class="detail__concept">{{ q.concept }}</h2>
             <a
               class="detail__edit"

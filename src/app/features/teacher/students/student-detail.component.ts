@@ -50,4 +50,24 @@ export class StudentDetailComponent {
     const pct = Math.round(score * 100);
     return Math.max(0, Math.min(100, pct));
   }
+
+  /** El backend devuelve un placeholder en inglés cuando aún no hay clasificación. */
+  private isPlaceholder(value: string | null | undefined): boolean {
+    if (!value) return true;
+    const v = value.toLowerCase();
+    return (
+      v.includes('will be determined') ||
+      v.includes('will be generated') ||
+      v.includes("based on the student")
+    );
+  }
+
+  classificationLabel(value: string | null | undefined): string {
+    return this.isPlaceholder(value) ? 'Sin clasificación aún' : (value as string);
+  }
+
+  /** Devuelve el feedback real, o null si es el placeholder en inglés (para mostrar el estado vacío). */
+  feedbackText(value: string | null | undefined): string | null {
+    return this.isPlaceholder(value) ? null : (value as string);
+  }
 }
