@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -20,6 +20,10 @@ describe('LoginComponent', () => {
         LoginComponent,
         { provide: AuthService, useValue: authServiceMock },
         { provide: Router, useValue: routerMock },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: () => null } } },
+        },
       ],
     });
 

@@ -11,6 +11,7 @@ export interface LoginResponse {
   expiration_time: number;
   refresh_token: string;
   user_id: string | null;
+  access_token?: string | null;
 }
 
 export interface RegisterCredentials {
