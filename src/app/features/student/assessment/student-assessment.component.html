@@ -1,0 +1,145 @@
+<section class="ev">
+  <header class="ev__header">
+    <h1 class="ev__title">Evaluación</h1>
+    <p class="ev__subtitle">Poné a prueba tu conocimiento y recibí feedback personalizado.</p>
+  </header>
+
+  @if (error()) {
+    <div class="ev__banner ev__banner--error" role="alert">{{ error() }}</div>
+  }
+
+  <!-- PASO 1: elegir tema -->
+  @if (step() === 'setup') {
+    <div class="ev__card">
+      <h2 class="ev__card-title">Elegí un tema</h2>
+      @if (isLoadingTopics()) {
+        <p class="ev__hint">Cargando temas…</p>
+      } @else if (topics().length === 0) {
+        <p class="ev__hint">No hay temas disponibles por ahora.</p>
+      } @else {
+        <div class="ev__field">
+          <label for="topic">Tema</label>
+          <select
+            id="topic"
+            [ngModel]="selectedTopic()"
+            (ngModelChange)="selectedTopic.set($event)"
+          >
+            @for (t of topics(); track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </div>
+        <p class="ev__note">La evaluación tendrá 5 preguntas abiertas.</p>
+        <button type="button" class="ev__primary" (click)="startAssessment()" [disabled]="isBusy()">
+          {{ isBusy() ? 'Generando…' : 'Comenzar evaluación' }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- PASO 2: responder -->
+  @if (step() === 'answering') {
+    @if (currentQuestion(); as q) {
+      <div class="ev__card">
+        <div class="ev__progress">
+          <span>{{ progressLabel() }}</span>
+          <span class="ev__topic-badge">{{ q.topic }}</span>
+        </div>
+
+        <p class="ev__question">{{ q.text_to_evaluate }}</p>
+
+        <div class="ev__field">
+          <label for="answer">Tu respuesta</label>
+          <textarea
+            id="answer"
+            rows="6"
+            [ngModel]="currentAnswer()"
+            (ngModelChange)="onAnswerChange($event)"
+            placeholder="Escribí tu respuesta con tus palabras…"
+          ></textarea>
+        </div>
+
+        <div class="ev__nav">
+          <button type="button" class="ev__ghost" (click)="prev()" [disabled]="currentIndex() === 0">
+            ← Anterior
+          </button>
+
+          @if (isLastQuestion()) {
+            <button type="button" class="ev__primary" (click)="submit()" [disabled]="isBusy()">
+              {{ isBusy() ? 'Enviando…' : 'Enviar evaluación' }}
+            </button>
+          } @else {
+            <button type="button" class="ev__primary" (click)="next()">Siguiente →</button>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <!-- PASO 3: calificando -->
+  @if (step() === 'grading') {
+    <div class="ev__card ev__card--center">
+      <div class="ev__spinner" aria-hidden="true"></div>
+      <h2 class="ev__card-title">Calificando…</h2>
+      <p class="ev__hint">{{ gradingMessage() }}</p>
+      <p class="ev__note">Esto puede tardar unos segundos. No cierres la página.</p>
+    </div>
+  }
+
+  <!-- PASO 4: resultado -->
+  @if (step() === 'result') {
+    @if (result(); as r) {
+      <div class="ev__result-head">
+        <div class="ev__score-ring">
+          <span class="ev__score-value">{{ scorePct(r.avg_score) }}%</span>
+          <span class="ev__score-label">Promedio</span>
+        </div>
+        <div>
+          <span class="ev__classif">{{ r.classification }}</span>
+          <p class="ev__feedback">{{ r.feedback }}</p>
+        </div>
+      </div>
+
+      <h2 class="ev__card-title ev__section">Detalle por pregunta</h2>
+      <div class="ev__answers">
+        @for (a of r.answer_scores; track a.question_id) {
+          <div class="ev__answer">
+            <div class="ev__answer-head">
+              <p class="ev__answer-q">{{ a.question_text }}</p>
+              <span class="ev__answer-score">{{ scorePct(a.score) }}%</span>
+            </div>
+            <p class="ev__answer-yours"><strong>Tu respuesta:</strong> {{ a.answer }}</p>
+            <p class="ev__answer-fb">{{ a.feedback }}</p>
+
+            @if (a.key_concepts && a.key_concepts.length > 0) {
+              <div class="ev__chips">
+                <span class="ev__chips-label">Conceptos clave:</span>
+                @for (k of a.key_concepts; track k) {
+                  <span class="ev__chip ev__chip--ok">{{ k }}</span>
+                }
+              </div>
+            }
+            @if (a.misconceptions && a.misconceptions.length > 0) {
+              <div class="ev__chips">
+                <span class="ev__chips-label">A reforzar:</span>
+                @for (m of a.misconceptions; track m) {
+                  <span class="ev__chip ev__chip--warn">{{ m }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <button type="button" class="ev__primary" (click)="restart()">Hacer otra evaluación</button>
+    } @else {
+      <div class="ev__card ev__card--center">
+        <h2 class="ev__card-title">Evaluación enviada</h2>
+        <p class="ev__hint">
+          Tus respuestas se guardaron. El resultado estará disponible en un momento.
+        </p>
+        <button type="button" class="ev__primary" (click)="restart()">Volver</button>
+      </div>
+    }
+  }
+</section>

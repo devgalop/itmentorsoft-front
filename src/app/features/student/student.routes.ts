@@ -20,6 +20,13 @@ export const STUDENT_ROUTES: Routes = [
           ),
       },
       {
+        path: 'assessments',
+        loadComponent: () =>
+          import('./assessment/student-assessment.component').then(
+            (m) => m.StudentAssessmentComponent,
+          ),
+      },
+      {
         path: 'route',
         data: { title: 'Mi ruta', subtitle: 'Próximamente: tu ruta de aprendizaje personalizada.' },
         loadComponent: PLACEHOLDER,
@@ -32,11 +39,6 @@ export const STUDENT_ROUTES: Routes = [
       {
         path: 'profile',
         data: { title: 'Mi perfil', subtitle: 'Próximamente: tu perfil y debilidades detectadas.' },
-        loadComponent: PLACEHOLDER,
-      },
-      {
-        path: 'assessments',
-        data: { title: 'Evaluaciones', subtitle: 'Próximamente: tus evaluaciones diagnósticas.' },
         loadComponent: PLACEHOLDER,
       },
       {
