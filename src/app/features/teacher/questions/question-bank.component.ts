@@ -31,6 +31,36 @@ const PAGE_SIZE = 10;
 export class QuestionBankComponent {
   private readonly assessments = inject(AssessmentsService);
 
+  /** Etiqueta legible de dificultad (por si el backend manda en inglés). */
+  difficultyLabel(value: string | null): string {
+    if (!value) return 'Sin dificultad';
+    const map: Record<string, string> = {
+      easy: 'Básico',
+      medium: 'Intermedio',
+      hard: 'Avanzado',
+      básico: 'Básico',
+      intermedio: 'Intermedio',
+      avanzado: 'Avanzado',
+    };
+    return map[value.toLowerCase()] ?? value;
+  }
+
+  /** Categoría/clasificación: 'Sin clasificar' cuando la pregunta aún no fue clasificada. */
+  categoryLabel(value: string | null): string {
+    return value && value.trim().length > 0 ? value : 'Sin clasificar';
+  }
+
+  /** Estado de la pregunta traducido. */
+  statusLabel(value: string | null): string {
+    if (!value) return 'Sin estado';
+    const map: Record<string, string> = {
+      draft: 'Borrador',
+      published: 'Publicada',
+      archived: 'Archivada',
+    };
+    return map[value.toLowerCase()] ?? value;
+  }
+
   readonly difficulties = QUESTION_DIFFICULTIES;
   readonly categories = signal<readonly string[]>(QUESTION_CATEGORIES);
 

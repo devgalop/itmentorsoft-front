@@ -140,14 +140,14 @@ export class QuestionFormComponent {
       wrong_sample: q.wrong_sample,
     });
 
-    const misconceptions = q.common_misconception ?? [];
+    const misconceptions = (q.common_misconception ?? []).filter((m) => m && m.trim().length > 0);
     this.misconceptions.clear();
     misconceptions.forEach((m) => this.misconceptions.push(this.newMisconception(m)));
     while (this.misconceptions.length < 2) {
       this.misconceptions.push(this.newMisconception());
     }
 
-    const keywords = q.semantic_keywords ?? [];
+    const keywords = (q.semantic_keywords ?? []).filter((k) => k && k.trim().length > 0);
     this.keywords.clear();
     keywords.forEach((k) => this.keywords.push(this.newKeyword(k)));
     if (this.keywords.length < 1) {

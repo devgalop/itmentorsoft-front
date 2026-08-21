@@ -382,3 +382,9 @@
   color: var(--color-mid-2);
   font-size: 0.82rem;
 }
+
+.cuest__badge--muted {
+  background: var(--color-light-2);
+  color: var(--color-mid-2);
+  font-style: italic;
+}
