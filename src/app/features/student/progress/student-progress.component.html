@@ -1,0 +1,52 @@
+<section class="prog">
+  <header class="prog__header">
+    <h1 class="prog__title">Mi progreso</h1>
+    <p class="prog__subtitle">Tu perfil de conocimiento y feedback personalizado.</p>
+  </header>
+
+  @if (isLoading()) {
+    <p class="prog__hint">Cargando tu progreso…</p>
+  } @else if (loadError()) {
+    <div class="prog__empty"><p>{{ loadError() }}</p></div>
+  } @else if (summary(); as s) {
+    <div class="prog__head">
+      <span class="prog__avatar">{{ s.name.slice(0, 2).toUpperCase() }}</span>
+      <div>
+        <h2 class="prog__name">{{ s.name }}</h2>
+        <span class="prog__badge">{{ classificationLabel(s.knowledge_classification) }}</span>
+      </div>
+    </div>
+
+    <div class="prog__grid">
+      <div class="prog__card">
+        <h3 class="prog__card-title">Perfil de conocimiento</h3>
+        @if (s.profile.length === 0) {
+          <div class="prog__empty"><p>Sin datos de perfil todavía.</p></div>
+        } @else {
+          <ul class="prog__profile">
+            @for (p of s.profile; track p.topic) {
+              <li class="prog__row">
+                <div class="prog__row-head">
+                  <span class="prog__topic">{{ p.topic }}</span>
+                  <span class="prog__score">{{ scorePct(p.score) }}%</span>
+                </div>
+                <div class="prog__bar">
+                  <div class="prog__bar-fill" [style.width.%]="scorePct(p.score)"></div>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="prog__card">
+        <h3 class="prog__card-title">Feedback</h3>
+        @if (feedbackText(s.feedback); as fb) {
+          <p class="prog__feedback">{{ fb }}</p>
+        } @else {
+          <div class="prog__empty"><p>Sin feedback generado aún.</p></div>
+        }
+      </div>
+    </div>
+  }
+</section>

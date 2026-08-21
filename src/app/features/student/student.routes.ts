@@ -33,13 +33,13 @@ export const STUDENT_ROUTES: Routes = [
       },
       {
         path: 'progress',
-        data: { title: 'Mi progreso', subtitle: 'Próximamente: métricas de tu avance.' },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./progress/student-progress.component').then((m) => m.StudentProgressComponent),
       },
       {
         path: 'profile',
-        data: { title: 'Mi perfil', subtitle: 'Próximamente: tu perfil y debilidades detectadas.' },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./progress/student-progress.component').then((m) => m.StudentProgressComponent),
       },
       {
         path: 'resources',
