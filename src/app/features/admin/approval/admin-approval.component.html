@@ -1,0 +1,91 @@
+<section class="ap">
+  <header class="ap__header">
+    <h1 class="ap__title">Aprobar contenido</h1>
+    <p class="ap__subtitle">
+      @if (total() > 0) {
+        {{ total() }} pregunta(s) pendiente(s) de revisión.
+      } @else {
+        Revisá y aprobá o rechazá las preguntas propuestas.
+      }
+    </p>
+  </header>
+
+  @if (isLoading()) {
+    <p class="ap__hint">Cargando pendientes…</p>
+  } @else if (loadError()) {
+    <p class="ap__error" role="alert">{{ loadError() }}</p>
+  } @else if (questions().length === 0) {
+    <div class="ap__empty">
+      <p>No hay preguntas pendientes de aprobación. ✔️</p>
+    </div>
+  } @else {
+    <div class="ap__list">
+      @for (q of questions(); track q.question_id) {
+        <article class="ap__card">
+          <div class="ap__card-top">
+            <span class="ap__concept">{{ q.concept }}</span>
+            <div class="ap__tags">
+              <span class="ap__tag">{{ q.difficulty }}</span>
+              <span class="ap__tag ap__tag--alt">{{ q.classification }}</span>
+            </div>
+          </div>
+
+          <p class="ap__question">{{ q.text_to_evaluate }}</p>
+
+          @if (q.definition) {
+            <p class="ap__meta"><strong>Definición:</strong> {{ q.definition }}</p>
+          }
+          @if (q.correct_sample) {
+            <p class="ap__meta ap__meta--ok"><strong>Ejemplo correcto:</strong> {{ q.correct_sample }}</p>
+          }
+          @if (q.wrong_sample) {
+            <p class="ap__meta ap__meta--warn"><strong>Ejemplo incorrecto:</strong> {{ q.wrong_sample }}</p>
+          }
+
+          @if (resolutionFor(q.question_id); as res) {
+            <div
+              class="ap__resolved"
+              [class.ap__resolved--ok]="res === 'published'"
+              [class.ap__resolved--rej]="res === 'archived'"
+            >
+              {{ res === 'published' ? '✔️ Aprobada (publicada)' : '✖️ Rechazada (archivada)' }}
+            </div>
+          } @else {
+            <div class="ap__field">
+              <label [for]="'c-' + q.question_id">Comentario de revisión (mín. {{ minComment }})</label>
+              <textarea
+                [id]="'c-' + q.question_id"
+                rows="2"
+                [ngModel]="commentFor(q.question_id)"
+                (ngModelChange)="onCommentChange(q.question_id, $event)"
+                placeholder="Explicá brevemente tu decisión…"
+              ></textarea>
+              @if (errorFor(q.question_id); as err) {
+                <p class="ap__row-error">{{ err }}</p>
+              }
+            </div>
+
+            <div class="ap__actions">
+              <button
+                type="button"
+                class="ap__btn ap__btn--reject"
+                (click)="review(q, 'archived')"
+                [disabled]="savingId() === q.question_id"
+              >
+                Rechazar
+              </button>
+              <button
+                type="button"
+                class="ap__btn ap__btn--approve"
+                (click)="review(q, 'published')"
+                [disabled]="savingId() === q.question_id"
+              >
+                {{ savingId() === q.question_id ? 'Guardando…' : 'Aprobar' }}
+              </button>
+            </div>
+          }
+        </article>
+      }
+    </div>
+  }
+</section>
