@@ -26,11 +26,8 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'content-approval',
-        data: {
-          title: 'Aprobar contenido',
-          subtitle: 'Próximamente: revisión y aprobación de preguntas pendientes.',
-        },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./approval/admin-approval.component').then((m) => m.AdminApprovalComponent),
       },
       {
         path: 'config',
