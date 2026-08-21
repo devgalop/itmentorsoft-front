@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
 
@@ -15,6 +15,7 @@ import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui'
 export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly loginForm = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
@@ -23,6 +24,13 @@ export class LoginComponent {
 
   readonly isLoading = signal(false);
   readonly serverError = signal<string | null>(null);
+  readonly sessionExpired = signal(false);
+
+  constructor() {
+    if (this.route.snapshot.queryParamMap.get('expired') === '1') {
+      this.sessionExpired.set(true);
+    }
+  }
 
   get emailControl(): FormControl {
     return this.loginForm.get('email') as FormControl;

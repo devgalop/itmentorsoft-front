@@ -325,4 +325,49 @@ describe('AuthService', () => {
     expect(sessionStorage.getItem('auth_user_id')).toBeNull();
   });
 
+
+  describe('refreshSession', () => {
+    async function loginFirst() {
+      const p = service.login({ email: 'a@b.co', password: 'x' } as never);
+      httpMock.expectOne('/users/sessions').flush(mockResponse);
+      await p;
+    }
+
+    it('returns null when there is no current token', async () => {
+      // sin login previo: no hay token actual
+      const token = await service.refreshSession();
+      expect(token).toBeNull();
+    });
+
+    it('refreshes the token with header + withCredentials and stores the new one', async () => {
+      await loginFirst();
+      const promise = service.refreshSession();
+      const req = httpMock.expectOne('/users/sessions/refresh');
+      expect(req.request.method).toBe('POST');
+      // El refresh no manda el token en el body: va en la cookie (withCredentials) y el header.
+      expect(req.request.withCredentials).toBe(true);
+      expect(req.request.headers.get('Authorization')).toContain('Bearer ');
+      req.flush({
+        is_successful: true,
+        access_token: 'NEW.jwt.token',
+        refresh_token: 'new-refresh-789',
+        expiration_time: 1700000000,
+        user_id: 'user-abc-123',
+      });
+      const token = await promise;
+      expect(token).toBe('NEW.jwt.token');
+      expect(sessionStorage.getItem('auth_token')).toBe('NEW.jwt.token');
+      expect(sessionStorage.getItem('auth_refresh_token')).toBe('new-refresh-789');
+    });
+
+    it('returns null when the refresh call fails', async () => {
+      await loginFirst();
+      const promise = service.refreshSession();
+      httpMock
+        .expectOne('/users/sessions/refresh')
+        .flush({ detail: 'invalid' }, { status: 401, statusText: 'Unauthorized' });
+      expect(await promise).toBeNull();
+    });
+  });
+
 });

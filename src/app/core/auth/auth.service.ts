@@ -18,11 +18,15 @@ import { environment } from '@env/environment';
 
 const TOKEN_KEY = 'auth_token';
 const USER_ID_KEY = 'auth_user_id';
+const REFRESH_KEY = 'auth_refresh_token';
+const USERNAME_KEY = 'auth_user_name';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly _token = signal<string | null>(sessionStorage.getItem(TOKEN_KEY));
   private readonly _userId = signal<string | null>(sessionStorage.getItem(USER_ID_KEY));
+  private readonly _refreshToken = signal<string | null>(sessionStorage.getItem(REFRESH_KEY));
+  private readonly _userName = signal<string | null>(sessionStorage.getItem(USERNAME_KEY));
   private readonly _isAuthenticated = computed(() => this._token() !== null);
 
   private readonly _user = computed<AuthUser | null>(() => {
@@ -45,13 +49,24 @@ export class AuthService {
   async login(credentials: LoginCredentials): Promise<void> {
     try {
       const response = await firstValueFrom(
-        this.http.post<LoginResponse>(`${environment.apiUrl}/users/sessions`, credentials),
+        this.http.post<LoginResponse>(`${environment.apiUrl}/users/sessions`, credentials, {
+          withCredentials: true,
+        }),
       );
       this._token.set(response.token);
       sessionStorage.setItem(TOKEN_KEY, response.token);
       if (response.user_id) {
         this._userId.set(response.user_id);
         sessionStorage.setItem(USER_ID_KEY, response.user_id);
+      }
+      if (response.refresh_token) {
+        this._refreshToken.set(response.refresh_token);
+        sessionStorage.setItem(REFRESH_KEY, response.refresh_token);
+      }
+      const decoded = this.jwtService.decode(response.token);
+      if (decoded?.userName) {
+        this._userName.set(decoded.userName);
+        sessionStorage.setItem(USERNAME_KEY, decoded.userName);
       }
     } catch (error) {
       throw this.mapHttpError(error);
@@ -107,10 +122,68 @@ export class AuthService {
   logout(): void {
     this._token.set(null);
     this._userId.set(null);
+    this._refreshToken.set(null);
+    this._userName.set(null);
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_ID_KEY);
+    sessionStorage.removeItem(REFRESH_KEY);
+    sessionStorage.removeItem(USERNAME_KEY);
     this.clearAllCookies();
     this.router.navigate(['/login']);
+  }
+
+  /**
+   * Intenta renovar el token con el refresh token guardado.
+   * Devuelve el nuevo access token si tuvo éxito, o null si falló (sesión no recuperable).
+   */
+  async refreshSession(): Promise<string | null> {
+    // El backend lee el refresh_token de una cookie httpOnly (seteada en el login)
+    // y el token actual del header Authorization (lo agrega el interceptor).
+    // El body va vacío y hay que enviar las cookies con withCredentials.
+    const currentToken = this._token();
+    if (!currentToken) {
+      return null;
+    }
+    try {
+      const response = await firstValueFrom(
+        this.http.post<LoginResponse>(
+          `${environment.apiUrl}/users/sessions/refresh`,
+          {},
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${currentToken}` },
+          },
+        ),
+      );
+      const newToken = response.access_token ?? response.token;
+      if (!response.is_successful || !newToken) {
+        return null;
+      }
+      this._token.set(newToken);
+      sessionStorage.setItem(TOKEN_KEY, newToken);
+      const decoded = this.jwtService.decode(newToken);
+      if (decoded?.userName) {
+        this._userName.set(decoded.userName);
+        sessionStorage.setItem(USERNAME_KEY, decoded.userName);
+      }
+      if (response.user_id) {
+        this._userId.set(response.user_id);
+        sessionStorage.setItem(USER_ID_KEY, response.user_id);
+      }
+      if (response.refresh_token) {
+        this._refreshToken.set(response.refresh_token);
+        sessionStorage.setItem(REFRESH_KEY, response.refresh_token);
+      }
+      return newToken;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Cierra la sesión por expiración y redirige al login con un aviso. */
+  expireSession(): void {
+    this.logout();
+    this.router.navigate(['/login'], { queryParams: { expired: '1' } });
   }
 
   private clearAllCookies(): void {
