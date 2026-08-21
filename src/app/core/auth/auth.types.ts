@@ -10,6 +10,7 @@ export interface LoginResponse {
   token: string;
   expiration_time: number;
   refresh_token: string;
+  user_id: string | null;
 }
 
 export interface RegisterCredentials {

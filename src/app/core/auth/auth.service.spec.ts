@@ -24,6 +24,7 @@ describe('AuthService', () => {
     token: VALID_STUDENT_TOKEN,
     expiration_time: 1700000000,
     refresh_token: 'refresh-token-456',
+    user_id: 'user-abc-123',
   };
 
   const validCredentials = {
@@ -305,4 +306,23 @@ describe('AuthService', () => {
       await expect(resetPromise).rejects.toThrow('Sin conexión al servidor');
     });
   });
+
+  it('login() stores user_id from the response and exposes it via userId()', async () => {
+    const loginPromise = service.login(validCredentials);
+    const req = httpMock.expectOne('/users/sessions');
+    req.flush(mockResponse);
+    await loginPromise;
+    expect(service.userId()).toBe('user-abc-123');
+    expect(sessionStorage.getItem('auth_user_id')).toBe('user-abc-123');
+  });
+
+  it('logout() clears the stored user_id', async () => {
+    const loginPromise = service.login(validCredentials);
+    httpMock.expectOne('/users/sessions').flush(mockResponse);
+    await loginPromise;
+    service.logout();
+    expect(service.userId()).toBeNull();
+    expect(sessionStorage.getItem('auth_user_id')).toBeNull();
+  });
+
 });
