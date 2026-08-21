@@ -17,10 +17,12 @@ import {
 import { environment } from '@env/environment';
 
 const TOKEN_KEY = 'auth_token';
+const USER_ID_KEY = 'auth_user_id';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly _token = signal<string | null>(sessionStorage.getItem(TOKEN_KEY));
+  private readonly _userId = signal<string | null>(sessionStorage.getItem(USER_ID_KEY));
   private readonly _isAuthenticated = computed(() => this._token() !== null);
 
   private readonly _user = computed<AuthUser | null>(() => {
@@ -29,6 +31,7 @@ export class AuthService {
   });
 
   readonly token = this._token.asReadonly();
+  readonly userId = this._userId.asReadonly();
   readonly isAuthenticated = this._isAuthenticated;
   readonly user = this._user;
   readonly role = computed<AuthUser['role'] | null>(() => this._user()?.role ?? null);
@@ -46,6 +49,10 @@ export class AuthService {
       );
       this._token.set(response.token);
       sessionStorage.setItem(TOKEN_KEY, response.token);
+      if (response.user_id) {
+        this._userId.set(response.user_id);
+        sessionStorage.setItem(USER_ID_KEY, response.user_id);
+      }
     } catch (error) {
       throw this.mapHttpError(error);
     }
@@ -99,7 +106,9 @@ export class AuthService {
 
   logout(): void {
     this._token.set(null);
+    this._userId.set(null);
     sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_ID_KEY);
     this.clearAllCookies();
     this.router.navigate(['/login']);
   }
