@@ -44,6 +44,27 @@
           <div class="det__empty"><p>Sin feedback generado aún.</p></div>
         }
       </div>
+
+      <div class="det__card det__card--wide">
+        <h2 class="det__card-title">Progreso por tema</h2>
+        @if (progressTopics().length === 0) {
+          <div class="det__empty"><p>Sin progreso registrado todavía.</p></div>
+        } @else {
+          <ul class="det__profile">
+            @for (t of progressTopics(); track t.topic) {
+              <li class="det__profile-row">
+                <div class="det__profile-head">
+                  <span class="det__topic">{{ t.topic }}</span>
+                  <span class="det__score">{{ t.score }}%</span>
+                </div>
+                <div class="det__bar">
+                  <div class="det__bar-fill" [style.width.%]="t.score"></div>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
     </div>
   }
 </section>
