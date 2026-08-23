@@ -58,14 +58,6 @@ export const TEACHER_ROUTES: Routes = [
           import('./resources/resources.component').then((m) => m.ResourcesComponent),
       },
       {
-        path: 'rubrics',
-        data: {
-          title: 'Rúbricas',
-          subtitle: 'Próximamente: creación y gestión de rúbricas de evaluación.',
-        },
-        loadComponent: PLACEHOLDER,
-      },
-      {
         path: 'routes',
         data: {
           title: 'Rutas',

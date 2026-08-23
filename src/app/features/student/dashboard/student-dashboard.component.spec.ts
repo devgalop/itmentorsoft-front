@@ -37,10 +37,10 @@ describe('StudentDashboardComponent', () => {
     expect(component.userName()).toBe('Estudiante');
   });
 
-  it('renders four stat cards', () => {
+  it('renders three stat cards', () => {
     setup({ userName: 'eider_student', role: 'student' });
     const stats = fixture.nativeElement.querySelectorAll('.dash__stat');
-    expect(stats.length).toBe(4);
+    expect(stats.length).toBe(3);
   });
 
   it('renders the three "how it works" steps', () => {

@@ -41,11 +41,6 @@ export const STUDENT_ROUTES: Routes = [
         loadComponent: () =>
           import('./progress/student-progress.component').then((m) => m.StudentProgressComponent),
       },
-      {
-        path: 'resources',
-        data: { title: 'Recursos', subtitle: 'Próximamente: recursos de aprendizaje asignados.' },
-        loadComponent: PLACEHOLDER,
-      },
     ],
   },
 ];
