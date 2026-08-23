@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { StudentDashboardComponent } from './student-dashboard.component';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -13,7 +14,7 @@ describe('StudentDashboardComponent', () => {
 
     TestBed.configureTestingModule({
       imports: [StudentDashboardComponent],
-      providers: [{ provide: AuthService, useValue: authServiceMock }],
+      providers: [provideRouter([]), { provide: AuthService, useValue: authServiceMock }],
     });
 
     fixture = TestBed.createComponent(StudentDashboardComponent);
