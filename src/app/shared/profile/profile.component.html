@@ -1,0 +1,41 @@
+<section class="profile">
+  <header class="profile__header">
+    <h1 class="profile__title">Mi perfil</h1>
+    <p class="profile__subtitle">Tus datos de cuenta en ITMentorSoft.</p>
+  </header>
+
+  @if (isLoading()) {
+    <p class="profile__hint">Cargando tu perfil…</p>
+  } @else if (loadError()) {
+    <div class="profile__empty"><p>{{ loadError() }}</p></div>
+  } @else if (user(); as u) {
+    <div class="profile__card">
+      <div class="profile__head">
+        <span class="profile__avatar">{{ initials(u.username) }}</span>
+        <div>
+          <p class="profile__name">{{ u.username }}</p>
+          <span class="profile__badge">{{ roleLabel(u.role) }}</span>
+        </div>
+      </div>
+
+      <dl class="profile__fields">
+        <div class="profile__field">
+          <dt>Usuario</dt>
+          <dd>{{ u.username }}</dd>
+        </div>
+        <div class="profile__field">
+          <dt>Email</dt>
+          <dd>{{ u.email }}</dd>
+        </div>
+        <div class="profile__field">
+          <dt>Rol</dt>
+          <dd>{{ roleLabel(u.role) }}</dd>
+        </div>
+      </dl>
+
+      <div class="profile__actions">
+        <a routerLink="/recover-password" class="profile__btn">Cambiar contraseña</a>
+      </div>
+    </div>
+  }
+</section>

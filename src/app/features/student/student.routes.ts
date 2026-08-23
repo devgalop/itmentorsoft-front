@@ -39,7 +39,7 @@ export const STUDENT_ROUTES: Routes = [
       {
         path: 'profile',
         loadComponent: () =>
-          import('./progress/student-progress.component').then((m) => m.StudentProgressComponent),
+          import('@shared/profile/profile.component').then((m) => m.ProfileComponent),
       },
     ],
   },

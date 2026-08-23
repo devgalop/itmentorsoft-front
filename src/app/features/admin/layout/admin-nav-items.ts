@@ -5,6 +5,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { label: 'Usuarios', route: '/admin/users', icon: 'users', group: 'Principal' },
   { label: 'Roles', route: '/admin/roles', icon: 'shield', group: 'Principal' },
   { label: 'Aprobar contenido', route: '/admin/content-approval', icon: 'check', group: 'Principal' },
+  { label: 'Mi perfil', route: '/admin/profile', icon: 'user', group: 'Principal' },
   { label: 'Configuración', route: '/admin/config', icon: 'settings', group: 'Sistema' },
   { label: 'Analíticas', route: '/admin/analytics', icon: 'chart', group: 'Sistema' },
 ];

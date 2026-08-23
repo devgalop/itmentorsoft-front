@@ -45,6 +45,11 @@ export const ADMIN_ROUTES: Routes = [
         },
         loadComponent: PLACEHOLDER,
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('@shared/profile/profile.component').then((m) => m.ProfileComponent),
+      },
     ],
   },
 ];
