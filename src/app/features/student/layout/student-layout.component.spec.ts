@@ -5,16 +5,19 @@ import { StudentLayoutComponent } from './student-layout.component';
 import { SidebarService } from '../../../shared/ui/sidebar/sidebar.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { STUDENT_NAV_ITEMS } from './student-nav-items';
+import { InitialAssessmentService } from '../../../core/student/initial-assessment.service';
 
 describe('StudentLayoutComponent', () => {
   let component: StudentLayoutComponent;
   let fixture: ComponentFixture<StudentLayoutComponent>;
   let sidebarServiceMock: { isCollapsed: ReturnType<typeof vi.fn> };
   let authServiceMock: { logout: ReturnType<typeof vi.fn> };
+  let initialAssessmentMock: { hasCompleted: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     sidebarServiceMock = { isCollapsed: vi.fn(() => false) };
     authServiceMock = { logout: vi.fn() };
+    initialAssessmentMock = { hasCompleted: vi.fn().mockResolvedValue(true) };
 
     await TestBed.configureTestingModule({
       imports: [StudentLayoutComponent],
@@ -22,6 +25,7 @@ describe('StudentLayoutComponent', () => {
         provideRouter([]),
         { provide: SidebarService, useValue: sidebarServiceMock },
         { provide: AuthService, useValue: authServiceMock },
+        { provide: InitialAssessmentService, useValue: initialAssessmentMock },
       ],
     }).compileComponents();
 
@@ -39,8 +43,22 @@ describe('StudentLayoutComponent', () => {
     expect(sidebar).toBeTruthy();
   });
 
-  it('passes STUDENT_NAV_ITEMS to the sidebar', () => {
-    expect(component.navItems).toBe(STUDENT_NAV_ITEMS);
+  it('passes all STUDENT_NAV_ITEMS to the sidebar when assessment is completed', async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(component.navItems()).toEqual(STUDENT_NAV_ITEMS);
+  });
+
+  it('hides Mi ruta and Mi progreso when the initial assessment is not completed', async () => {
+    initialAssessmentMock.hasCompleted.mockResolvedValue(false);
+    const f = TestBed.createComponent(StudentLayoutComponent);
+    await Promise.resolve();
+    await Promise.resolve();
+    const routes = f.componentInstance.navItems().map((i) => i.route);
+    expect(routes).not.toContain('/student/route');
+    expect(routes).not.toContain('/student/progress');
+    expect(routes).toContain('/student/profile');
+    expect(routes).toContain('/student/dashboard');
   });
 
   it('renders router-outlet inside the content area', () => {
