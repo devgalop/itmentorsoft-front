@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import {
   GetAllStudentsResponse,
+  GetStudentsByCategoryResponse,
   GetStudentProgressResponse,
   GetStudentSummaryResponse,
   PagedStudents,
@@ -22,6 +23,25 @@ export class ReportsService {
         this.http.get<GetAllStudentsResponse>(`${environment.apiUrl}/reports/students`, {
           params: { page, page_size: pageSize },
         }),
+      );
+      const result = response.result;
+      return {
+        students: result?.students ?? [],
+        total: result?.total_students ?? 0,
+      };
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Estudiantes filtrados por categoría/clasificación (page arranca en 0). */
+  async getStudentsByCategory(category: string, page = 0, pageSize = 10): Promise<PagedStudents> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetStudentsByCategoryResponse>(
+          `${environment.apiUrl}/reports/students-by-category`,
+          { params: { category, page, page_size: pageSize } },
+        ),
       );
       const result = response.result;
       return {

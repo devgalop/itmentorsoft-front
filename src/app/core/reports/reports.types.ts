@@ -16,6 +16,12 @@ export interface GetAllStudentsResponse {
   result: PaginatedStudentResult | null;
 }
 
+export interface GetStudentsByCategoryResponse {
+  is_success: boolean;
+  message: string;
+  result: PaginatedStudentResult | null;
+}
+
 export interface PagedStudents {
   students: StudentClassification[];
   total: number;

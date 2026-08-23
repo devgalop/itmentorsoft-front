@@ -46,11 +46,8 @@ export const TEACHER_ROUTES: Routes = [
       },
       {
         path: 'reports',
-        data: {
-          title: 'Reportes',
-          subtitle: 'Próximamente: métricas y reportes de desempeño del grupo.',
-        },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./reports/teacher-reports.component').then((m) => m.TeacherReportsComponent),
       },
       {
         path: 'resources',

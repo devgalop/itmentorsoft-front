@@ -120,4 +120,41 @@ describe('ReportsService', () => {
       await expect(promise).rejects.toThrow('No se encontró el estudiante');
     });
   });
+
+  describe('getStudentsByCategory', () => {
+    it('GETs students-by-category with category and pagination', async () => {
+      const promise = service.getStudentsByCategory('básico', 0, 10);
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === '/reports/students-by-category' &&
+          r.params.get('category') === 'básico' &&
+          r.params.get('page') === '0' &&
+          r.params.get('page_size') === '10',
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        is_success: true,
+        message: 'ok',
+        result: {
+          students: [{ student_id: 's1', student_name: 'Ana', knowledge_classification: 'básico' }],
+          total_students: 1,
+          page: 0,
+        },
+      });
+      const res = await promise;
+      expect(res.students).toHaveLength(1);
+      expect(res.total).toBe(1);
+    });
+
+    it('returns empty when result is null', async () => {
+      const promise = service.getStudentsByCategory('avanzado');
+      httpMock
+        .expectOne((r) => r.url === '/reports/students-by-category')
+        .flush({ is_success: true, message: 'ok', result: null });
+      const res = await promise;
+      expect(res.students).toEqual([]);
+      expect(res.total).toBe(0);
+    });
+  });
+
 });
