@@ -30,7 +30,6 @@ export class StudentDashboardComponent {
     { value: '—', label: 'Categoría asignada', hint: 'Pendiente evaluación' },
     { value: '0%', label: 'Progreso en ruta', hint: 'Sin ruta asignada' },
     { value: '0', label: 'Evaluaciones realizadas', hint: 'Completá la inicial' },
-    { value: '0', label: 'Recursos completados', hint: 'Accedé a tu ruta' },
   ];
 
   // Contenido estático (informativo), tal cual el mockup.
@@ -45,7 +44,7 @@ export class StudentDashboardComponent {
     },
     {
       title: 'Recibí tu ruta personalizada',
-      description: 'Recursos y evaluaciones adaptadas a tus debilidades.',
+      description: 'Evaluaciones adaptadas a tus debilidades.',
     },
   ];
 }
