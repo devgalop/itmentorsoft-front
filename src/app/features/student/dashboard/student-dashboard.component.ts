@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 
 interface StatCard {
   value: string;
   label: string;
   hint: string;
+  route?: string;
 }
 
 interface HowToStep {
@@ -15,6 +17,7 @@ interface HowToStep {
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
+  imports: [RouterLink],
   templateUrl: './student-dashboard.component.html',
   styleUrl: './student-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,9 +30,9 @@ export class StudentDashboardComponent {
 
   // Estructura del mockup. Sin backend de progreso todavía → valores "sin datos".
   readonly stats: StatCard[] = [
-    { value: '—', label: 'Categoría asignada', hint: 'Pendiente evaluación' },
-    { value: '0%', label: 'Progreso en ruta', hint: 'Sin ruta asignada' },
-    { value: '0', label: 'Evaluaciones realizadas', hint: 'Completá la inicial' },
+    { value: '—', label: 'Categoría asignada', hint: 'Pendiente evaluación', route: '/student/progress' },
+    { value: '0%', label: 'Progreso en ruta', hint: 'Sin ruta asignada', route: '/student/route' },
+    { value: '0', label: 'Evaluaciones realizadas', hint: 'Completá la inicial', route: '/student/assessments' },
   ];
 
   // Contenido estático (informativo), tal cual el mockup.

@@ -15,11 +15,19 @@
 
   <div class="dash__stats">
     @for (s of stats; track s.label) {
-      <div class="dash__stat">
-        <span class="dash__stat-value">{{ s.value }}</span>
-        <span class="dash__stat-label">{{ s.label }}</span>
-        <span class="dash__stat-hint">{{ s.hint }}</span>
-      </div>
+      @if (s.route) {
+        <a [routerLink]="s.route" class="dash__stat dash__stat--link">
+          <span class="dash__stat-value">{{ s.value }}</span>
+          <span class="dash__stat-label">{{ s.label }}</span>
+          <span class="dash__stat-hint">{{ s.hint }}</span>
+        </a>
+      } @else {
+        <div class="dash__stat">
+          <span class="dash__stat-value">{{ s.value }}</span>
+          <span class="dash__stat-label">{{ s.label }}</span>
+          <span class="dash__stat-hint">{{ s.hint }}</span>
+        </div>
+      }
     }
   </div>
 

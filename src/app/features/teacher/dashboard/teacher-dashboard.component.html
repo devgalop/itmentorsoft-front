@@ -14,21 +14,21 @@
   </div>
 
   <div class="dash__stats">
-    <div class="dash__stat">
+    <a routerLink="/teacher/students" class="dash__stat dash__stat--link">
       <span class="dash__stat-value">{{ studentsTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Estudiantes activos</span>
       <span class="dash__stat-hint">{{ studentsTotal() === null ? 'Sin datos' : 'Registrados' }}</span>
-    </div>
-    <div class="dash__stat">
+    </a>
+    <a routerLink="/teacher/questions" class="dash__stat dash__stat--link">
       <span class="dash__stat-value">{{ categoriesTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Categorías activas</span>
       <span class="dash__stat-hint">{{ categoriesTotal() === null ? 'Sin datos' : 'De preguntas' }}</span>
-    </div>
-    <div class="dash__stat">
+    </a>
+    <a routerLink="/teacher/resources" class="dash__stat dash__stat--link">
       <span class="dash__stat-value">{{ resourcesTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Recursos activos</span>
       <span class="dash__stat-hint">{{ resourcesTotal() === null ? 'Sin datos' : 'Publicados' }}</span>
-    </div>
+    </a>
   </div>
 
   <div class="dash__grid">

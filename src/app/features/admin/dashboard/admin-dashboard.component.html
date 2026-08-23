@@ -19,17 +19,17 @@
       <span class="dash__stat-label">Estudiantes</span>
       <span class="dash__stat-hint">{{ studentsTotal() === null ? 'Sin datos' : 'Registrados' }}</span>
     </div>
-    <div class="dash__stat">
+    <a routerLink="/admin/roles" class="dash__stat dash__stat--link">
       <span class="dash__stat-value">{{ rolesTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Roles configurados</span>
       <span class="dash__stat-hint">{{ rolesTotal() === null ? 'Sin datos' : 'Disponibles' }}</span>
-    </div>
+    </a>
     <div class="dash__stat">
       <span class="dash__stat-value">{{ resourcesTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Recursos activos</span>
       <span class="dash__stat-hint">{{ resourcesTotal() === null ? 'Sin datos' : 'Publicados' }}</span>
     </div>
-    <div class="dash__stat">
+    <a routerLink="/admin/content-approval" class="dash__stat dash__stat--link">
       <span class="dash__stat-value">{{ pendingTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Pendientes aprobación</span>
       <span class="dash__stat-hint">
@@ -41,7 +41,7 @@
           Al día
         }
       </span>
-    </div>
+    </a>
   </div>
 
   <div class="dash__grid">
