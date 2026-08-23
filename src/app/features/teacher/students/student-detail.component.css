@@ -140,3 +140,7 @@
     grid-template-columns: 1fr;
   }
 }
+
+.det__card--wide {
+  grid-column: 1 / -1;
+}

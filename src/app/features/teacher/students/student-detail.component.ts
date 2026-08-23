@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ReportsService } from '@core/reports/reports.service';
-import { StudentSummary } from '@core/reports/reports.types';
+import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
 
 @Component({
   selector: 'app-student-detail',
@@ -16,6 +16,7 @@ export class StudentDetailComponent {
   private readonly reports = inject(ReportsService);
 
   readonly summary = signal<StudentSummary | null>(null);
+  readonly progress = signal<StudentProgress | null>(null);
   readonly isLoading = signal(true);
   readonly loadError = signal<string | null>(null);
 
@@ -33,8 +34,12 @@ export class StudentDetailComponent {
     this.isLoading.set(true);
     this.loadError.set(null);
     try {
-      const summary = await this.reports.getStudentSummary(id);
+      const [summary, progress] = await Promise.all([
+        this.reports.getStudentSummary(id),
+        this.reports.getStudentProgress(id).catch(() => null),
+      ]);
       this.summary.set(summary);
+      this.progress.set(progress);
       if (!summary) {
         this.loadError.set('No hay reporte disponible para este estudiante.');
       }
@@ -43,6 +48,18 @@ export class StudentDetailComponent {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  /** Temas del progreso ordenados por índice (score ya viene en % 0–100). */
+  progressTopics(): { topic: string; score: number }[] {
+    const items = this.progress()?.knowledge_profile ?? [];
+    return [...items]
+      .sort((a, b) => a.index - b.index)
+      .map((i) => ({ topic: i.topic, score: this.clampPct(i.score) }));
+  }
+
+  private clampPct(value: number): number {
+    return Math.max(0, Math.min(100, Math.round(value)));
   }
 
   /** Score (0–1) a porcentaje 0–100 para las barras. */
