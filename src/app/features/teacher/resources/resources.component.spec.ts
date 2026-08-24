@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { ResourcesComponent } from './resources.component';
 import { ContentService } from '../../../core/content/content.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 const existing = {
   content_id: 'c1',
@@ -11,6 +12,9 @@ const existing = {
   category: 'intermedio',
   related_topics: ['SOLID', 'Patrones'],
 };
+
+const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
+afterEach(() => { toastMock.success.mockClear(); toastMock.error.mockClear(); });
 
 describe('ResourcesComponent', () => {
   let serviceMock: {
@@ -22,7 +26,7 @@ describe('ResourcesComponent', () => {
   function createComponent(): ResourcesComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [ResourcesComponent, { provide: ContentService, useValue: serviceMock }],
+      providers: [ResourcesComponent, { provide: ContentService, useValue: serviceMock }, { provide: ToastService, useValue: toastMock }],
     });
     return TestBed.inject(ResourcesComponent);
   }
@@ -89,7 +93,7 @@ describe('ResourcesComponent', () => {
 
     expect(serviceMock.registerContent).toHaveBeenCalledTimes(1);
     expect(serviceMock.updateContent).not.toHaveBeenCalled();
-    expect(component.submitSuccess()).toBe('Recurso creado correctamente');
+    expect(toastMock.success).toHaveBeenCalledWith('Recurso creado', expect.any(String));
     expect(component.isModalOpen()).toBe(false);
     expect(serviceMock.getAllContents).toHaveBeenCalledTimes(2);
   });
@@ -119,7 +123,7 @@ describe('ResourcesComponent', () => {
     expect(serviceMock.updateContent).toHaveBeenCalledTimes(1);
     expect(serviceMock.updateContent.mock.calls[0][0]).toBe('c1');
     expect(serviceMock.registerContent).not.toHaveBeenCalled();
-    expect(component.submitSuccess()).toBe('Recurso actualizado correctamente');
+    expect(toastMock.success).toHaveBeenCalledWith('Recurso actualizado', expect.any(String));
     expect(component.editingId()).toBeNull();
   });
 
@@ -142,6 +146,6 @@ describe('ResourcesComponent', () => {
 
     await component.submit();
 
-    expect(component.submitError()).toBe('Rechazado');
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo guardar', 'Rechazado');
   });
 });

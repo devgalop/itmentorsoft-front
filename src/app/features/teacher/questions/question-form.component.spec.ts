@@ -3,6 +3,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { vi } from 'vitest';
 import { QuestionFormComponent } from './question-form.component';
 import { AssessmentsService } from '../../../core/assessments/assessments.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 const validDetail = {
   question_id: 'q-1',
@@ -17,6 +18,9 @@ const validDetail = {
   semantic_keywords: ['alpha', 'beta'],
   status: 'published',
 };
+
+const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
+afterEach(() => { toastMock.success.mockClear(); toastMock.error.mockClear(); });
 
 describe('QuestionFormComponent', () => {
   describe('modo creación', () => {
@@ -37,7 +41,7 @@ describe('QuestionFormComponent', () => {
 
       await TestBed.configureTestingModule({
         imports: [QuestionFormComponent],
-        providers: [provideRouter([]), { provide: AssessmentsService, useValue: serviceMock }],
+        providers: [provideRouter([]), { provide: AssessmentsService, useValue: serviceMock }, { provide: ToastService, useValue: toastMock }],
       }).compileComponents();
 
       fixture = TestBed.createComponent(QuestionFormComponent);
@@ -105,7 +109,7 @@ describe('QuestionFormComponent', () => {
 
       expect(serviceMock.registerQuestion).toHaveBeenCalledTimes(1);
       expect(serviceMock.updateQuestion).not.toHaveBeenCalled();
-      expect(component.submitSuccess()).toBe('Pregunta creada correctamente');
+      expect(toastMock.success).toHaveBeenCalledWith('Pregunta creada', expect.any(String));
       expect(component.misconceptions.length).toBe(2);
       expect(component.form.get('text')?.value).toBe('');
     });
@@ -116,7 +120,7 @@ describe('QuestionFormComponent', () => {
 
       await component.submit();
 
-      expect(component.submitError()).toBe('Sin conexión al servidor');
+      expect(toastMock.error).toHaveBeenCalledWith('Error al guardar', 'Sin conexión al servidor');
     });
   });
 
@@ -133,6 +137,7 @@ describe('QuestionFormComponent', () => {
         providers: [
           provideRouter([]),
           { provide: AssessmentsService, useValue: serviceMock },
+          { provide: ToastService, useValue: toastMock },
           {
             provide: ActivatedRoute,
             useValue: { snapshot: { paramMap: convertToParamMap({ id }) } },
@@ -167,7 +172,7 @@ describe('QuestionFormComponent', () => {
       expect(serviceMock.updateQuestion).toHaveBeenCalledTimes(1);
       expect(serviceMock.updateQuestion.mock.calls[0][0]).toBe('q-1');
       expect(serviceMock.registerQuestion).not.toHaveBeenCalled();
-      expect(component.submitSuccess()).toBe('Pregunta actualizada correctamente');
+      expect(toastMock.success).toHaveBeenCalledWith('Pregunta actualizada', expect.any(String));
     });
 
     it('shows a load error when the question is not found', async () => {

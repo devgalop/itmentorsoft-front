@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { UsersService } from '@core/users/users.service';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import { CreateUserPayload } from '@core/users/users.types';
 
 /** username: alfanumérico + guion bajo (coincide con \w+ del backend). */
@@ -21,13 +22,12 @@ function usernamePattern(control: AbstractControl): ValidationErrors | null {
 export class AdminUsersComponent {
   private readonly fb = inject(FormBuilder);
   private readonly users = inject(UsersService);
+  private readonly toast = inject(ToastService);
 
   readonly roles = signal<string[]>([]);
   readonly isLoadingRoles = signal(false);
 
   readonly isSubmitting = signal(false);
-  readonly submitError = signal<string | null>(null);
-  readonly submitSuccess = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
     email: [
@@ -74,8 +74,6 @@ export class AdminUsersComponent {
   }
 
   async submit(): Promise<void> {
-    this.submitError.set(null);
-    this.submitSuccess.set(null);
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -88,13 +86,13 @@ export class AdminUsersComponent {
     try {
       const response = await this.users.createUser(payload);
       if (response.is_success) {
-        this.submitSuccess.set(response.message || 'Usuario creado correctamente');
+        this.toast.success('Usuario creado', 'El usuario se registró correctamente.');
         this.resetForm();
       } else {
-        this.submitError.set(response.message || 'No se pudo crear el usuario');
+        this.toast.error('No se pudo crear', response.message || 'Intentá nuevamente.');
       }
     } catch (error) {
-      this.submitError.set(error instanceof Error ? error.message : 'Error inesperado');
+      this.toast.error('Error al crear usuario', error instanceof Error ? error.message : 'Error inesperado');
     } finally {
       this.isSubmitting.set(false);
     }

@@ -9,6 +9,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ContentService } from '@core/content/content.service';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import {
   CONTENT_CATEGORIES,
   contentCategoryLabel,
@@ -40,6 +41,7 @@ function httpsUrl(control: AbstractControl): ValidationErrors | null {
 export class ResourcesComponent {
   private readonly fb = inject(FormBuilder);
   private readonly content = inject(ContentService);
+  private readonly toast = inject(ToastService);
 
   readonly categories = CONTENT_CATEGORIES;
 
@@ -53,8 +55,6 @@ export class ResourcesComponent {
 
   readonly isModalOpen = signal(false);
   readonly isSubmitting = signal(false);
-  readonly submitError = signal<string | null>(null);
-  readonly submitSuccess = signal<string | null>(null);
 
   /** Id del recurso en edición; null = creando. */
   readonly editingId = signal<string | null>(null);
@@ -103,8 +103,6 @@ export class ResourcesComponent {
 
   openCreate(): void {
     this.editingId.set(null);
-    this.submitError.set(null);
-    this.submitSuccess.set(null);
     this.resetForm();
     this.isModalOpen.set(true);
   }
@@ -112,8 +110,6 @@ export class ResourcesComponent {
   /** Abre el modal en modo edición, precargando el recurso (summary -> description). */
   openEdit(resource: ContentItem): void {
     this.editingId.set(resource.content_id);
-    this.submitError.set(null);
-    this.submitSuccess.set(null);
 
     this.form.patchValue({
       title: resource.title,
@@ -149,8 +145,6 @@ export class ResourcesComponent {
   }
 
   async submit(): Promise<void> {
-    this.submitError.set(null);
-    this.submitSuccess.set(null);
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -167,16 +161,19 @@ export class ResourcesComponent {
         : await this.content.registerContent(payload);
 
       if (response.is_success) {
-        this.submitSuccess.set(editingId ? 'Recurso actualizado correctamente' : 'Recurso creado correctamente');
+        this.toast.success(
+          editingId ? 'Recurso actualizado' : 'Recurso creado',
+          editingId ? 'Los cambios se guardaron correctamente.' : 'El recurso se creó correctamente.',
+        );
         this.resetForm();
         this.editingId.set(null);
         this.closeModal();
         await this.loadResources();
       } else {
-        this.submitError.set(response.message || 'No se pudo guardar el recurso');
+        this.toast.error('No se pudo guardar', response.message || 'Intentá nuevamente.');
       }
     } catch (error) {
-      this.submitError.set(error instanceof Error ? error.message : 'Error inesperado');
+      this.toast.error('Error al guardar', error instanceof Error ? error.message : 'Error inesperado');
     } finally {
       this.isSubmitting.set(false);
     }

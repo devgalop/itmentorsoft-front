@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '@core/auth/auth.service';
 import { ApprovalService } from '@core/admin/approval.service';
 import { PendingQuestion, ReviewStatus } from '@core/admin/approval.types';
+import { ToastService } from '@shared/ui/toast/toast.service';
 
 const MIN_COMMENT = 10;
 
@@ -17,6 +18,7 @@ const MIN_COMMENT = 10;
 export class AdminApprovalComponent {
   private readonly approval = inject(ApprovalService);
   private readonly auth = inject(AuthService);
+  private readonly toast = inject(ToastService);
 
   readonly questions = signal<PendingQuestion[]>([]);
   readonly total = signal(0);
@@ -96,6 +98,10 @@ export class AdminApprovalComponent {
       if (response.is_success) {
         this.resolved.update((r) => ({ ...r, [question.question_id]: status }));
         this.total.update((t) => Math.max(0, t - 1));
+        this.toast.success(
+          status === 'published' ? 'Pregunta aprobada' : 'Pregunta rechazada',
+          status === 'published' ? 'La pregunta fue publicada.' : 'La pregunta fue archivada.',
+        );
       } else {
         this.setRowError(question.question_id, response.message || 'No se pudo guardar la revisión');
       }
