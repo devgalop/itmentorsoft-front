@@ -11,6 +11,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AssessmentsService } from '@core/assessments/assessments.service';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import { QuestionDetail, RegisterQuestionPayload } from '@core/assessments/assessments.types';
 
 /** Valida que un FormArray tenga al menos `min` elementos. */
@@ -32,6 +33,7 @@ function minItems(min: number) {
 export class QuestionFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly assessments = inject(AssessmentsService);
+  private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
 
   private questionId: string | null = null;
@@ -41,8 +43,6 @@ export class QuestionFormComponent {
   readonly loadError = signal<string | null>(null);
 
   readonly isSubmitting = signal(false);
-  readonly submitError = signal<string | null>(null);
-  readonly submitSuccess = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
     text: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(500)]],
@@ -207,8 +207,6 @@ export class QuestionFormComponent {
   }
 
   async submit(): Promise<void> {
-    this.submitError.set(null);
-    this.submitSuccess.set(null);
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -226,16 +224,16 @@ export class QuestionFormComponent {
 
       if (response.is_success) {
         if (this.isEditMode()) {
-          this.submitSuccess.set('Pregunta actualizada correctamente');
+          this.toast.success('Pregunta actualizada', 'Los cambios se guardaron correctamente.');
         } else {
-          this.submitSuccess.set('Pregunta creada correctamente');
+          this.toast.success('Pregunta creada', 'La pregunta se registró correctamente.');
           this.resetForm();
         }
       } else {
-        this.submitError.set(response.message || 'No se pudo guardar la pregunta');
+        this.toast.error('No se pudo guardar', response.message || 'Intentá nuevamente.');
       }
     } catch (error) {
-      this.submitError.set(error instanceof Error ? error.message : 'Error inesperado');
+      this.toast.error('Error al guardar', error instanceof Error ? error.message : 'Error inesperado');
     } finally {
       this.isSubmitting.set(false);
     }

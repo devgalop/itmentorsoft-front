@@ -14,12 +14,6 @@
     <div class="qform__banner qform__banner--error" role="alert">{{ loadError() }}</div>
   }
 
-  @if (submitSuccess()) {
-    <div class="qform__banner qform__banner--ok" role="status">{{ submitSuccess() }}</div>
-  }
-  @if (submitError()) {
-    <div class="qform__banner qform__banner--error" role="alert">{{ submitError() }}</div>
-  }
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="qform__form">
     <!-- Campos de texto -->

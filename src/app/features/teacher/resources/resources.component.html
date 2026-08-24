@@ -7,9 +7,6 @@
     <button type="button" class="res__new" (click)="openCreate()">+ Nuevo recurso</button>
   </header>
 
-  @if (submitSuccess()) {
-    <div class="res__banner res__banner--ok" role="status">{{ submitSuccess() }}</div>
-  }
 
   <div class="res__panel">
     @if (isLoading()) {
@@ -62,9 +59,6 @@
       <button type="button" class="modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
       <h2 class="modal__title">{{ editingId() ? 'Editar recurso' : 'Nuevo recurso' }}</h2>
 
-      @if (submitError()) {
-        <div class="res__banner res__banner--error" role="alert">{{ submitError() }}</div>
-      }
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="res__form">
         <div class="res__field">
