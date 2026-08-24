@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { AdminApprovalComponent } from './admin-approval.component';
 import { ApprovalService } from '../../../core/admin/approval.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('AdminApprovalComponent', () => {
   let approvalMock: {
@@ -37,6 +38,7 @@ describe('AdminApprovalComponent', () => {
         AdminApprovalComponent,
         { provide: ApprovalService, useValue: approvalMock },
         { provide: AuthService, useValue: authMock },
+        { provide: ToastService, useValue: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } },
       ],
     });
     return TestBed.inject(AdminApprovalComponent);

@@ -4,16 +4,8 @@
     <p class="usr__subtitle">Creá nuevos usuarios y asignales un rol.</p>
   </header>
 
-  @if (submitSuccess()) {
-    <div class="usr__banner usr__banner--ok" role="status">{{ submitSuccess() }}</div>
-  }
-
   <div class="usr__panel">
     <h2 class="usr__panel-title">Crear usuario</h2>
-
-    @if (submitError()) {
-      <div class="usr__banner usr__banner--error" role="alert">{{ submitError() }}</div>
-    }
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="usr__form">
       <div class="usr__field">

@@ -2,8 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { AdminUsersComponent } from './admin-users.component';
 import { UsersService } from '../../../core/users/users.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('AdminUsersComponent', () => {
+  const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
+  afterEach(() => { toastMock.success.mockClear(); toastMock.error.mockClear(); });
   let serviceMock: {
     getAvailableRoles: ReturnType<typeof vi.fn>;
     createUser: ReturnType<typeof vi.fn>;
@@ -12,7 +15,7 @@ describe('AdminUsersComponent', () => {
   function createComponent(): AdminUsersComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [AdminUsersComponent, { provide: UsersService, useValue: serviceMock }],
+      providers: [AdminUsersComponent, { provide: UsersService, useValue: serviceMock }, { provide: ToastService, useValue: toastMock }],
     });
     return TestBed.inject(AdminUsersComponent);
   }
@@ -80,7 +83,7 @@ describe('AdminUsersComponent', () => {
       username: 'nuevo_user',
       role: 'teacher',
     });
-    expect(component.submitSuccess()).toBe('Usuario creado');
+    expect(toastMock.success).toHaveBeenCalledWith('Usuario creado', expect.any(String));
     expect(component.form.get('email')?.value).toBe('');
   });
 
@@ -92,7 +95,7 @@ describe('AdminUsersComponent', () => {
 
     await component.submit();
 
-    expect(component.submitError()).toBe('Email ya existe');
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo crear', 'Email ya existe');
   });
 
   it('shows an error when the service throws', async () => {
@@ -103,6 +106,6 @@ describe('AdminUsersComponent', () => {
 
     await component.submit();
 
-    expect(component.submitError()).toBe('Datos inválidos');
+    expect(toastMock.error).toHaveBeenCalledWith('Error al crear usuario', 'Datos inválidos');
   });
 });
