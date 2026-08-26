@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
+import { ENDPOINTS } from '@core/config/endpoints';
 import {
   AssignRoleResponse,
   CreateUserPayload,
@@ -18,7 +19,7 @@ export class UsersService {
   async getAvailableRoles(): Promise<string[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetAvailableRolesResponse>(`${environment.apiUrl}/users/available-roles`),
+        this.http.get<GetAvailableRolesResponse>(`${environment.apiUrl}${ENDPOINTS.users.availableRoles}`),
       );
       return response.roles ?? [];
     } catch (error) {
@@ -30,7 +31,7 @@ export class UsersService {
     try {
       const response = await firstValueFrom(
         this.http.get<GetUserResponse>(
-          `${environment.apiUrl}/users/${encodeURIComponent(userId)}`,
+          `${environment.apiUrl}${ENDPOINTS.users.byId(userId)}`,
         ),
       );
       return response.user ?? null;
@@ -42,7 +43,7 @@ export class UsersService {
   async assignRole(userId: string, role: string): Promise<AssignRoleResponse> {
     try {
       return await firstValueFrom(
-        this.http.put<AssignRoleResponse>(`${environment.apiUrl}/users/assign-role`, {
+        this.http.put<AssignRoleResponse>(`${environment.apiUrl}${ENDPOINTS.users.assignRole}`, {
           user_id: userId,
           role,
         }),
@@ -56,7 +57,7 @@ export class UsersService {
     try {
       return await firstValueFrom(
         this.http.post<CreateUserResponse>(
-          `${environment.apiUrl}/users/create_user_from_admin`,
+          `${environment.apiUrl}${ENDPOINTS.users.createUserFromAdmin}`,
           payload,
         ),
       );

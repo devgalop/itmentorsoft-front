@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
+import { ENDPOINTS } from '@core/config/endpoints';
 import {
   EvaluativeQuestion,
   GetAllQuestionsResponse,
@@ -23,7 +24,7 @@ export class AssessmentsService {
     try {
       const response = await firstValueFrom(
         this.http.get<GetQuestionsResponse>(
-          `${environment.apiUrl}/assessments/questions/level/${encodeURIComponent(difficulty)}`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.questionsByLevel(difficulty)}`,
         ),
       );
       return response.questions ?? [];
@@ -36,7 +37,7 @@ export class AssessmentsService {
     try {
       const response = await firstValueFrom(
         this.http.get<GetQuestionsResponse>(
-          `${environment.apiUrl}/assessments/questions/category/${encodeURIComponent(category)}`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.questionsByCategory(category)}`,
         ),
       );
       return response.questions ?? [];
@@ -49,7 +50,7 @@ export class AssessmentsService {
     try {
       const response = await firstValueFrom(
         this.http.get<GetQuestionByIdResponse>(
-          `${environment.apiUrl}/assessments/questions/${encodeURIComponent(questionId)}`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.questionById(questionId)}`,
         ),
       );
       return response.question ?? null;
@@ -62,7 +63,7 @@ export class AssessmentsService {
   async getAllQuestions(page = 0, pageSize = 10): Promise<PagedQuestions> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetAllQuestionsResponse>(`${environment.apiUrl}/assessments/questions`, {
+        this.http.get<GetAllQuestionsResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.questions}`, {
           params: { page, page_size: pageSize },
         }),
       );
@@ -75,7 +76,7 @@ export class AssessmentsService {
   async getCategories(version = 1): Promise<string[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetCategoriesResponse>(`${environment.apiUrl}/assessments/categories`, {
+        this.http.get<GetCategoriesResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.categories}`, {
           params: { version },
         }),
       );
@@ -89,7 +90,7 @@ export class AssessmentsService {
     try {
       return await firstValueFrom(
         this.http.post<RegisterQuestionResponse>(
-          `${environment.apiUrl}/assessments/questions/register`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.registerQuestion}`,
           payload,
         ),
       );
@@ -105,7 +106,7 @@ export class AssessmentsService {
     try {
       return await firstValueFrom(
         this.http.put<UpdateQuestionResponse>(
-          `${environment.apiUrl}/assessments/questions/${encodeURIComponent(questionId)}`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.questionById(questionId)}`,
           payload,
         ),
       );

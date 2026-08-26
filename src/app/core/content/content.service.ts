@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
+import { ENDPOINTS } from '@core/config/endpoints';
 import {
   ContentItem,
   GetAllContentsResponse,
@@ -18,7 +19,7 @@ export class ContentService {
   async getAllContents(page = 0, pageSize = 50): Promise<ContentItem[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetAllContentsResponse>(`${environment.apiUrl}/content/`, {
+        this.http.get<GetAllContentsResponse>(`${environment.apiUrl}${ENDPOINTS.content.root}`, {
           params: { page, page_size: pageSize },
         }),
       );
@@ -31,7 +32,7 @@ export class ContentService {
   async registerContent(payload: RegisterContentPayload): Promise<RegisterContentResponse> {
     try {
       return await firstValueFrom(
-        this.http.post<RegisterContentResponse>(`${environment.apiUrl}/content/`, payload),
+        this.http.post<RegisterContentResponse>(`${environment.apiUrl}${ENDPOINTS.content.root}`, payload),
       );
     } catch (error) {
       throw this.mapHttpError(error);
@@ -45,7 +46,7 @@ export class ContentService {
     try {
       return await firstValueFrom(
         this.http.put<UpdateContentResponse>(
-          `${environment.apiUrl}/content/${encodeURIComponent(contentId)}`,
+          `${environment.apiUrl}${ENDPOINTS.content.byId(contentId)}`,
           payload,
         ),
       );

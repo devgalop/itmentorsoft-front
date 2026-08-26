@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
+import { ENDPOINTS } from '@core/config/endpoints';
 import {
   GeneratedAssessment,
   GetAssessmentByTopicResponse,
@@ -21,7 +22,7 @@ export class StudentAssessmentService {
   async getTopics(): Promise<string[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetTopicsResponse>(`${environment.apiUrl}/assessments/topics`),
+        this.http.get<GetTopicsResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.topics}`),
       );
       return response.topics ?? [];
     } catch (error) {
@@ -37,7 +38,7 @@ export class StudentAssessmentService {
   ): Promise<GeneratedAssessment> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetAssessmentByTopicResponse>(`${environment.apiUrl}/assessments/topic`, {
+        this.http.get<GetAssessmentByTopicResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.topic}`, {
           params: { topic, user_id: userId, number_of_questions: numberOfQuestions },
         }),
       );
@@ -58,7 +59,7 @@ export class StudentAssessmentService {
   async saveAnswers(payload: SaveAssessmentPayload): Promise<SaveAssessmentResponse> {
     try {
       return await firstValueFrom(
-        this.http.post<SaveAssessmentResponse>(`${environment.apiUrl}/assessments/`, payload),
+        this.http.post<SaveAssessmentResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.root}`, payload),
       );
     } catch (error) {
       throw this.mapHttpError(error);
@@ -70,7 +71,7 @@ export class StudentAssessmentService {
     try {
       const response = await firstValueFrom(
         this.http.get<QualificationStatusResponse>(
-          `${environment.apiUrl}/assessments/qualification-status`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.qualificationStatus}`,
           { params: { user_id: userId, assessment_id: assessmentId } },
         ),
       );
@@ -85,7 +86,7 @@ export class StudentAssessmentService {
     try {
       const response = await firstValueFrom(
         this.http.get<GetAssessmentResultResponse>(
-          `${environment.apiUrl}/assessments/assessment_result`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.assessmentResult}`,
           { params: { user_id: userId, assessment_id: assessmentId } },
         ),
       );
