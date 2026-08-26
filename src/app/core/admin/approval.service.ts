@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
+import { ENDPOINTS } from '@core/config/endpoints';
 import {
   GetPendingApprovalResponse,
   PagedPending,
@@ -18,7 +19,7 @@ export class ApprovalService {
     try {
       const response = await firstValueFrom(
         this.http.get<GetPendingApprovalResponse>(
-          `${environment.apiUrl}/assessments/pending-approval-questions`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.pendingApprovalQuestions}`,
           { params: { page, page_size: pageSize } },
         ),
       );
@@ -33,7 +34,7 @@ export class ApprovalService {
     try {
       return await firstValueFrom(
         this.http.post<ReviewQuestionResponse>(
-          `${environment.apiUrl}/assessments/review`,
+          `${environment.apiUrl}${ENDPOINTS.assessments.review}`,
           payload,
         ),
       );

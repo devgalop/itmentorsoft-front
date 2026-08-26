@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
+import { ENDPOINTS } from '@core/config/endpoints';
 import {
   GetAllStudentsResponse,
   GetStudentsByCategoryResponse,
@@ -20,7 +21,7 @@ export class ReportsService {
   async getStudents(page = 0, pageSize = 10): Promise<PagedStudents> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetAllStudentsResponse>(`${environment.apiUrl}/reports/students`, {
+        this.http.get<GetAllStudentsResponse>(`${environment.apiUrl}${ENDPOINTS.reports.students}`, {
           params: { page, page_size: pageSize },
         }),
       );
@@ -39,7 +40,7 @@ export class ReportsService {
     try {
       const response = await firstValueFrom(
         this.http.get<GetStudentsByCategoryResponse>(
-          `${environment.apiUrl}/reports/students-by-category`,
+          `${environment.apiUrl}${ENDPOINTS.reports.studentsByCategory}`,
           { params: { category, page, page_size: pageSize } },
         ),
       );
@@ -56,7 +57,7 @@ export class ReportsService {
   async getStudentProgress(id: string): Promise<StudentProgress | null> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetStudentProgressResponse>(`${environment.apiUrl}/reports/student_progress`, {
+        this.http.get<GetStudentProgressResponse>(`${environment.apiUrl}${ENDPOINTS.reports.studentProgress}`, {
           params: { id },
         }),
       );
@@ -69,7 +70,7 @@ export class ReportsService {
   async getStudentSummary(id: string): Promise<StudentSummary | null> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetStudentSummaryResponse>(`${environment.apiUrl}/reports/student_summary`, {
+        this.http.get<GetStudentSummaryResponse>(`${environment.apiUrl}${ENDPOINTS.reports.studentSummary}`, {
           params: { id },
         }),
       );

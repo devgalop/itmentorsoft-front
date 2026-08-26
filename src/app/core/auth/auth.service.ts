@@ -15,6 +15,7 @@ import {
   ResetPasswordResponse,
 } from './auth.types';
 import { environment } from '@env/environment';
+import { ENDPOINTS } from '@core/config/endpoints';
 
 const TOKEN_KEY = 'auth_token';
 const USER_ID_KEY = 'auth_user_id';
@@ -49,7 +50,7 @@ export class AuthService {
   async login(credentials: LoginCredentials): Promise<void> {
     try {
       const response = await firstValueFrom(
-        this.http.post<LoginResponse>(`${environment.apiUrl}/users/sessions`, credentials, {
+        this.http.post<LoginResponse>(`${environment.apiUrl}${ENDPOINTS.users.sessions}`, credentials, {
           withCredentials: true,
         }),
       );
@@ -76,7 +77,7 @@ export class AuthService {
   async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
     try {
       return await firstValueFrom(
-        this.http.post<RegisterResponse>(`${environment.apiUrl}/users/`, credentials),
+        this.http.post<RegisterResponse>(`${environment.apiUrl}${ENDPOINTS.users.root}`, credentials),
       );
     } catch (error) {
       throw this.mapHttpError(error);
@@ -89,7 +90,7 @@ export class AuthService {
     try {
       return await firstValueFrom(
         this.http.post<RecoverPasswordResponse>(
-          `${environment.apiUrl}/users/recovery-password`,
+          `${environment.apiUrl}${ENDPOINTS.users.recoveryPassword}`,
           credentials,
         ),
       );
@@ -109,7 +110,7 @@ export class AuthService {
 
       return await firstValueFrom(
         this.http.put<ResetPasswordResponse>(
-          `${environment.apiUrl}/users/change-password`,
+          `${environment.apiUrl}${ENDPOINTS.users.changePassword}`,
           { new_password: credentials.new_password },
           { params },
         ),
@@ -147,7 +148,7 @@ export class AuthService {
     try {
       const response = await firstValueFrom(
         this.http.post<LoginResponse>(
-          `${environment.apiUrl}/users/sessions/refresh`,
+          `${environment.apiUrl}${ENDPOINTS.users.refreshSession}`,
           {},
           {
             withCredentials: true,
