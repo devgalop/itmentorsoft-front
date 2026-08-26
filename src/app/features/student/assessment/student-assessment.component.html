@@ -55,8 +55,14 @@
             rows="6"
             [ngModel]="currentAnswer()"
             (ngModelChange)="onAnswerChange($event)"
+            (paste)="blockClipboard($event, 'pegar')"
+            (copy)="blockClipboard($event, 'copiar')"
+            (cut)="blockClipboard($event, 'cortar')"
+            (contextmenu)="blockContextMenu($event)"
+            (drop)="blockClipboard($event, 'arrastrar')"
             placeholder="Escribí tu respuesta con tus palabras…"
           ></textarea>
+          <p class="ev__hint">Por integridad de la evaluación, no se permite copiar ni pegar.</p>
         </div>
 
         <div class="ev__nav">

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '@core/auth/auth.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import {
   AssessmentAnswerInput,
   StudentAssessmentResult,
@@ -25,6 +26,7 @@ const MAX_POLLS = 40; // ~2 min de espera máxima
 export class StudentAssessmentComponent {
   private readonly auth = inject(AuthService);
   private readonly assessments = inject(StudentAssessmentService);
+  private readonly toast = inject(ToastService);
 
   readonly step = signal<Step>('setup');
   readonly error = signal<string | null>(null);
@@ -127,6 +129,20 @@ export class StudentAssessmentComponent {
     if (q) {
       this.answers.set(q.question_id, value);
     }
+  }
+
+  /** Bloquea copiar/pegar/cortar/arrastrar en el campo de respuesta y avisa. */
+  blockClipboard(event: Event, action: string): void {
+    event.preventDefault();
+    this.toast.warning(
+      'Acción no permitida',
+      `No se puede ${action} en la evaluación. Escribí tu respuesta con tus palabras.`,
+    );
+  }
+
+  /** Evita el menú contextual (que ofrece pegar) en el campo de respuesta. */
+  blockContextMenu(event: Event): void {
+    event.preventDefault();
   }
 
   private recordTime(): void {

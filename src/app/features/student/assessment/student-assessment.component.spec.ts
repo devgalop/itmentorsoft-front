@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { StudentAssessmentComponent } from './student-assessment.component';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('StudentAssessmentComponent', () => {
   let serviceMock: {
@@ -18,6 +19,8 @@ describe('StudentAssessmentComponent', () => {
     return { question_id: id, topic: 'POO', text_to_evaluate: '¿Qué es ' + id + '?' };
   }
 
+  const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
+
   function createComponent(): StudentAssessmentComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -25,6 +28,7 @@ describe('StudentAssessmentComponent', () => {
         StudentAssessmentComponent,
         { provide: StudentAssessmentService, useValue: serviceMock },
         { provide: AuthService, useValue: authMock },
+        { provide: ToastService, useValue: toastMock },
       ],
     });
     return TestBed.inject(StudentAssessmentComponent);
@@ -141,4 +145,20 @@ describe('StudentAssessmentComponent', () => {
     expect(c.questions()).toEqual([]);
     expect(c.result()).toBeNull();
   });
+
+  it('prevents clipboard actions and warns via toast', () => {
+    const c = createComponent();
+    const event = { preventDefault: vi.fn() } as unknown as Event;
+    c.blockClipboard(event, 'pegar');
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(toastMock.warning).toHaveBeenCalled();
+  });
+
+  it('prevents the context menu', () => {
+    const c = createComponent();
+    const event = { preventDefault: vi.fn() } as unknown as Event;
+    c.blockContextMenu(event);
+    expect(event.preventDefault).toHaveBeenCalled();
+  });
+
 });

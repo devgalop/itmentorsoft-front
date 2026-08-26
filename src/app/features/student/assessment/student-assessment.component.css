@@ -315,3 +315,10 @@
 .ev__answers + .ev__primary {
   margin-top: 1.25rem;
 }
+
+.ev__hint {
+  font-size: 0.78rem;
+  color: var(--color-mid-2);
+  margin-top: 0.4rem;
+  font-style: italic;
+}
