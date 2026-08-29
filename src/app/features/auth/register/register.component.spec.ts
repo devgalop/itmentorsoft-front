@@ -4,16 +4,27 @@ import { Router } from '@angular/router';
 import { vi } from 'vitest';
 import { RegisterComponent } from './register.component';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
-  let authServiceMock: { register: ReturnType<typeof vi.fn> };
+  let authServiceMock: {
+    register: ReturnType<typeof vi.fn>;
+    translateError: ReturnType<typeof vi.fn>;
+  };
   let routerMock: { navigate: ReturnType<typeof vi.fn> };
+  let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     vi.useFakeTimers();
-    authServiceMock = { register: vi.fn() };
+    authServiceMock = {
+      register: vi.fn(),
+      translateError: vi.fn((m: string) =>
+        m === 'Email already in use' ? 'Este correo ya está registrado' : m,
+      ),
+    };
     routerMock = { navigate: vi.fn() };
+    toastMock = { success: vi.fn(), error: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [ReactiveFormsModule],
@@ -21,6 +32,7 @@ describe('RegisterComponent', () => {
         RegisterComponent,
         { provide: AuthService, useValue: authServiceMock },
         { provide: Router, useValue: routerMock },
+        { provide: ToastService, useValue: toastMock },
       ],
     });
 
@@ -42,8 +54,8 @@ describe('RegisterComponent', () => {
 
   it('form is valid with correct data and matching passwords', () => {
     component.registerForm.setValue({
-      username: 'eider_test',
-      email: 'eider@test.com',
+      username: 'juan_test',
+      email: 'juan@test.com',
       password: 'Password123!',
       confirmPassword: 'Password123!',
     });
@@ -57,12 +69,12 @@ describe('RegisterComponent', () => {
     });
 
     it('rejects username with special characters', () => {
-      component.usernameControl.setValue('eider-test!');
+      component.usernameControl.setValue('juan-test!');
       expect(component.usernameControl.hasError('pattern')).toBe(true);
     });
 
     it('accepts username with underscore', () => {
-      component.usernameControl.setValue('eider_test');
+      component.usernameControl.setValue('juan_test');
       expect(component.usernameControl.valid).toBe(true);
     });
   });
@@ -75,9 +87,40 @@ describe('RegisterComponent', () => {
   });
 
   describe('password validation', () => {
-    it('rejects password shorter than 6 characters', () => {
-      component.passwordControl.setValue('12345');
-      expect(component.passwordControl.hasError('minlength')).toBe(true);
+    it('rejects a password that only has digits (no letter/special)', () => {
+      component.passwordControl.setValue('123456');
+      expect(component.passwordControl.hasError('passwordStrength')).toBe(true);
+    });
+
+    it('rejects a password shorter than 6 characters', () => {
+      component.passwordControl.setValue('Ab1!');
+      expect(component.passwordControl.hasError('passwordStrength')).toBe(true);
+    });
+
+    it('accepts a password that meets every rule', () => {
+      component.passwordControl.setValue('Password123!');
+      expect(component.passwordControl.valid).toBe(true);
+    });
+  });
+
+  describe('password checklist', () => {
+    it('is hidden until the user types', () => {
+      expect(component.showPasswordChecks()).toBe(false);
+    });
+
+    it('marks each rule as met for a strong password', () => {
+      component.passwordControl.setValue('Password123!');
+      expect(component.showPasswordChecks()).toBe(true);
+      expect(component.passwordChecks().every((c) => c.met)).toBe(true);
+    });
+
+    it('leaves letter/special unmet for a digits-only password', () => {
+      component.passwordControl.setValue('123456');
+      const byLabel = (frag: string) =>
+        component.passwordChecks().find((c) => c.label.includes(frag))!;
+      expect(byLabel('número').met).toBe(true);
+      expect(byLabel('letra').met).toBe(false);
+      expect(byLabel('especial').met).toBe(false);
     });
   });
 
@@ -99,8 +142,8 @@ describe('RegisterComponent', () => {
 
   describe('onSubmit', () => {
     const validFormData = {
-      username: 'eider_test',
-      email: 'eider@test.com',
+      username: 'juan_test',
+      email: 'juan@test.com',
       password: 'Password123!',
       confirmPassword: 'Password123!',
     };
@@ -117,13 +160,8 @@ describe('RegisterComponent', () => {
     });
 
     it('does not call AuthService.register() when passwords do not match', async () => {
-      component.registerForm.setValue({
-        ...validFormData,
-        confirmPassword: 'Different123!',
-      });
-
+      component.registerForm.setValue({ ...validFormData, confirmPassword: 'Different123!' });
       await component.onSubmit();
-
       expect(authServiceMock.register).not.toHaveBeenCalled();
     });
 
@@ -138,13 +176,13 @@ describe('RegisterComponent', () => {
       await component.onSubmit();
 
       expect(authServiceMock.register).toHaveBeenCalledWith({
-        username: 'eider_test',
-        email: 'eider@test.com',
+        username: 'juan_test',
+        email: 'juan@test.com',
         password: 'Password123!',
       });
     });
 
-    it('shows success message and redirects to /login after delay on is_success true', async () => {
+    it('shows a success toast and redirects to /login after delay on is_success true', async () => {
       authServiceMock.register.mockResolvedValue({
         is_success: true,
         message: 'User created successfully',
@@ -154,17 +192,15 @@ describe('RegisterComponent', () => {
 
       await component.onSubmit();
 
-      expect(component.successMessage()).toBe(
-        'Cuenta creada exitosamente. Ya podés iniciar sesión.',
-      );
+      expect(toastMock.success).toHaveBeenCalledWith('Cuenta creada', 'Ya podés iniciar sesión.');
       expect(routerMock.navigate).not.toHaveBeenCalled();
 
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(1500);
 
       expect(routerMock.navigate).toHaveBeenCalledWith(['/login']);
     });
 
-    it('shows server error message when is_success is false', async () => {
+    it('shows an error toast with a translated message when is_success is false', async () => {
       authServiceMock.register.mockResolvedValue({
         is_success: false,
         message: 'Email already in use',
@@ -174,17 +210,23 @@ describe('RegisterComponent', () => {
 
       await component.onSubmit();
 
-      expect(component.serverError()).toBe('Email already in use');
-      expect(component.successMessage()).toBeNull();
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'No se pudo crear la cuenta',
+        'Este correo ya está registrado',
+      );
+      expect(toastMock.success).not.toHaveBeenCalled();
     });
 
-    it('shows error message when register() throws (network/validation error)', async () => {
+    it('shows an error toast when register() throws', async () => {
       authServiceMock.register.mockRejectedValue(new Error('Sin conexión al servidor'));
       component.registerForm.setValue(validFormData);
 
       await component.onSubmit();
 
-      expect(component.serverError()).toBe('Sin conexión al servidor');
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'No se pudo crear la cuenta',
+        'Sin conexión al servidor',
+      );
     });
 
     it('resets loading state after submit completes', async () => {

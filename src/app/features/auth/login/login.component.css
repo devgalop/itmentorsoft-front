@@ -190,16 +190,6 @@
   cursor: pointer;
 }
 
-.login-form__server-error {
-  padding: 0.75rem 1rem;
-  background: color-mix(in srgb, var(--color-error) 8%, var(--color-white));
-  border: 1px solid var(--color-error);
-  border-radius: 0.5rem;
-  color: var(--color-error);
-  font-size: 0.875rem;
-  text-align: center;
-}
-
 .login-card__footer {
   text-align: center;
   margin-top: 1.5rem;
@@ -239,13 +229,4 @@
   .login-form-panel {
     flex: 1;
   }
-}
-.login-expired {
-  background: color-mix(in srgb, var(--color-warning) 16%, var(--color-white));
-  border: 1px solid var(--color-warning);
-  color: color-mix(in srgb, var(--color-warning) 82%, black);
-  border-radius: 0.5rem;
-  padding: 0.65rem 0.9rem;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
 }

@@ -59,7 +59,7 @@
           <app-input
             id="username"
             type="text"
-            placeholder="eider_estudiante"
+            placeholder="tu_usuario"
             [control]="registerForm.controls.username"
           />
         </app-form-field>
@@ -77,10 +77,26 @@
           <app-input
             id="password"
             type="password"
-            placeholder="Mín. 6 caracteres"
+            placeholder="Crea una contraseña segura"
             [control]="registerForm.controls.password"
           />
         </app-form-field>
+
+        @if (showPasswordChecks()) {
+          <ul class="register-form__password-rules" aria-live="polite">
+            @for (check of passwordChecks(); track check.label) {
+              <li
+                class="register-form__rule"
+                [class.register-form__rule--met]="check.met"
+              >
+                <span class="register-form__rule-icon" aria-hidden="true">
+                  {{ check.met ? '✓' : '○' }}
+                </span>
+                {{ check.label }}
+              </li>
+            }
+          </ul>
+        }
 
         <app-form-field
           label="Confirmar contraseña"
@@ -94,18 +110,6 @@
             [control]="registerForm.controls.confirmPassword"
           />
         </app-form-field>
-
-        @if (serverError()) {
-          <div class="register-form__server-error" role="alert">
-            {{ serverError() }}
-          </div>
-        }
-
-        @if (successMessage()) {
-          <div class="register-form__success" role="status">
-            {{ successMessage() }}
-          </div>
-        }
 
         <app-button type="submit" variant="primary" [loading]="isLoading()">
           Continuar

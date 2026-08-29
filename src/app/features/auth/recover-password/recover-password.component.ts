@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
 
 @Component({
@@ -14,14 +15,15 @@ import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui'
 })
 export class RecoverPasswordComponent {
   private readonly authService = inject(AuthService);
+  private readonly toast = inject(ToastService);
 
   readonly recoverForm = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
   });
 
   readonly isLoading = signal(false);
-  readonly serverError = signal<string | null>(null);
-  readonly successMessage = signal<string | null>(null);
+  /** Se envió la solicitud correctamente (para mostrar la confirmación en pantalla). */
+  readonly submitted = signal(false);
 
   get emailControl(): FormControl {
     return this.recoverForm.get('email') as FormControl;
@@ -36,8 +38,6 @@ export class RecoverPasswordComponent {
   }
 
   async onSubmit(): Promise<void> {
-    this.serverError.set(null);
-    this.successMessage.set(null);
     this.recoverForm.markAllAsTouched();
 
     if (this.recoverForm.invalid) {
@@ -50,10 +50,18 @@ export class RecoverPasswordComponent {
     this.recoverForm.disable();
 
     try {
-      const response = await this.authService.recoverPassword({ email: email! });
-      this.successMessage.set(response.message);
+      await this.authService.recoverPassword({ email: email! });
+      this.submitted.set(true);
+      this.toast.success(
+        'Solicitud enviada',
+        'Si el correo existe, te enviamos un enlace para restablecer tu contraseña.',
+        6000,
+      );
     } catch (error) {
-      this.serverError.set(error instanceof Error ? error.message : 'Error inesperado');
+      this.toast.error(
+        'No se pudo enviar la solicitud',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
     } finally {
       this.isLoading.set(false);
       this.recoverForm.enable();

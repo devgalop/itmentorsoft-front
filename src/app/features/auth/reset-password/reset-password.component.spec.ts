@@ -4,9 +4,14 @@ import { ActivatedRoute } from '@angular/router';
 import { vi } from 'vitest';
 import { ResetPasswordComponent } from './reset-password.component';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('ResetPasswordComponent', () => {
-  let authServiceMock: { resetPassword: ReturnType<typeof vi.fn> };
+  let authServiceMock: {
+    resetPassword: ReturnType<typeof vi.fn>;
+    translateError: ReturnType<typeof vi.fn>;
+  };
+  let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   // El componente lee token/trx del ActivatedRoute en el constructor, por eso
   // se instancia con un factory que inyecta los query params de cada caso.
@@ -22,6 +27,7 @@ describe('ResetPasswordComponent', () => {
       providers: [
         ResetPasswordComponent,
         { provide: AuthService, useValue: authServiceMock },
+        { provide: ToastService, useValue: toastMock },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap } } },
       ],
     });
@@ -32,7 +38,15 @@ describe('ResetPasswordComponent', () => {
   const validParams = { token: 'token-from-email', trx: 'trx-abc-123' };
 
   beforeEach(() => {
-    authServiceMock = { resetPassword: vi.fn() };
+    authServiceMock = {
+      resetPassword: vi.fn(),
+      translateError: vi.fn((m: string) =>
+        m === 'Invalid or expired token'
+          ? 'El enlace no es válido o expiró. Solicitá uno nuevo.'
+          : m,
+      ),
+    };
+    toastMock = { success: vi.fn(), error: vi.fn() };
   });
 
   describe('link validation', () => {
@@ -188,10 +202,10 @@ describe('ResetPasswordComponent', () => {
       await component.onSubmit();
 
       expect(component.success()).toBe(true);
-      expect(component.serverError()).toBeNull();
+      expect(toastMock.error).not.toHaveBeenCalled();
     });
 
-    it('shows an error when is_success is false (invalid/expired token)', async () => {
+    it('shows a translated error toast when is_success is false (invalid/expired token)', async () => {
       authServiceMock.resetPassword.mockResolvedValue({
         is_success: false,
         message: 'Invalid or expired token',
@@ -202,18 +216,24 @@ describe('ResetPasswordComponent', () => {
       await component.onSubmit();
 
       expect(component.success()).toBe(false);
-      expect(component.serverError()).toBe('Invalid or expired token');
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'No se pudo cambiar la contraseña',
+        'El enlace no es válido o expiró. Solicitá uno nuevo.',
+      );
       expect(component.resetForm.enabled).toBe(true);
     });
 
-    it('shows the mapped error message when resetPassword throws', async () => {
+    it('shows an error toast when resetPassword throws', async () => {
       authServiceMock.resetPassword.mockRejectedValue(new Error('Sin conexión al servidor'));
       const component = createComponent(validParams);
       fillValidForm(component);
 
       await component.onSubmit();
 
-      expect(component.serverError()).toBe('Sin conexión al servidor');
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'No se pudo cambiar la contraseña',
+        'Sin conexión al servidor',
+      );
       expect(component.success()).toBe(false);
     });
 

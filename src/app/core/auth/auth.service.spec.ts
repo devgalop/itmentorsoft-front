@@ -98,6 +98,26 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
+  it('login() translates a 422 backend validation message to Spanish', async () => {
+    const loginPromise = service.login(validCredentials);
+
+    const req = httpMock.expectOne(sessionUrl);
+    req.flush(
+      {
+        detail: [
+          {
+            type: 'value_error',
+            loc: ['body', 'password'],
+            msg: 'Value error, Password must contain at least one letter',
+          },
+        ],
+      },
+      { status: 422, statusText: 'Unprocessable Entity' },
+    );
+
+    await expect(loginPromise).rejects.toThrow('La contraseña debe incluir al menos una letra');
+  });
+
   it('login() throws connection error message on network error', async () => {
     const loginPromise = service.login(validCredentials);
 
@@ -159,7 +179,7 @@ describe('AuthService', () => {
         { status: 400, statusText: 'Bad Request' },
       );
 
-      await expect(registerPromise).rejects.toThrow('Email already in use');
+      await expect(registerPromise).rejects.toThrow('Este correo ya está registrado');
     });
 
     it('throws validation error message on 422 invalid password', async () => {
@@ -175,7 +195,7 @@ describe('AuthService', () => {
         { status: 422, statusText: 'Unprocessable Entity' },
       );
 
-      await expect(registerPromise).rejects.toThrow('Password must be at least 6 characters long');
+      await expect(registerPromise).rejects.toThrow('La contraseña debe tener al menos 6 caracteres');
     });
 
     it('throws connection error message on network error', async () => {
@@ -233,7 +253,7 @@ describe('AuthService', () => {
         { status: 422, statusText: 'Unprocessable Entity' },
       );
 
-      await expect(recoverPromise).rejects.toThrow('Invalid email format');
+      await expect(recoverPromise).rejects.toThrow('El formato del correo no es válido');
     });
 
     it('throws connection error message on network error', async () => {
@@ -294,7 +314,7 @@ describe('AuthService', () => {
         { status: 422, statusText: 'Unprocessable Entity' },
       );
 
-      await expect(resetPromise).rejects.toThrow('Password must be at least 6 characters long');
+      await expect(resetPromise).rejects.toThrow('La contraseña debe tener al menos 6 caracteres');
     });
 
     it('throws connection error message on network error', async () => {

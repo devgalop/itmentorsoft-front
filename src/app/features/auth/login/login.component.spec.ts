@@ -4,15 +4,22 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let authServiceMock: { login: ReturnType<typeof vi.fn>; role: ReturnType<typeof vi.fn> };
   let routerMock: { navigate: ReturnType<typeof vi.fn> };
+  let toastMock: {
+    success: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+    info: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     authServiceMock = { login: vi.fn(), role: vi.fn().mockReturnValue(null) };
     routerMock = { navigate: vi.fn() };
+    toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [ReactiveFormsModule],
@@ -20,6 +27,7 @@ describe('LoginComponent', () => {
         LoginComponent,
         { provide: AuthService, useValue: authServiceMock },
         { provide: Router, useValue: routerMock },
+        { provide: ToastService, useValue: toastMock },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: { get: () => null } } },
@@ -134,7 +142,7 @@ describe('LoginComponent', () => {
     expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
   });
 
-  it('on 401 error, shows error message', async () => {
+  it('on 401 error, shows an error toast', async () => {
     authServiceMock.login.mockRejectedValue(new Error('Credenciales inválidas'));
     component.loginForm.setValue({
       email: 'test@example.com',
@@ -143,7 +151,7 @@ describe('LoginComponent', () => {
 
     await component.onSubmit();
 
-    expect(component.serverError()).toBe('Credenciales inválidas');
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo iniciar sesión', 'Credenciales inválidas');
   });
 
   it('on error, does not redirect', async () => {
