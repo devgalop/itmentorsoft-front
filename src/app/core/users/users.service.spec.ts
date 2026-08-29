@@ -35,6 +35,22 @@ describe('UsersService', () => {
     });
   });
 
+  describe('getConnectedTotal', () => {
+    it('GETs connected/total and returns the count', async () => {
+      const promise = service.getConnectedTotal();
+      const req = httpMock.expectOne('/users/connected/total');
+      expect(req.request.method).toBe('GET');
+      req.flush({ is_success: true, message: 'ok', total_users: 7 });
+      expect(await promise).toBe(7);
+    });
+
+    it('returns 0 when total_users is missing', async () => {
+      const promise = service.getConnectedTotal();
+      httpMock.expectOne('/users/connected/total').flush({ is_success: true, message: 'ok' });
+      expect(await promise).toBe(0);
+    });
+  });
+
   describe('getUser', () => {
     it('GETs the encoded user id and returns the user', async () => {
       const promise = service.getUser('abc-123');

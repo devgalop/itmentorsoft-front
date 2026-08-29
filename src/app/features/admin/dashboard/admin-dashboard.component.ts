@@ -21,6 +21,7 @@ export class AdminDashboardComponent {
   private readonly approval = inject(ApprovalService);
 
   readonly studentsTotal = signal<number | null>(null);
+  readonly connectedTotal = signal<number | null>(null);
   readonly rolesTotal = signal<number | null>(null);
   readonly resourcesTotal = signal<number | null>(null);
   readonly pendingTotal = signal<number | null>(null);
@@ -35,8 +36,9 @@ export class AdminDashboardComponent {
   async load(): Promise<void> {
     this.isLoading.set(true);
 
-    const [students, roles, contents, pending] = await Promise.allSettled([
+    const [students, connected, roles, contents, pending] = await Promise.allSettled([
       this.reports.getStudents(0, 100),
+      this.users.getConnectedTotal(),
       this.users.getAvailableRoles(),
       this.content.getAllContents(0, 100),
       this.approval.getPending(0, 1),
@@ -45,6 +47,9 @@ export class AdminDashboardComponent {
     if (students.status === 'fulfilled') {
       this.studentsTotal.set(students.value.total);
       this.recentStudents.set(students.value.students.slice(0, 5));
+    }
+    if (connected.status === 'fulfilled') {
+      this.connectedTotal.set(connected.value);
     }
     if (roles.status === 'fulfilled') {
       this.rolesTotal.set(roles.value.length);

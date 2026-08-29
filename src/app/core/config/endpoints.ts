@@ -47,5 +47,6 @@ export const ENDPOINTS = {
     changePassword: '/users/change-password',
     sessions: '/users/sessions',
     refreshSession: '/users/sessions/refresh',
+    connectedTotal: '/users/connected/total',
   },
 } as const;
