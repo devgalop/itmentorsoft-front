@@ -9,6 +9,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
 
 // Mismo conjunto de caracteres especiales que exige el backend
@@ -55,6 +56,7 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
 export class ResetPasswordComponent {
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly toast = inject(ToastService);
 
   // El link del correo llega como /reset-password?token=...&trx=...
   // Ojo: en la URL el parámetro se llama `trx`, pero el endpoint espera `id_trx`.
@@ -77,7 +79,6 @@ export class ResetPasswordComponent {
   );
 
   readonly isLoading = signal(false);
-  readonly serverError = signal<string | null>(null);
   readonly success = signal(false);
 
   get newPasswordControl(): FormControl {
@@ -110,7 +111,6 @@ export class ResetPasswordComponent {
   }
 
   async onSubmit(): Promise<void> {
-    this.serverError.set(null);
     this.resetForm.markAllAsTouched();
 
     if (this.resetForm.invalid || !this.token || !this.trx) {
@@ -133,11 +133,17 @@ export class ResetPasswordComponent {
         this.success.set(true);
       } else {
         // Token inválido/expirado -> el backend responde 200 con is_success=false.
-        this.serverError.set(response.message || 'No se pudo cambiar la contraseña');
+        this.toast.error(
+          'No se pudo cambiar la contraseña',
+          this.authService.translateError(response.message || 'No se pudo cambiar la contraseña'),
+        );
         this.resetForm.enable();
       }
     } catch (error) {
-      this.serverError.set(error instanceof Error ? error.message : 'Error inesperado');
+      this.toast.error(
+        'No se pudo cambiar la contraseña',
+        error instanceof Error ? this.authService.translateError(error.message) : 'Error inesperado',
+      );
       this.resetForm.enable();
     } finally {
       this.isLoading.set(false);

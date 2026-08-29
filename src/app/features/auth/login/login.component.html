@@ -46,12 +46,6 @@
       <h2 class="login-card__title">Bienvenido de vuelta</h2>
       <p class="login-card__subtitle">Ingres&aacute; tus credenciales para continuar</p>
 
-      @if (sessionExpired()) {
-        <div class="login-expired" role="status">
-          Tu sesi&oacute;n expir&oacute; por inactividad. Inici&aacute; sesi&oacute;n de nuevo para continuar.
-        </div>
-      }
-
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
         <app-form-field label="Email" forId="email" [error]="getEmailError()">
           <app-input
@@ -74,12 +68,6 @@
         <div class="login-form__forgot-link">
           <a routerLink="/recover-password">&iquest;Olvidaste tu contrase&ntilde;a?</a>
         </div>
-
-        @if (serverError()) {
-          <div class="login-form__server-error" role="alert">
-            {{ serverError() }}
-          </div>
-        }
 
         <app-button type="submit" variant="primary" [loading]="isLoading()">
           Iniciar sesi&oacute;n
