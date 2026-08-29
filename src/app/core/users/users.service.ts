@@ -8,6 +8,7 @@ import {
   CreateUserPayload,
   CreateUserResponse,
   GetAvailableRolesResponse,
+  GetConnectedUsersResponse,
   GetUserResponse,
   UserInfo,
 } from './users.types';
@@ -22,6 +23,23 @@ export class UsersService {
         this.http.get<GetAvailableRolesResponse>(`${environment.apiUrl}${ENDPOINTS.users.availableRoles}`),
       );
       return response.roles ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Total de usuarios con sesión activa (refresh token vigente).
+   * Accesible por admin.
+   */
+  async getConnectedTotal(): Promise<number> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetConnectedUsersResponse>(
+          `${environment.apiUrl}${ENDPOINTS.users.connectedTotal}`,
+        ),
+      );
+      return response.total_users ?? 0;
     } catch (error) {
       throw this.mapHttpError(error);
     }

@@ -19,6 +19,11 @@
       <span class="dash__stat-label">Estudiantes</span>
       <span class="dash__stat-hint">{{ studentsTotal() === null ? 'Sin datos' : 'Registrados' }}</span>
     </div>
+    <div class="dash__stat">
+      <span class="dash__stat-value">{{ connectedTotal() ?? '—' }}</span>
+      <span class="dash__stat-label">Usuarios conectados</span>
+      <span class="dash__stat-hint">{{ connectedTotal() === null ? 'Sin datos' : 'Sesión activa' }}</span>
+    </div>
     <a routerLink="/admin/roles" class="dash__stat dash__stat--link">
       <span class="dash__stat-value">{{ rolesTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Roles configurados</span>

@@ -21,6 +21,12 @@ export interface AssignRoleResponse {
   message: string;
 }
 
+export interface GetConnectedUsersResponse {
+  is_success: boolean;
+  message: string;
+  total_users: number;
+}
+
 export interface CreateUserPayload {
   email: string;
   username: string;
