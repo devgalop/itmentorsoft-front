@@ -46,12 +46,30 @@ describe('RegisterComponent', () => {
 
   it('form is valid with correct data and matching passwords', () => {
     component.registerForm.setValue({
+      name: 'Juan Pérez',
       username: 'juan_test',
       email: 'juan@test.com',
       password: 'Password123!',
       confirmPassword: 'Password123!',
     });
     expect(component.registerForm.valid).toBe(true);
+  });
+
+  describe('name validation', () => {
+    it('rejects an empty name', () => {
+      component.nameControl.setValue('');
+      expect(component.nameControl.hasError('required')).toBe(true);
+    });
+
+    it('rejects a name shorter than 3 characters', () => {
+      component.nameControl.setValue('Jo');
+      expect(component.nameControl.hasError('minlength')).toBe(true);
+    });
+
+    it('accepts a valid name', () => {
+      component.nameControl.setValue('Juan Pérez');
+      expect(component.nameControl.valid).toBe(true);
+    });
   });
 
   describe('username validation', () => {
@@ -134,6 +152,7 @@ describe('RegisterComponent', () => {
 
   describe('onSubmit', () => {
     const validFormData = {
+      name: 'Juan Pérez',
       username: 'juan_test',
       email: 'juan@test.com',
       password: 'Password123!',
@@ -168,6 +187,7 @@ describe('RegisterComponent', () => {
       await component.onSubmit();
 
       expect(authServiceMock.register).toHaveBeenCalledWith({
+        name: 'Juan Pérez',
         username: 'juan_test',
         email: 'juan@test.com',
         password: 'Password123!',

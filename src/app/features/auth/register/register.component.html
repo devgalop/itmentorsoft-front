@@ -55,6 +55,15 @@
       </div>
 
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+        <app-form-field label="Nombre" forId="name" [error]="getNameError()">
+          <app-input
+            id="name"
+            type="text"
+            placeholder="Tu nombre completo"
+            [control]="registerForm.controls.name"
+          />
+        </app-form-field>
+
         <app-form-field label="Nombre de usuario" forId="username" [error]="getUsernameError()">
           <app-input
             id="username"
