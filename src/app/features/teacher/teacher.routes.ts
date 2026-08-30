@@ -1,10 +1,5 @@
 import { Routes } from '@angular/router';
 
-const PLACEHOLDER = () =>
-  import('./placeholder/teacher-placeholder.component').then(
-    (m) => m.TeacherPlaceholderComponent,
-  );
-
 export const TEACHER_ROUTES: Routes = [
   {
     path: '',
@@ -53,14 +48,6 @@ export const TEACHER_ROUTES: Routes = [
         path: 'resources',
         loadComponent: () =>
           import('./resources/resources.component').then((m) => m.ResourcesComponent),
-      },
-      {
-        path: 'routes',
-        data: {
-          title: 'Rutas',
-          subtitle: 'Próximamente: configuración de rutas de aprendizaje por categoría.',
-        },
-        loadComponent: PLACEHOLDER,
       },
       {
         path: 'profile',

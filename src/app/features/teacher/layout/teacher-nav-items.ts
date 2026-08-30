@@ -7,5 +7,4 @@ export const TEACHER_NAV_ITEMS: NavItem[] = [
   { label: 'Mi perfil', route: '/teacher/profile', icon: 'user', group: 'Principal' },
   { label: 'Cuestionarios', route: '/teacher/questions', icon: 'book', group: 'Contenido' },
   { label: 'Recursos', route: '/teacher/resources', icon: 'folder', group: 'Contenido' },
-  { label: 'Rutas', route: '/teacher/routes', icon: 'route', group: 'Contenido' },
 ];
