@@ -164,11 +164,11 @@ export class RegisterComponent {
         this.toast.success('Cuenta creada', 'Ya podés iniciar sesión.');
         setTimeout(() => this.router.navigate(['/login']), 1500);
       } else {
-        this.toast.error('No se pudo crear la cuenta', this.authService.translateError(response.message));
+        this.toast.error('No se pudo crear la cuenta', response.message);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error inesperado';
-      this.toast.error('No se pudo crear la cuenta', this.authService.translateError(message));
+      this.toast.error('No se pudo crear la cuenta', message);
     } finally {
       this.isLoading.set(false);
       this.registerForm.enable();

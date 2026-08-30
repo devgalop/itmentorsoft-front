@@ -135,14 +135,14 @@ export class ResetPasswordComponent {
         // Token inválido/expirado -> el backend responde 200 con is_success=false.
         this.toast.error(
           'No se pudo cambiar la contraseña',
-          this.authService.translateError(response.message || 'No se pudo cambiar la contraseña'),
+          response.message || 'No se pudo cambiar la contraseña',
         );
         this.resetForm.enable();
       }
     } catch (error) {
       this.toast.error(
         'No se pudo cambiar la contraseña',
-        error instanceof Error ? this.authService.translateError(error.message) : 'Error inesperado',
+        error instanceof Error ? error.message : 'Error inesperado',
       );
       this.resetForm.enable();
     } finally {

@@ -7,10 +7,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('ResetPasswordComponent', () => {
-  let authServiceMock: {
-    resetPassword: ReturnType<typeof vi.fn>;
-    translateError: ReturnType<typeof vi.fn>;
-  };
+  let authServiceMock: { resetPassword: ReturnType<typeof vi.fn> };
   let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   // El componente lee token/trx del ActivatedRoute en el constructor, por eso
@@ -38,14 +35,7 @@ describe('ResetPasswordComponent', () => {
   const validParams = { token: 'token-from-email', trx: 'trx-abc-123' };
 
   beforeEach(() => {
-    authServiceMock = {
-      resetPassword: vi.fn(),
-      translateError: vi.fn((m: string) =>
-        m === 'Invalid or expired token'
-          ? 'El enlace no es válido o expiró. Solicitá uno nuevo.'
-          : m,
-      ),
-    };
+    authServiceMock = { resetPassword: vi.fn() };
     toastMock = { success: vi.fn(), error: vi.fn() };
   });
 
@@ -205,10 +195,10 @@ describe('ResetPasswordComponent', () => {
       expect(toastMock.error).not.toHaveBeenCalled();
     });
 
-    it('shows a translated error toast when is_success is false (invalid/expired token)', async () => {
+    it('shows an error toast with the backend message when is_success is false', async () => {
       authServiceMock.resetPassword.mockResolvedValue({
         is_success: false,
-        message: 'Invalid or expired token',
+        message: 'El enlace no es válido o expiró. Solicitá uno nuevo.',
       });
       const component = createComponent(validParams);
       fillValidForm(component);

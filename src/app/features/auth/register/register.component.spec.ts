@@ -8,21 +8,13 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
-  let authServiceMock: {
-    register: ReturnType<typeof vi.fn>;
-    translateError: ReturnType<typeof vi.fn>;
-  };
+  let authServiceMock: { register: ReturnType<typeof vi.fn> };
   let routerMock: { navigate: ReturnType<typeof vi.fn> };
   let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     vi.useFakeTimers();
-    authServiceMock = {
-      register: vi.fn(),
-      translateError: vi.fn((m: string) =>
-        m === 'Email already in use' ? 'Este correo ya está registrado' : m,
-      ),
-    };
+    authServiceMock = { register: vi.fn() };
     routerMock = { navigate: vi.fn() };
     toastMock = { success: vi.fn(), error: vi.fn() };
 
@@ -200,10 +192,10 @@ describe('RegisterComponent', () => {
       expect(routerMock.navigate).toHaveBeenCalledWith(['/login']);
     });
 
-    it('shows an error toast with a translated message when is_success is false', async () => {
+    it('shows an error toast with the backend message when is_success is false', async () => {
       authServiceMock.register.mockResolvedValue({
         is_success: false,
-        message: 'Email already in use',
+        message: 'Este correo ya está registrado',
         user_id: null,
       });
       component.registerForm.setValue(validFormData);
