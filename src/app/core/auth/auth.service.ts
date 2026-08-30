@@ -17,41 +17,6 @@ import {
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
 
-/**
- * Traducciones al español de los mensajes de validación y de negocio que el
- * backend (user_management) devuelve en inglés. Fuente única para todo el
- * flujo de autenticación (login, registro, recuperar y restablecer).
- */
-const AUTH_ERROR_TRANSLATIONS: Record<string, string> = {
-  // Contraseña
-  'Password is required': 'La contraseña es requerida',
-  'Password must be at least 6 characters long': 'La contraseña debe tener al menos 6 caracteres',
-  'Password must be no more than 20 characters long':
-    'La contraseña no puede tener más de 20 caracteres',
-  'Password must contain at least one digit': 'La contraseña debe incluir al menos un número',
-  'Password must contain at least one letter': 'La contraseña debe incluir al menos una letra',
-  'Password must contain at least one special character':
-    'La contraseña debe incluir al menos un carácter especial',
-  // Email
-  'Email is required': 'El correo es requerido',
-  'Invalid email format': 'El formato del correo no es válido',
-  'Email must be at least 5 characters long': 'El correo debe tener al menos 5 caracteres',
-  'Email must be no more than 255 characters long': 'El correo no puede tener más de 255 caracteres',
-  'Email already in use': 'Este correo ya está registrado',
-  // Usuario
-  'Username is required': 'El nombre de usuario es requerido',
-  'Username must be at least 3 characters long':
-    'El nombre de usuario debe tener al menos 3 caracteres',
-  'Username must be no more than 20 characters long':
-    'El nombre de usuario no puede tener más de 20 caracteres',
-  'Username must be alphanumeric and can include underscores':
-    'El nombre de usuario solo puede tener letras, números y guion bajo',
-  'Username already in use': 'Este nombre de usuario ya está en uso',
-  // Token de recuperación
-  'Invalid or expired token': 'El enlace no es válido o expiró. Solicitá uno nuevo.',
-  'User not found': 'No se encontró el usuario.',
-};
-
 const TOKEN_KEY = 'auth_token';
 const USER_ID_KEY = 'auth_user_id';
 const REFRESH_KEY = 'auth_refresh_token';
@@ -263,24 +228,13 @@ export class AuthService {
     const detail = error.error?.detail;
     if (Array.isArray(detail) && detail.length > 0) {
       const rawMsg: string | undefined = detail[0]?.msg;
-      const clean = rawMsg?.replace('Value error, ', '');
-      return clean ? this.translateError(clean) : null;
+      return rawMsg?.replace('Value error, ', '') ?? null;
     }
     return null;
   }
 
   private extractBusinessErrorMessage(error: HttpErrorResponse): string | null {
     const message = error.error?.detail?.message?.message;
-    return typeof message === 'string' ? this.translateError(message) : null;
-  }
-
-  /**
-   * Traduce al español los mensajes de validación/negocio que el backend
-   * devuelve en inglés. Fuente única para todo el flujo de autenticación
-   * (login, registro, recuperar y restablecer). Si el mensaje no está en el
-   * mapa, se devuelve tal cual.
-   */
-  translateError(message: string): string {
-    return AUTH_ERROR_TRANSLATIONS[message] ?? message;
+    return typeof message === 'string' ? message : null;
   }
 }

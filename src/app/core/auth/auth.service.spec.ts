@@ -98,7 +98,7 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
-  it('login() translates a 422 backend validation message to Spanish', async () => {
+  it('login() surfaces the backend validation message on 422', async () => {
     const loginPromise = service.login(validCredentials);
 
     const req = httpMock.expectOne(sessionUrl);
@@ -108,7 +108,7 @@ describe('AuthService', () => {
           {
             type: 'value_error',
             loc: ['body', 'password'],
-            msg: 'Value error, Password must contain at least one letter',
+            msg: 'Value error, La contraseña debe incluir al menos una letra',
           },
         ],
       },
@@ -175,7 +175,7 @@ describe('AuthService', () => {
 
       const req = httpMock.expectOne(registerUrl);
       req.flush(
-        { detail: { message: { is_success: false, message: 'Email already in use', user_id: null } } },
+        { detail: { message: { is_success: false, message: 'Este correo ya está registrado', user_id: null } } },
         { status: 400, statusText: 'Bad Request' },
       );
 
@@ -189,7 +189,7 @@ describe('AuthService', () => {
       req.flush(
         {
           detail: [
-            { type: 'value_error', loc: ['body', 'password'], msg: 'Value error, Password must be at least 6 characters long' },
+            { type: 'value_error', loc: ['body', 'password'], msg: 'Value error, La contraseña debe tener al menos 6 caracteres' },
           ],
         },
         { status: 422, statusText: 'Unprocessable Entity' },
@@ -247,7 +247,7 @@ describe('AuthService', () => {
       req.flush(
         {
           detail: [
-            { type: 'value_error', loc: ['body', 'email'], msg: 'Value error, Invalid email format' },
+            { type: 'value_error', loc: ['body', 'email'], msg: 'Value error, El formato del correo no es válido' },
           ],
         },
         { status: 422, statusText: 'Unprocessable Entity' },
@@ -308,7 +308,7 @@ describe('AuthService', () => {
       req.flush(
         {
           detail: [
-            { type: 'value_error', loc: ['body', 'new_password'], msg: 'Value error, Password must be at least 6 characters long' },
+            { type: 'value_error', loc: ['body', 'new_password'], msg: 'Value error, La contraseña debe tener al menos 6 caracteres' },
           ],
         },
         { status: 422, statusText: 'Unprocessable Entity' },
