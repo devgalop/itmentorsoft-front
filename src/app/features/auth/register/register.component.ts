@@ -58,6 +58,11 @@ export class RegisterComponent {
   private readonly toast = inject(ToastService);
 
   readonly registerForm = new FormGroup({
+    name: new FormControl('', [
+      Validators.required,
+      Validators.minLength(3),
+      Validators.maxLength(100),
+    ]),
     username: new FormControl('', [
       Validators.required,
       Validators.minLength(3),
@@ -85,6 +90,10 @@ export class RegisterComponent {
   /** El checklist aparece en cuanto el usuario empieza a escribir. */
   readonly showPasswordChecks = computed(() => (this.passwordValue() ?? '').length > 0);
 
+  get nameControl(): FormControl {
+    return this.registerForm.get('name') as FormControl;
+  }
+
   get usernameControl(): FormControl {
     return this.registerForm.get('username') as FormControl;
   }
@@ -99,6 +108,15 @@ export class RegisterComponent {
 
   get confirmPasswordControl(): FormControl {
     return this.registerForm.get('confirmPassword') as FormControl;
+  }
+
+  getNameError(): string | null {
+    const ctrl = this.nameControl;
+    if (!ctrl.touched) return null;
+    if (ctrl.hasError('required')) return 'El nombre es requerido';
+    if (ctrl.hasError('minlength')) return 'Mínimo 3 caracteres';
+    if (ctrl.hasError('maxlength')) return 'Máximo 100 caracteres';
+    return null;
   }
 
   getUsernameError(): string | null {
@@ -148,13 +166,14 @@ export class RegisterComponent {
       return;
     }
 
-    const { username, email, password } = this.registerForm.value;
+    const { name, username, email, password } = this.registerForm.value;
 
     this.isLoading.set(true);
     this.registerForm.disable();
 
     try {
       const response = await this.authService.register({
+        name: name!,
         username: username!,
         email: email!,
         password: password!,
