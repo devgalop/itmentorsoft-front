@@ -30,6 +30,7 @@ export const ENDPOINTS = {
   content: {
     root: '/content/',
     byId: (id: string) => `/content/${encodeURIComponent(id)}`,
+    recommendedLearningPaths: '/content/recommended/learning-paths',
   },
   reports: {
     students: '/reports/students',

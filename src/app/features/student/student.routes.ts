@@ -1,11 +1,6 @@
 import { Routes } from '@angular/router';
 import { initialAssessmentGuard } from '@core/guards/initial-assessment.guard';
 
-const PLACEHOLDER = () =>
-  import('./placeholder/student-placeholder.component').then(
-    (m) => m.StudentPlaceholderComponent,
-  );
-
 export const STUDENT_ROUTES: Routes = [
   {
     path: '',
@@ -30,8 +25,8 @@ export const STUDENT_ROUTES: Routes = [
       {
         path: 'route',
         canActivate: [initialAssessmentGuard],
-        data: { title: 'Mi ruta', subtitle: 'Próximamente: tu ruta de aprendizaje personalizada.' },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./route/student-route.component').then((m) => m.StudentRouteComponent),
       },
       {
         path: 'progress',

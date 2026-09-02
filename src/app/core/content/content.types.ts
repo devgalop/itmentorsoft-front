@@ -35,6 +35,26 @@ export interface GetAllContentsResponse {
   total: number;
 }
 
+/** Contenido recomendado dentro de un tema, para "Mi ruta". */
+export interface RecommendedContent {
+  content_id: string;
+  title: string;
+  description: string;
+  rating: number;
+}
+
+/** Tema con su lista de contenidos recomendados. */
+export interface RecommendedTopic {
+  topic: string;
+  contents: RecommendedContent[];
+}
+
+export interface GetRecommendedLearningPathsResponse {
+  is_success: boolean;
+  message: string;
+  recommendation: RecommendedTopic[];
+}
+
 export interface RegisterContentPayload {
   title: string;
   description: string;

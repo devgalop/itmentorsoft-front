@@ -6,6 +6,8 @@ import { ENDPOINTS } from '@core/config/endpoints';
 import {
   ContentItem,
   GetAllContentsResponse,
+  GetRecommendedLearningPathsResponse,
+  RecommendedTopic,
   RegisterContentPayload,
   RegisterContentResponse,
   UpdateContentResponse,
@@ -16,6 +18,24 @@ export class ContentService {
   private readonly http = inject(HttpClient);
 
   /** Listado paginado de recursos (page arranca en 0; el backend exige ambos params). */
+  /**
+   * Ruta de aprendizaje recomendada para el estudiante: contenidos agrupados
+   * por tema. Solo accesible por rol student.
+   */
+  async getRecommendedLearningPaths(userId: string): Promise<RecommendedTopic[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetRecommendedLearningPathsResponse>(
+          `${environment.apiUrl}${ENDPOINTS.content.recommendedLearningPaths}`,
+          { params: { user_id: userId } },
+        ),
+      );
+      return response.recommendation ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
   async getAllContents(page = 0, pageSize = 50): Promise<ContentItem[]> {
     try {
       const response = await firstValueFrom(
