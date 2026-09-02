@@ -4,9 +4,11 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
 import {
+  AssessmentSummary,
   GeneratedAssessment,
   GetAssessmentByTopicResponse,
   GetAssessmentResultResponse,
+  GetAssessmentsSummaryResponse,
   GetTopicsResponse,
   QualificationStatusResponse,
   SaveAssessmentPayload,
@@ -91,6 +93,25 @@ export class StudentAssessmentService {
         ),
       );
       return response.result ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Historial de evaluaciones del estudiante (resumen paginado). */
+  async getAssessmentsSummary(
+    studentId: string,
+    page = 0,
+    pageSize = 20,
+  ): Promise<AssessmentSummary[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetAssessmentsSummaryResponse>(
+          `${environment.apiUrl}${ENDPOINTS.assessments.summary}`,
+          { params: { student_id: studentId, page, page_size: pageSize } },
+        ),
+      );
+      return response.assessments ?? [];
     } catch (error) {
       throw this.mapHttpError(error);
     }

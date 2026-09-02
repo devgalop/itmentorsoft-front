@@ -28,12 +28,41 @@
 }
 
 .ev__card {
-  margin-top: 1.25rem;
+  margin: 1.25rem auto 0;
   background: var(--color-white);
   border: 1px solid var(--color-light-1);
   border-radius: 0.9rem;
   padding: 1.5rem;
   max-width: 720px;
+}
+
+/* Historial: ocupa todo el ancho disponible. */
+.ev__card--wide {
+  max-width: none;
+}
+
+/* Setup ("Elegí un tema"): un poco más angosto y con más presencia. */
+.ev__card--setup {
+  max-width: 640px;
+  margin-top: 2rem;
+  padding: 2.25rem 2.5rem;
+}
+
+.ev__card--setup .ev__link-btn {
+  margin-bottom: 0.75rem;
+}
+
+.ev__card--setup .ev__field select {
+  padding: 0.75rem 0.85rem;
+  font-size: 1rem;
+}
+
+/* Botón a lo ancho de la tarjeta. */
+.ev__primary--block {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.85rem 1.5rem;
 }
 
 .ev__card--center {
@@ -321,4 +350,85 @@
   color: var(--color-mid-2);
   margin-top: 0.4rem;
   font-style: italic;
+}
+
+/* Botón secundario tipo enlace (historial / volver) */
+.ev__link-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  align-self: flex-start;
+}
+
+.ev__link-btn:hover {
+  text-decoration: underline;
+}
+
+/* Historial de evaluaciones */
+.ev__hist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.875rem;
+}
+
+.ev__hist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ev__hist-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.625rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ev__hist-item:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  background: var(--color-light-3);
+}
+
+.ev__hist-item:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ev__hist-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.ev__hist-classif {
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+}
+
+.ev__hist-date {
+  font-size: 0.78rem;
+  color: var(--color-mid-2);
+}
+
+.ev__hist-score {
+  font-weight: 700;
+  color: var(--color-accent);
+  font-size: 1rem;
 }

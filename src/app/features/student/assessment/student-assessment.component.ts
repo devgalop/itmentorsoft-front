@@ -5,11 +5,12 @@ import { StudentAssessmentService } from '@core/assessments/student-assessment.s
 import { ToastService } from '@shared/ui/toast/toast.service';
 import {
   AssessmentAnswerInput,
+  AssessmentSummary,
   StudentAssessmentResult,
   TopicQuestion,
 } from '@core/assessments/student-assessment.types';
 
-type Step = 'setup' | 'answering' | 'grading' | 'result';
+type Step = 'setup' | 'answering' | 'grading' | 'history' | 'result';
 
 const NUMBER_OF_QUESTIONS = 5;
 const POLL_INTERVAL_MS = 3000;
@@ -28,7 +29,7 @@ export class StudentAssessmentComponent {
   private readonly assessments = inject(StudentAssessmentService);
   private readonly toast = inject(ToastService);
 
-  readonly step = signal<Step>('setup');
+  readonly step = signal<Step>('history');
   readonly error = signal<string | null>(null);
   readonly isBusy = signal(false);
 
@@ -44,6 +45,12 @@ export class StudentAssessmentComponent {
   private readonly answers = new Map<string, string>();
   private questionStartedAt = Date.now();
   private readonly timePerQuestion = new Map<string, number>();
+  /** Texto de la respuesta visible; se sincroniza por pregunta (arregla el bug visual). */
+  readonly draft = signal('');
+
+  // History (historial de evaluaciones)
+  readonly history = signal<AssessmentSummary[]>([]);
+  readonly isLoadingHistory = signal(false);
 
   // Result
   readonly result = signal<StudentAssessmentResult | null>(null);
@@ -58,13 +65,11 @@ export class StudentAssessmentComponent {
   readonly isLastQuestion = computed(
     () => this.currentIndex() >= this.questions().length - 1,
   );
-  readonly currentAnswer = computed(() => {
-    const q = this.currentQuestion();
-    return q ? (this.answers.get(q.question_id) ?? '') : '';
-  });
 
   constructor() {
+    // Arranca mostrando el historial; los temas se precargan para "Nueva evaluación".
     void this.loadTopics();
+    void this.loadHistory();
   }
 
   private get userId(): string | null {
@@ -115,6 +120,7 @@ export class StudentAssessmentComponent {
       this.currentIndex.set(0);
       this.answers.clear();
       this.timePerQuestion.clear();
+      this.draft.set('');
       this.questionStartedAt = Date.now();
       this.step.set('answering');
     } catch (error) {
@@ -129,6 +135,13 @@ export class StudentAssessmentComponent {
     if (q) {
       this.answers.set(q.question_id, value);
     }
+    this.draft.set(value);
+  }
+
+  /** Carga en el textarea la respuesta guardada de la pregunta actual. */
+  private syncDraft(): void {
+    const q = this.currentQuestion();
+    this.draft.set(q ? (this.answers.get(q.question_id) ?? '') : '');
   }
 
   /** Bloquea copiar/pegar/cortar/arrastrar en el campo de respuesta y avisa. */
@@ -157,6 +170,7 @@ export class StudentAssessmentComponent {
     this.recordTime();
     if (!this.isLastQuestion()) {
       this.currentIndex.update((i) => i + 1);
+      this.syncDraft();
     }
   }
 
@@ -164,6 +178,7 @@ export class StudentAssessmentComponent {
     this.recordTime();
     if (this.currentIndex() > 0) {
       this.currentIndex.update((i) => i - 1);
+      this.syncDraft();
     }
   }
 
@@ -219,7 +234,7 @@ export class StudentAssessmentComponent {
     }
   }
 
-  /** Polling del estado de calificación y carga del resultado cuando está listo. */
+  /** Polling del estado de calificación; al terminar, muestra el historial. */
   private async waitForQualificationAndLoadResult(
     userId: string,
     assessmentId: string,
@@ -228,9 +243,8 @@ export class StudentAssessmentComponent {
       try {
         const ready = await this.assessments.getQualificationStatus(userId, assessmentId);
         if (ready) {
-          const result = await this.assessments.getResult(userId, assessmentId);
-          this.result.set(result);
-          this.step.set('result');
+          await this.loadHistory();
+          this.step.set('history');
           return;
         }
       } catch {
@@ -241,6 +255,59 @@ export class StudentAssessmentComponent {
     this.gradingMessage.set(
       'La calificación está tardando más de lo esperado. Podés revisar el resultado más tarde.',
     );
+  }
+
+  /** Carga el historial de evaluaciones del estudiante (punto 4). */
+  async loadHistory(): Promise<void> {
+    const userId = this.userId;
+    if (!userId) return;
+    this.isLoadingHistory.set(true);
+    try {
+      const list = await this.assessments.getAssessmentsSummary(userId);
+      this.history.set(list);
+    } catch {
+      // Si falla el historial no bloqueamos la pantalla; queda vacío.
+      this.history.set([]);
+    } finally {
+      this.isLoadingHistory.set(false);
+    }
+  }
+
+  /** Abre el historial desde el setup. */
+  async openHistory(): Promise<void> {
+    this.error.set(null);
+    await this.loadHistory();
+    this.step.set('history');
+  }
+
+  /** Al clickear una evaluación del historial, carga y muestra su detalle (punto 8). */
+  async viewResult(assessmentId: string): Promise<void> {
+    const userId = this.userId;
+    if (!userId) return;
+    this.isBusy.set(true);
+    this.error.set(null);
+    try {
+      const result = await this.assessments.getResult(userId, assessmentId);
+      if (!result) {
+        this.toast.warning('Sin detalle', 'No se encontró el detalle de esta evaluación.');
+        return;
+      }
+      this.result.set(result);
+      this.step.set('result');
+    } catch (error) {
+      this.toast.error(
+        'No se pudo cargar el resultado',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
+    } finally {
+      this.isBusy.set(false);
+    }
+  }
+
+  /** Vuelve del detalle al historial. */
+  backToHistory(): void {
+    this.result.set(null);
+    this.step.set('history');
   }
 
   private delay(ms: number): Promise<void> {
@@ -261,6 +328,13 @@ export class StudentAssessmentComponent {
     this.answers.clear();
     this.timePerQuestion.clear();
     this.currentIndex.set(0);
+    this.draft.set('');
     this.gradingMessage.set('Estamos calificando tus respuestas…');
+  }
+
+  /** Fecha legible para el historial. */
+  formatDate(value: string): string {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? value : d.toLocaleDateString();
   }
 }
