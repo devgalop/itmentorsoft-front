@@ -10,7 +10,10 @@
 
   <!-- PASO 1: elegir tema -->
   @if (step() === 'setup') {
-    <div class="ev__card">
+    <div class="ev__card ev__card--setup">
+      <button type="button" class="ev__link-btn" (click)="openHistory()">
+        ← Volver a mis evaluaciones
+      </button>
       <h2 class="ev__card-title">Elegí un tema</h2>
       @if (isLoadingTopics()) {
         <p class="ev__hint">Cargando temas…</p>
@@ -30,7 +33,7 @@
           </select>
         </div>
         <p class="ev__note">La evaluación tendrá 5 preguntas abiertas.</p>
-        <button type="button" class="ev__primary" (click)="startAssessment()" [disabled]="isBusy()">
+        <button type="button" class="ev__primary ev__primary--block" (click)="startAssessment()" [disabled]="isBusy()">
           {{ isBusy() ? 'Generando…' : 'Comenzar evaluación' }}
         </button>
       }
@@ -53,8 +56,8 @@
           <textarea
             id="answer"
             rows="6"
-            [ngModel]="currentAnswer()"
-            (ngModelChange)="onAnswerChange($event)"
+            [value]="draft()"
+            (input)="onAnswerChange($any($event.target).value)"
             (paste)="blockClipboard($event, 'pegar')"
             (copy)="blockClipboard($event, 'copiar')"
             (cut)="blockClipboard($event, 'cortar')"
@@ -92,9 +95,40 @@
     </div>
   }
 
+  <!-- PASO HISTORIAL: lista de evaluaciones -->
+  @if (step() === 'history') {
+    <div class="ev__card ev__card--wide">
+      <div class="ev__hist-head">
+        <h2 class="ev__card-title">Mis evaluaciones</h2>
+        <button type="button" class="ev__ghost" (click)="restart()">＋ Nueva evaluación</button>
+      </div>
+
+      @if (isLoadingHistory()) {
+        <p class="ev__hint">Cargando tu historial…</p>
+      } @else if (history().length === 0) {
+        <p class="ev__hint">Todavía no realizaste evaluaciones.</p>
+      } @else {
+        <ul class="ev__hist-list">
+          @for (h of history(); track h.assessment_id) {
+            <li>
+              <button type="button" class="ev__hist-item" (click)="viewResult(h.assessment_id)" [disabled]="isBusy()">
+                <div class="ev__hist-main">
+                  <span class="ev__hist-classif">{{ h.classification ?? 'Sin clasificar' }}</span>
+                  <span class="ev__hist-date">{{ formatDate(h.date_taken) }}</span>
+                </div>
+                <span class="ev__hist-score">{{ scorePct(h.score) }}%</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+
   <!-- PASO 4: resultado -->
   @if (step() === 'result') {
     @if (result(); as r) {
+      <button type="button" class="ev__link-btn" (click)="backToHistory()">← Volver a mis evaluaciones</button>
       <div class="ev__result-head">
         <div class="ev__score-ring">
           <span class="ev__score-value">{{ scorePct(r.avg_score) }}%</span>
@@ -137,7 +171,7 @@
         }
       </div>
 
-      <button type="button" class="ev__primary" (click)="restart()">Hacer otra evaluación</button>
+      <button type="button" class="ev__primary" (click)="backToHistory()">Volver a mis evaluaciones</button>
     } @else {
       <div class="ev__card ev__card--center">
         <h2 class="ev__card-title">Evaluación enviada</h2>

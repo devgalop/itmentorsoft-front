@@ -12,6 +12,7 @@ describe('StudentAssessmentComponent', () => {
     saveAnswers: ReturnType<typeof vi.fn>;
     getQualificationStatus: ReturnType<typeof vi.fn>;
     getResult: ReturnType<typeof vi.fn>;
+    getAssessmentsSummary: ReturnType<typeof vi.fn>;
   };
   let authMock: { userId: ReturnType<typeof vi.fn> };
 
@@ -52,8 +53,19 @@ describe('StudentAssessmentComponent', () => {
         feedback: 'Buen trabajo',
         answer_scores: [],
       }),
+      getAssessmentsSummary: vi.fn().mockResolvedValue([
+        { assessment_id: 'assess-1', score: 0.8, date_taken: '2026-01-01', classification: 'average', feedback: 'ok' },
+      ]),
     };
     authMock = { userId: vi.fn().mockReturnValue('u1') };
+  });
+
+  it('starts on the history step and loads the summary', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(c.step()).toBe('history');
+    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1');
   });
 
   it('loads topics on creation and preselects the first', async () => {
@@ -88,13 +100,13 @@ describe('StudentAssessmentComponent', () => {
     await Promise.resolve();
     await c.startAssessment();
     c.onAnswerChange('respuesta 1');
-    expect(c.currentAnswer()).toBe('respuesta 1');
+    expect(c.draft()).toBe('respuesta 1');
     c.next();
     expect(c.currentIndex()).toBe(1);
     c.onAnswerChange('respuesta 2');
     c.prev();
     expect(c.currentIndex()).toBe(0);
-    expect(c.currentAnswer()).toBe('respuesta 1');
+    expect(c.draft()).toBe('respuesta 1');
   });
 
   it('does not submit if there are missing answers', async () => {
@@ -124,9 +136,33 @@ describe('StudentAssessmentComponent', () => {
     expect(payload.user_id).toBe('u1');
     expect(payload.answers).toHaveLength(2);
     expect(serviceMock.getQualificationStatus).toHaveBeenCalledWith('u1', 'assess-1');
+    // Al terminar la calificación se muestra el historial (punto 8).
+    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1');
+    expect(c.step()).toBe('history');
+    expect(c.history()).toHaveLength(1);
+
+    // Al clickear una evaluación del historial se carga su detalle.
+    await c.viewResult('assess-1');
     expect(serviceMock.getResult).toHaveBeenCalledWith('u1', 'assess-1');
     expect(c.step()).toBe('result');
     expect(c.result()?.classification).toBe('average');
+  });
+
+  it('draft reflects each question answer when navigating (fix punto 5)', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    await c.startAssessment();
+    // Q1
+    c.onAnswerChange('respuesta 1');
+    expect(c.draft()).toBe('respuesta 1');
+    c.next();
+    // Q2 arranca vacía (no muestra el texto de Q1)
+    expect(c.draft()).toBe('');
+    c.onAnswerChange('respuesta 2');
+    expect(c.draft()).toBe('respuesta 2');
+    // volver a Q1 muestra su respuesta guardada
+    c.prev();
+    expect(c.draft()).toBe('respuesta 1');
   });
 
   it('scorePct clamps to 0..100', () => {

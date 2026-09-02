@@ -26,6 +26,7 @@ export const ENDPOINTS = {
     pendingApprovalQuestions: '/assessments/pending-approval-questions',
     qualificationStatus: '/assessments/qualification-status',
     assessmentResult: '/assessments/assessment_result',
+    summary: '/assessments/summary',
   },
   content: {
     root: '/content/',

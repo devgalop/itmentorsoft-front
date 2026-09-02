@@ -71,3 +71,19 @@ export interface GetAssessmentResultResponse {
   message: string;
   result: StudentAssessmentResult | null;
 }
+
+/** Una evaluación en el historial del estudiante. */
+export interface AssessmentSummary {
+  assessment_id: string;
+  score: number;
+  date_taken: string;
+  classification: string | null;
+  feedback: string | null;
+}
+
+export interface GetAssessmentsSummaryResponse {
+  is_success: boolean;
+  message: string;
+  total_assessments: number;
+  assessments: AssessmentSummary[];
+}
