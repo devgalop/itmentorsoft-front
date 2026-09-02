@@ -1,0 +1,52 @@
+<section class="route">
+  <header class="route__header">
+    <h1 class="route__title">Mi ruta de aprendizaje</h1>
+    <p class="route__subtitle">
+      Contenidos recomendados para vos según tu evaluación diagnóstica.
+    </p>
+  </header>
+
+  @if (isLoading()) {
+    <div class="route__state">Cargando tu ruta…</div>
+  } @else if (loadError()) {
+    <div class="route__state route__state--error">{{ loadError() }}</div>
+  } @else if (topics().length === 0) {
+    <div class="route__state">
+      Todavía no tenés contenidos recomendados. Completá una evaluación para armar tu ruta.
+    </div>
+  } @else {
+    <p class="route__summary">
+      {{ topics().length }} tema(s) · {{ totalContents() }} contenido(s) recomendado(s)
+    </p>
+
+    @for (topic of topics(); track topic.topic) {
+      <div class="route__topic">
+        <h2 class="route__topic-name">{{ topic.topic }}</h2>
+
+        @if (topic.contents.length === 0) {
+          <p class="route__topic-empty">Sin contenidos para este tema todavía.</p>
+        } @else {
+          <ul class="route__list">
+            @for (item of topic.contents; track item.content_id) {
+              <li class="route__item">
+                <div class="route__item-body">
+                  <p class="route__item-title">{{ item.title }}</p>
+                  <p class="route__item-desc">{{ item.description }}</p>
+                </div>
+                <div class="route__item-rating" [attr.aria-label]="'Valoración ' + item.rating">
+                  @for (s of [1, 2, 3, 4, 5]; track s) {
+                    <span
+                      class="route__star"
+                      [class.route__star--on]="s <= stars(item.rating)"
+                      aria-hidden="true"
+                    >★</span>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  }
+</section>

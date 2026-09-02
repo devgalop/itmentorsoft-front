@@ -17,6 +17,36 @@ describe('ContentService', () => {
 
   afterEach(() => httpMock.verify());
 
+  describe('getRecommendedLearningPaths', () => {
+    it('GETs recommended learning paths with user_id and returns the recommendation', async () => {
+      const promise = service.getRecommendedLearningPaths('user-123');
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === '/content/recommended/learning-paths' &&
+          r.params.get('user_id') === 'user-123',
+      );
+      expect(req.request.method).toBe('GET');
+      const recommendation = [
+        {
+          topic: 'Arquitectura',
+          contents: [
+            { content_id: 'c1', title: 'Capas', description: 'Intro', rating: 4.5 },
+          ],
+        },
+      ];
+      req.flush({ is_success: true, message: 'ok', recommendation });
+      expect(await promise).toEqual(recommendation);
+    });
+
+    it('returns [] when recommendation is missing', async () => {
+      const promise = service.getRecommendedLearningPaths('user-123');
+      httpMock
+        .expectOne((r) => r.url === '/content/recommended/learning-paths')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
   describe('getAllContents', () => {
     it('GETs /content/ and returns the items', async () => {
       const promise = service.getAllContents();
