@@ -155,3 +155,66 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Distribución por categoría */
+.rep__dist {
+  background: var(--color-white);
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.rep__dist-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0 0 0.25rem;
+}
+
+.rep__dist-total,
+.rep__dist-hint {
+  font-size: 0.8rem;
+  color: var(--color-mid-2);
+  margin: 0 0 0.875rem;
+}
+
+.rep__dist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.rep__dist-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.rep__dist-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.rep__dist-count {
+  font-size: 0.8rem;
+  color: var(--color-mid-1);
+}
+
+.rep__dist-bar {
+  height: 8px;
+  background: var(--color-light-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.rep__dist-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}

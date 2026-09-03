@@ -4,6 +4,29 @@
     <p class="rep__subtitle">Estudiantes agrupados por nivel de conocimiento.</p>
   </header>
 
+  <!-- Distribución por categoría -->
+  <div class="rep__dist">
+    <h2 class="rep__dist-title">Estudiantes por categoría</h2>
+    @if (isLoadingDistribution()) {
+      <p class="rep__dist-hint">Cargando distribución…</p>
+    } @else {
+      <p class="rep__dist-total">{{ distributionTotal() }} estudiantes clasificados en total</p>
+      <ul class="rep__dist-list">
+        @for (d of distribution(); track d.value) {
+          <li class="rep__dist-item">
+            <div class="rep__dist-row">
+              <span class="rep__dist-label">{{ d.label }}</span>
+              <span class="rep__dist-count">{{ d.count }} ({{ percent(d.count) }}%)</span>
+            </div>
+            <div class="rep__dist-bar">
+              <div class="rep__dist-fill" [style.width.%]="percent(d.count)"></div>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
   <div class="rep__filters">
     <label for="rep-cat">Categoría</label>
     <select

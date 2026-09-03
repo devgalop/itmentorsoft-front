@@ -60,6 +60,31 @@ describe('ReportsService', () => {
     });
   });
 
+  describe('getCategorySummary', () => {
+    it('GETs /reports/category_summary with the category and returns the count', async () => {
+      const promise = service.getCategorySummary('principiante');
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === '/reports/category_summary' && r.params.get('category') === 'principiante',
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        is_success: true,
+        message: 'ok',
+        category_summary: { category: 'principiante', total_students: 7 },
+      });
+      expect(await promise).toBe(7);
+    });
+
+    it('returns 0 when category_summary is null', async () => {
+      const promise = service.getCategorySummary('básico');
+      httpMock
+        .expectOne((r) => r.url === '/reports/category_summary')
+        .flush({ is_success: true, message: 'ok', category_summary: null });
+      expect(await promise).toBe(0);
+    });
+  });
+
   describe('getStudentProgress', () => {
     it('GETs student_progress with the id', async () => {
       const promise = service.getStudentProgress('s1');
