@@ -74,6 +74,25 @@ describe('UsersService', () => {
     });
   });
 
+  describe('updateProfile', () => {
+    it('PUTs /users/profile with the payload', async () => {
+      const promise = service.updateProfile({
+        user_id: 'u1',
+        username: 'nuevo_user',
+        name: 'Nombre Nuevo',
+      });
+      const req = httpMock.expectOne('/users/profile');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({
+        user_id: 'u1',
+        username: 'nuevo_user',
+        name: 'Nombre Nuevo',
+      });
+      req.flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual({ is_success: true, message: 'ok' });
+    });
+  });
+
   describe('assignRole', () => {
     it('PUTs assign-role with user_id and role in the body', async () => {
       const promise = service.assignRole('abc-123', 'teacher');
