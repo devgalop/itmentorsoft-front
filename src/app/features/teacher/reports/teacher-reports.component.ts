@@ -42,8 +42,42 @@ export class TeacherReportsComponent {
   readonly canPrev = computed(() => this.page() > 0);
   readonly canNext = computed(() => this.page() + 1 < this.totalPages());
 
+  /** Distribución de estudiantes por categoría (para el resumen superior). */
+  readonly distribution = signal<{ value: string; label: string; count: number }[]>([]);
+  readonly isLoadingDistribution = signal(true);
+  readonly distributionTotal = computed(() =>
+    this.distribution().reduce((acc, d) => acc + d.count, 0),
+  );
+
   constructor() {
+    void this.loadDistribution();
     void this.load(0);
+  }
+
+  /** Trae el conteo de cada categoría en paralelo. */
+  async loadDistribution(): Promise<void> {
+    this.isLoadingDistribution.set(true);
+    try {
+      const counts = await Promise.all(
+        CATEGORIES.map(async (c) => {
+          try {
+            const count = await this.reports.getCategorySummary(c.value);
+            return { value: c.value, label: c.label, count };
+          } catch {
+            return { value: c.value, label: c.label, count: 0 };
+          }
+        }),
+      );
+      this.distribution.set(counts);
+    } finally {
+      this.isLoadingDistribution.set(false);
+    }
+  }
+
+  /** Porcentaje que representa una categoría sobre el total (para la barra). */
+  percent(count: number): number {
+    const total = this.distributionTotal();
+    return total === 0 ? 0 : Math.round((count / total) * 100);
   }
 
   onCategoryChange(value: string): void {

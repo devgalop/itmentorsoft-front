@@ -5,6 +5,7 @@ import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
 import {
   GetAllStudentsResponse,
+  GetCategorySummaryResponse,
   GetStudentsByCategoryResponse,
   GetStudentProgressResponse,
   GetStudentSummaryResponse,
@@ -49,6 +50,21 @@ export class ReportsService {
         students: result?.students ?? [],
         total: result?.total_students ?? 0,
       };
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Cantidad de estudiantes clasificados en una categoría. */
+  async getCategorySummary(category: string): Promise<number> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetCategorySummaryResponse>(
+          `${environment.apiUrl}${ENDPOINTS.reports.categorySummary}`,
+          { params: { category } },
+        ),
+      );
+      return response.category_summary?.total_students ?? 0;
     } catch (error) {
       throw this.mapHttpError(error);
     }

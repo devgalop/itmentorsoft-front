@@ -27,6 +27,18 @@ export interface PagedStudents {
   total: number;
 }
 
+/** Conteo de estudiantes en una categoría (para la distribución). */
+export interface CategorySummary {
+  category: string;
+  total_students: number;
+}
+
+export interface GetCategorySummaryResponse {
+  is_success: boolean;
+  message: string;
+  category_summary: CategorySummary | null;
+}
+
 export interface ProgressProfileItem {
   topic: string;
   score: number;

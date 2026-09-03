@@ -36,6 +36,7 @@ export const ENDPOINTS = {
   reports: {
     students: '/reports/students',
     studentsByCategory: '/reports/students-by-category',
+    categorySummary: '/reports/category_summary',
     studentProgress: '/reports/student_progress',
     studentSummary: '/reports/student_summary',
   },

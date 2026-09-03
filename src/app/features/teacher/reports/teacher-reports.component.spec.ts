@@ -5,7 +5,10 @@ import { TeacherReportsComponent } from './teacher-reports.component';
 import { ReportsService } from '../../../core/reports/reports.service';
 
 describe('TeacherReportsComponent', () => {
-  let reportsMock: { getStudentsByCategory: ReturnType<typeof vi.fn> };
+  let reportsMock: {
+    getStudentsByCategory: ReturnType<typeof vi.fn>;
+    getCategorySummary: ReturnType<typeof vi.fn>;
+  };
 
   function make(): TeacherReportsComponent {
     TestBed.resetTestingModule();
@@ -33,6 +36,7 @@ describe('TeacherReportsComponent', () => {
           1,
         ),
       ),
+      getCategorySummary: vi.fn().mockResolvedValue(5),
     };
   });
 
@@ -80,5 +84,18 @@ describe('TeacherReportsComponent', () => {
     const c = make();
     expect(c.classificationLabel('básico')).toBe('Básico');
     expect(c.classificationLabel('avanzado')).toBe('Avanzado');
+  });
+
+  it('loads the category distribution on creation', async () => {
+    const c = make();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    // 4 categorías consultadas
+    expect(reportsMock.getCategorySummary).toHaveBeenCalledTimes(4);
+    expect(c.distribution().length).toBe(4);
+    // cada una devolvió 5 -> total 20 y 25% cada una
+    expect(c.distributionTotal()).toBe(20);
+    expect(c.percent(5)).toBe(25);
   });
 });
