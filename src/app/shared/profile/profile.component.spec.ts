@@ -4,12 +4,23 @@ import { vi } from 'vitest';
 import { ProfileComponent } from './profile.component';
 import { UsersService } from '../../core/users/users.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { ToastService } from '../../shared/ui/toast/toast.service';
 
 describe('ProfileComponent', () => {
-  let usersMock: { getUser: ReturnType<typeof vi.fn> };
+  let usersMock: {
+    getUser: ReturnType<typeof vi.fn>;
+    updateProfile: ReturnType<typeof vi.fn>;
+  };
   let authMock: { userId: ReturnType<typeof vi.fn> };
+  let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
-  const user = { user_id: 'u1', username: 'student2', email: 's2@itm.co', role: 'student' };
+  const user = {
+    user_id: 'u1',
+    username: 'student2',
+    email: 's2@itm.co',
+    name: 'Estudiante Dos',
+    role: 'student',
+  };
 
   function createComponent(): ProfileComponent {
     TestBed.resetTestingModule();
@@ -19,14 +30,19 @@ describe('ProfileComponent', () => {
         provideRouter([]),
         { provide: UsersService, useValue: usersMock },
         { provide: AuthService, useValue: authMock },
+        { provide: ToastService, useValue: toastMock },
       ],
     });
     return TestBed.inject(ProfileComponent);
   }
 
   beforeEach(() => {
-    usersMock = { getUser: vi.fn().mockResolvedValue(user) };
+    usersMock = {
+      getUser: vi.fn().mockResolvedValue(user),
+      updateProfile: vi.fn().mockResolvedValue({ is_success: true, message: 'ok' }),
+    };
     authMock = { userId: vi.fn().mockReturnValue('u1') };
+    toastMock = { success: vi.fn(), error: vi.fn() };
   });
 
   it('loads the logged-in user profile', async () => {
@@ -67,5 +83,52 @@ describe('ProfileComponent', () => {
     expect(c.initials('student2')).toBe('ST');
     expect(c.roleLabel('teacher')).toBe('Docente');
     expect(c.roleLabel('admin')).toBe('Administrador');
+  });
+
+  it('startEdit prefills the form and enters edit mode', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    c.startEdit();
+    expect(c.isEditing()).toBe(true);
+    expect(c.editForm.value).toEqual({ name: 'Estudiante Dos', username: 'student2' });
+  });
+
+  it('does not save when the form is invalid', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    c.startEdit();
+    c.editForm.setValue({ name: 'ab', username: '' }); // name corto, username vacío
+    await c.save();
+    expect(usersMock.updateProfile).not.toHaveBeenCalled();
+  });
+
+  it('saves the profile and updates the view on success', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    c.startEdit();
+    c.editForm.setValue({ name: 'Nombre Nuevo', username: 'nuevo_user' });
+    await c.save();
+
+    expect(usersMock.updateProfile).toHaveBeenCalledWith({
+      user_id: 'u1',
+      username: 'nuevo_user',
+      name: 'Nombre Nuevo',
+    });
+    expect(c.user()?.name).toBe('Nombre Nuevo');
+    expect(c.user()?.username).toBe('nuevo_user');
+    expect(c.isEditing()).toBe(false);
+    expect(toastMock.success).toHaveBeenCalled();
+  });
+
+  it('shows an error toast when saving fails', async () => {
+    usersMock.updateProfile.mockRejectedValue(new Error('Sin conexión al servidor'));
+    const c = createComponent();
+    await Promise.resolve();
+    c.startEdit();
+    c.editForm.setValue({ name: 'Nombre Nuevo', username: 'nuevo_user' });
+    await c.save();
+
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo actualizar', 'Sin conexión al servidor');
+    expect(c.isEditing()).toBe(true);
   });
 });

@@ -11,31 +11,69 @@
   } @else if (user(); as u) {
     <div class="profile__card">
       <div class="profile__head">
-        <span class="profile__avatar">{{ initials(u.username) }}</span>
+        <span class="profile__avatar">{{ initials(u.name || u.username) }}</span>
         <div>
-          <p class="profile__name">{{ u.username }}</p>
+          <p class="profile__name">{{ u.name || u.username }}</p>
           <span class="profile__badge">{{ roleLabel(u.role) }}</span>
         </div>
       </div>
 
-      <dl class="profile__fields">
-        <div class="profile__field">
-          <dt>Usuario</dt>
-          <dd>{{ u.username }}</dd>
-        </div>
-        <div class="profile__field">
-          <dt>Email</dt>
-          <dd>{{ u.email }}</dd>
-        </div>
-        <div class="profile__field">
-          <dt>Rol</dt>
-          <dd>{{ roleLabel(u.role) }}</dd>
-        </div>
-      </dl>
+      @if (!isEditing()) {
+        <dl class="profile__fields">
+          <div class="profile__field">
+            <dt>Nombre</dt>
+            <dd>{{ u.name || '—' }}</dd>
+          </div>
+          <div class="profile__field">
+            <dt>Usuario</dt>
+            <dd>{{ u.username }}</dd>
+          </div>
+          <div class="profile__field">
+            <dt>Email</dt>
+            <dd>{{ u.email }}</dd>
+          </div>
+          <div class="profile__field">
+            <dt>Rol</dt>
+            <dd>{{ roleLabel(u.role) }}</dd>
+          </div>
+        </dl>
 
-      <div class="profile__actions">
-        <a routerLink="/recover-password" class="profile__btn">Cambiar contraseña</a>
-      </div>
+        <div class="profile__actions">
+          <button type="button" class="profile__btn profile__btn--solid" (click)="startEdit()">
+            Editar perfil
+          </button>
+          <a routerLink="/recover-password" class="profile__btn">Cambiar contraseña</a>
+        </div>
+      } @else {
+        <form class="profile__form" [formGroup]="editForm" (ngSubmit)="save()">
+          <div class="profile__form-field">
+            <label for="name">Nombre</label>
+            <input id="name" type="text" formControlName="name" placeholder="Tu nombre completo" />
+            @if (getNameError(); as err) {
+              <span class="profile__error">{{ err }}</span>
+            }
+          </div>
+
+          <div class="profile__form-field">
+            <label for="username">Usuario</label>
+            <input id="username" type="text" formControlName="username" placeholder="tu_usuario" />
+            @if (getUsernameError(); as err) {
+              <span class="profile__error">{{ err }}</span>
+            }
+          </div>
+
+          <p class="profile__note">El email y el rol no se pueden modificar desde aquí.</p>
+
+          <div class="profile__actions">
+            <button type="submit" class="profile__btn profile__btn--solid" [disabled]="isSaving()">
+              {{ isSaving() ? 'Guardando…' : 'Guardar cambios' }}
+            </button>
+            <button type="button" class="profile__btn" (click)="cancelEdit()" [disabled]="isSaving()">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      }
     </div>
   }
 </section>

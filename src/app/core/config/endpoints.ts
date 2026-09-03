@@ -44,6 +44,7 @@ export const ENDPOINTS = {
     byId: (id: string) => `/users/${encodeURIComponent(id)}`,
     availableRoles: '/users/available-roles',
     assignRole: '/users/assign-role',
+    profile: '/users/profile',
     createUserFromAdmin: '/users/create_user_from_admin',
     recoveryPassword: '/users/recovery-password',
     changePassword: '/users/change-password',

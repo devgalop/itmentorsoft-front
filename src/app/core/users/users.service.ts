@@ -10,6 +10,8 @@ import {
   GetAvailableRolesResponse,
   GetConnectedUsersResponse,
   GetUserResponse,
+  UpdateProfilePayload,
+  UpdateProfileResponse,
   UserInfo,
 } from './users.types';
 
@@ -65,6 +67,20 @@ export class UsersService {
           user_id: userId,
           role,
         }),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Actualiza el perfil (username + name) del usuario. */
+  async updateProfile(payload: UpdateProfilePayload): Promise<UpdateProfileResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.put<UpdateProfileResponse>(
+          `${environment.apiUrl}${ENDPOINTS.users.profile}`,
+          payload,
+        ),
       );
     } catch (error) {
       throw this.mapHttpError(error);
