@@ -67,11 +67,19 @@ describe('ResourcesComponent', () => {
 
   it('adds and removes topics but never below 1', () => {
     const component = createComponent();
+    component.topics.at(0).setValue('APIs');
     component.addTopic();
     expect(component.topics.length).toBe(2);
     component.removeTopic(1);
     expect(component.topics.length).toBe(1);
     component.removeTopic(0);
+    expect(component.topics.length).toBe(1);
+  });
+
+  it('does not add a new topic when the last one is empty', () => {
+    const component = createComponent();
+    // el primer tema está vacío -> el guard evita agregar otro campo
+    component.addTopic();
     expect(component.topics.length).toBe(1);
   });
 

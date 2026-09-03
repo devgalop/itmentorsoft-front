@@ -80,6 +80,12 @@ export class ResourcesComponent {
   }
 
   addTopic(): void {
+    const last = this.topics.at(this.topics.length - 1);
+    // No agregar otro campo si el último está vacío: marca el error en ese.
+    if (last && !((last.value ?? '') as string).trim()) {
+      last.markAsTouched();
+      return;
+    }
     this.topics.push(this.newTopic());
   }
 
@@ -153,6 +159,10 @@ export class ResourcesComponent {
 
     this.isSubmitting.set(true);
     const payload = this.form.getRawValue() as RegisterContentPayload;
+    // Limpia temas vacíos o con espacios antes de enviar.
+    payload.related_topic = (payload.related_topic ?? [])
+      .map((t) => (t ?? '').trim())
+      .filter((t) => t.length > 0);
     const editingId = this.editingId();
 
     try {
