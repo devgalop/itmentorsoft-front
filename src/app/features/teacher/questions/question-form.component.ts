@@ -154,7 +154,9 @@ export class QuestionFormComponent {
       this.keywords.push(this.newKeyword());
     }
 
-    const rubric = q.rubric ?? [];
+    const rubric = (q.rubric ?? []).filter(
+      (r) => r && r.explanation && r.explanation.trim().length > 0,
+    );
     this.rubric.clear();
     rubric.forEach((r) => this.rubric.push(this.newRubric(r.score, r.explanation)));
     if (this.rubric.length < 1) {

@@ -161,6 +161,24 @@ describe('QuestionFormComponent', () => {
       expect(component.rubric.at(0).get('criteria')?.value).toBe('criterio de rubrica valido');
     });
 
+    it('filters out rubric rows with empty criteria on preload', async () => {
+      const detailWithBlank = {
+        ...validDetail,
+        rubric: [
+          { score: 0, explanation: '' },
+          { score: 0, explanation: '   ' },
+          { score: 2, explanation: 'criterio de rubrica valido' },
+        ],
+      };
+      const { component } = createEdit('q-2', detailWithBlank);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Solo queda el criterio con contenido; no se cargan los vacíos.
+      expect(component.rubric.length).toBe(1);
+      expect(component.rubric.at(0).get('criteria')?.value).toBe('criterio de rubrica valido');
+    });
+
     it('submits via updateQuestion in edit mode', async () => {
       const { component, serviceMock } = createEdit('q-1', validDetail);
       serviceMock.updateQuestion.mockResolvedValue({ is_success: true, message: 'Actualizada' });
