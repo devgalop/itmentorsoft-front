@@ -1,14 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, signal } from '@angular/core';
 import {
   AbstractControl,
-  FormArray,
   FormBuilder,
-  FormControl,
   ReactiveFormsModule,
   ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { ContentService } from '@core/content/content.service';
+import { AssessmentsService } from '@core/assessments/assessments.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import {
   CONTENT_CATEGORIES,
@@ -17,10 +16,11 @@ import {
   RegisterContentPayload,
 } from '@core/content/content.types';
 
-function minItems(min: number) {
+/** Requiere al menos `min` elementos seleccionados en un control de tipo string[]. */
+function minSelected(min: number) {
   return (control: AbstractControl): ValidationErrors | null => {
-    const arr = control as FormArray;
-    return arr.length >= min ? null : { minItems: { required: min, actual: arr.length } };
+    const value = (control.value ?? []) as string[];
+    return value.length >= min ? null : { minSelected: { required: min, actual: value.length } };
   };
 }
 
@@ -41,9 +41,36 @@ function httpsUrl(control: AbstractControl): ValidationErrors | null {
 export class ResourcesComponent {
   private readonly fb = inject(FormBuilder);
   private readonly content = inject(ContentService);
+  private readonly assessments = inject(AssessmentsService);
   private readonly toast = inject(ToastService);
+  private readonly host = inject(ElementRef<HTMLElement>);
 
-  readonly categories = CONTENT_CATEGORIES;
+  /** Estado abierto/cerrado del desplegable de temas. */
+  readonly isTopicsOpen = signal(false);
+
+  toggleTopicsDropdown(): void {
+    this.isTopicsOpen.update((open) => !open);
+  }
+
+  /** Texto del botón del combobox según lo seleccionado. */
+  topicsSummary(): string {
+    const selected = this.selectedTopics();
+    if (selected.length === 0) return 'Seleccioná uno o más temas';
+    if (selected.length === 1) return selected[0]!;
+    return `${selected.length} temas seleccionados`;
+  }
+
+  /** Cierra el desplegable al hacer click fuera del componente. */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.isTopicsOpen() && !this.host.nativeElement.contains(event.target)) {
+      this.isTopicsOpen.set(false);
+    }
+  }
+
+  /** Categorías/temas disponibles para marcar (de GET /assessments/topics). */
+  readonly availableTopics = signal<string[]>([]);
+  readonly isLoadingTopics = signal(false);
 
   categoryLabel(value: string): string {
     return contentCategoryLabel(value);
@@ -64,35 +91,46 @@ export class ResourcesComponent {
     description: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(300)]],
     url: ['', [Validators.required, httpsUrl]],
     category: [CONTENT_CATEGORIES[0] as string, [Validators.required]],
-    related_topic: this.fb.array([this.newTopic()], minItems(1)),
+    related_topic: this.fb.nonNullable.control<string[]>([], [minSelected(1)]),
   });
 
   constructor() {
     void this.loadResources();
+    void this.loadTopics();
   }
 
-  get topics(): FormArray {
-    return this.form.get('related_topic') as FormArray;
+  private get topicsControl() {
+    return this.form.controls.related_topic;
   }
 
-  private newTopic(value = ''): FormControl {
-    return this.fb.nonNullable.control(value, [Validators.required, Validators.minLength(2)]);
+  /** Categorías seleccionadas actualmente. */
+  selectedTopics(): string[] {
+    return this.topicsControl.value ?? [];
   }
 
-  addTopic(): void {
-    const last = this.topics.at(this.topics.length - 1);
-    // No agregar otro campo si el último está vacío: marca el error en ese.
-    if (last && !((last.value ?? '') as string).trim()) {
-      last.markAsTouched();
-      return;
+  async loadTopics(): Promise<void> {
+    this.isLoadingTopics.set(true);
+    try {
+      const topics = await this.assessments.getTopics();
+      this.availableTopics.set(topics);
+    } catch {
+      this.availableTopics.set([]);
+    } finally {
+      this.isLoadingTopics.set(false);
     }
-    this.topics.push(this.newTopic());
   }
 
-  removeTopic(index: number): void {
-    if (this.topics.length > 1) {
-      this.topics.removeAt(index);
-    }
+  isTopicSelected(topic: string): boolean {
+    return (this.topicsControl.value ?? []).includes(topic);
+  }
+
+  toggleTopic(topic: string): void {
+    const current = this.topicsControl.value ?? [];
+    const next = current.includes(topic)
+      ? current.filter((t) => t !== topic)
+      : [...current, topic];
+    this.topicsControl.setValue(next);
+    this.topicsControl.markAsTouched();
   }
 
   async loadResources(): Promise<void> {
@@ -122,14 +160,8 @@ export class ResourcesComponent {
       description: resource.summary,
       url: resource.url,
       category: resource.category,
+      related_topic: resource.related_topics ?? [],
     });
-
-    this.topics.clear();
-    const topics = resource.related_topics ?? [];
-    topics.forEach((t) => this.topics.push(this.newTopic(t)));
-    if (this.topics.length === 0) {
-      this.topics.push(this.newTopic());
-    }
 
     this.isModalOpen.set(true);
   }
@@ -147,11 +179,11 @@ export class ResourcesComponent {
     if (e['minlength']) return `Mínimo ${e['minlength'].requiredLength} caracteres`;
     if (e['maxlength']) return `Máximo ${e['maxlength'].requiredLength} caracteres`;
     if (e['https']) return 'Debe empezar con https://';
+    if (e['minSelected']) return 'Seleccioná al menos un tema';
     return 'Inválido';
   }
 
   async submit(): Promise<void> {
-
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -159,10 +191,6 @@ export class ResourcesComponent {
 
     this.isSubmitting.set(true);
     const payload = this.form.getRawValue() as RegisterContentPayload;
-    // Limpia temas vacíos o con espacios antes de enviar.
-    payload.related_topic = (payload.related_topic ?? [])
-      .map((t) => (t ?? '').trim())
-      .filter((t) => t.length > 0);
     const editingId = this.editingId();
 
     try {
@@ -190,8 +218,6 @@ export class ResourcesComponent {
   }
 
   private resetForm(): void {
-    this.form.reset({ category: CONTENT_CATEGORIES[0] });
-    this.topics.clear();
-    this.topics.push(this.newTopic());
+    this.form.reset({ category: CONTENT_CATEGORIES[0], related_topic: [] });
   }
 }

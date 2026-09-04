@@ -53,6 +53,12 @@ export interface GetCategoriesResponse {
   categories: string[];
 }
 
+export interface GetTopicsResponse {
+  is_success: boolean;
+  message: string;
+  topics: string[];
+}
+
 export interface RubricCriterion {
   score: number;
   criteria: string;

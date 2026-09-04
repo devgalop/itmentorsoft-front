@@ -7,6 +7,7 @@ import {
   EvaluativeQuestion,
   GetAllQuestionsResponse,
   GetCategoriesResponse,
+  GetTopicsResponse,
   GetQuestionByIdResponse,
   GetQuestionsResponse,
   PagedQuestions,
@@ -81,6 +82,18 @@ export class AssessmentsService {
         }),
       );
       return response.categories ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Temas disponibles (GET /assessments/topics). */
+  async getTopics(): Promise<string[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetTopicsResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.topics}`),
+      );
+      return response.topics ?? [];
     } catch (error) {
       throw this.mapHttpError(error);
     }
