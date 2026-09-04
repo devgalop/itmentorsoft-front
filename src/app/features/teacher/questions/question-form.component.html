@@ -69,7 +69,7 @@
     <!-- Errores comunes (mín. 2) -->
     <fieldset class="qform__array" formArrayName="common_misconception">
       <legend>Errores comunes <span class="qform__hint">(mín. 2 · cada uno 20–300)</span></legend>
-      @for (ctrl of misconceptions.controls; track $index) {
+      @for (ctrl of misconceptions.controls; track ctrl) {
         <div class="qform__array-row">
           <textarea [formControlName]="$index" rows="2"></textarea>
           <button
@@ -90,7 +90,7 @@
     <!-- Palabras clave (mín. 1) -->
     <fieldset class="qform__array" formArrayName="semantic_keywords">
       <legend>Palabras clave <span class="qform__hint">(mín. 1 · cada una 2–100)</span></legend>
-      @for (ctrl of keywords.controls; track $index) {
+      @for (ctrl of keywords.controls; track ctrl) {
         <div class="qform__array-row">
           <input type="text" [formControlName]="$index" />
           <button
@@ -111,7 +111,7 @@
     <!-- Rúbrica (mín. 1) -->
     <fieldset class="qform__array" formArrayName="rubric">
       <legend>Rúbrica <span class="qform__hint">(score 0–3 · criterio 10–300)</span></legend>
-      @for (group of rubric.controls; track $index) {
+      @for (group of rubric.controls; track group) {
         <div class="qform__rubric-row" [formGroupName]="$index">
           <select formControlName="score" class="qform__score" aria-label="Puntaje">
             <option [value]="0">0</option>

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormArray,
@@ -35,6 +35,7 @@ export class QuestionFormComponent {
   private readonly assessments = inject(AssessmentsService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   private questionId: string | null = null;
 
@@ -162,6 +163,9 @@ export class QuestionFormComponent {
     if (this.rubric.length < 1) {
       this.rubric.push(this.newRubric());
     }
+
+    // App zoneless + OnPush: mutar los FormArray no dispara render, forzamos la detección.
+    this.cdr.markForCheck();
   }
 
   addMisconception(): void {
