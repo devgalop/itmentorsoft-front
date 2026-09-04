@@ -1,8 +1,12 @@
 import { TestBed } from '@angular/core/testing';
+import { ElementRef } from '@angular/core';
 import { vi } from 'vitest';
 import { ResourcesComponent } from './resources.component';
 import { ContentService } from '../../../core/content/content.service';
+import { AssessmentsService } from '../../../core/assessments/assessments.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+
+const CATEGORIES = ['APIs', 'SOLID', 'Patrones', 'Arquitectura'];
 
 const existing = {
   content_id: 'c1',
@@ -22,11 +26,18 @@ describe('ResourcesComponent', () => {
     registerContent: ReturnType<typeof vi.fn>;
     updateContent: ReturnType<typeof vi.fn>;
   };
+  let assessmentsMock: { getTopics: ReturnType<typeof vi.fn> };
 
   function createComponent(): ResourcesComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [ResourcesComponent, { provide: ContentService, useValue: serviceMock }, { provide: ToastService, useValue: toastMock }],
+      providers: [
+        ResourcesComponent,
+        { provide: ContentService, useValue: serviceMock },
+        { provide: AssessmentsService, useValue: assessmentsMock },
+        { provide: ToastService, useValue: toastMock },
+        { provide: ElementRef, useValue: { nativeElement: document.createElement('div') } },
+      ],
     });
     return TestBed.inject(ResourcesComponent);
   }
@@ -37,6 +48,7 @@ describe('ResourcesComponent', () => {
       registerContent: vi.fn(),
       updateContent: vi.fn(),
     };
+    assessmentsMock = { getTopics: vi.fn().mockResolvedValue(CATEGORIES) };
   });
 
   function fillValid(component: ResourcesComponent): void {
@@ -46,16 +58,18 @@ describe('ResourcesComponent', () => {
       url: 'https://ejemplo.com',
       category: 'principiante',
     });
-    component.topics.at(0).setValue('APIs');
+    component.toggleTopic('APIs');
   }
 
-  it('loads resources on creation', async () => {
+  it('loads resources and available categories on creation', async () => {
     serviceMock.getAllContents.mockResolvedValue([existing]);
     const component = createComponent();
     await Promise.resolve();
     await Promise.resolve();
     expect(serviceMock.getAllContents).toHaveBeenCalled();
+    expect(assessmentsMock.getTopics).toHaveBeenCalled();
     expect(component.resources()).toHaveLength(1);
+    expect(component.availableTopics()).toEqual(CATEGORIES);
   });
 
   it('rejects a url that does not start with https://', () => {
@@ -65,22 +79,29 @@ describe('ResourcesComponent', () => {
     expect(component.form.get('url')?.valid).toBe(false);
   });
 
-  it('adds and removes topics but never below 1', () => {
+  it('toggles categories on and off', () => {
     const component = createComponent();
-    component.topics.at(0).setValue('APIs');
-    component.addTopic();
-    expect(component.topics.length).toBe(2);
-    component.removeTopic(1);
-    expect(component.topics.length).toBe(1);
-    component.removeTopic(0);
-    expect(component.topics.length).toBe(1);
+    expect(component.isTopicSelected('SOLID')).toBe(false);
+    component.toggleTopic('SOLID');
+    expect(component.isTopicSelected('SOLID')).toBe(true);
+    expect(component.selectedTopics()).toEqual(['SOLID']);
+    component.toggleTopic('SOLID');
+    expect(component.isTopicSelected('SOLID')).toBe(false);
+    expect(component.selectedTopics()).toEqual([]);
   });
 
-  it('does not add a new topic when the last one is empty', () => {
+  it('is invalid when no category is selected', () => {
     const component = createComponent();
-    // el primer tema está vacío -> el guard evita agregar otro campo
-    component.addTopic();
-    expect(component.topics.length).toBe(1);
+    component.form.patchValue({
+      title: 'Recurso de prueba',
+      description: 'Una descripción válida',
+      url: 'https://ejemplo.com',
+      category: 'principiante',
+    });
+    // sin categorías marcadas -> inválido
+    expect(component.form.valid).toBe(false);
+    component.toggleTopic('APIs');
+    expect(component.form.valid).toBe(true);
   });
 
   it('does not submit when invalid', async () => {
@@ -90,7 +111,7 @@ describe('ResourcesComponent', () => {
     expect(serviceMock.updateContent).not.toHaveBeenCalled();
   });
 
-  it('creates a resource via registerContent and reloads', async () => {
+  it('creates a resource via registerContent with the selected categories', async () => {
     serviceMock.registerContent.mockResolvedValue({ is_success: true, message: 'Creado' });
     const component = createComponent();
     await Promise.resolve();
@@ -100,13 +121,13 @@ describe('ResourcesComponent', () => {
     await component.submit();
 
     expect(serviceMock.registerContent).toHaveBeenCalledTimes(1);
+    expect(serviceMock.registerContent.mock.calls[0][0].related_topic).toEqual(['APIs']);
     expect(serviceMock.updateContent).not.toHaveBeenCalled();
     expect(toastMock.success).toHaveBeenCalledWith('Recurso creado', expect.any(String));
     expect(component.isModalOpen()).toBe(false);
-    expect(serviceMock.getAllContents).toHaveBeenCalledTimes(2);
   });
 
-  it('openEdit preloads the form mapping summary -> description', () => {
+  it('openEdit preloads the form and checks the resource categories', () => {
     const component = createComponent();
 
     component.openEdit(existing);
@@ -116,8 +137,8 @@ describe('ResourcesComponent', () => {
     expect(component.form.get('title')?.value).toBe('Recurso existente');
     expect(component.form.get('description')?.value).toBe('Resumen del recurso');
     expect(component.form.get('category')?.value).toBe('intermedio');
-    expect(component.topics.length).toBe(2);
-    expect(component.topics.at(0).value).toBe('SOLID');
+    expect(component.selectedTopics()).toEqual(['SOLID', 'Patrones']);
+    expect(component.isTopicSelected('SOLID')).toBe(true);
   });
 
   it('updates via updateContent when editing', async () => {
@@ -135,7 +156,7 @@ describe('ResourcesComponent', () => {
     expect(component.editingId()).toBeNull();
   });
 
-  it('openCreate clears the editing state', () => {
+  it('openCreate clears the editing state and selected categories', () => {
     const component = createComponent();
     component.openEdit(existing);
     expect(component.editingId()).toBe('c1');
@@ -144,6 +165,25 @@ describe('ResourcesComponent', () => {
 
     expect(component.editingId()).toBeNull();
     expect(component.form.get('title')?.value).toBe('');
+    expect(component.selectedTopics()).toEqual([]);
+  });
+
+  it('toggles the topics dropdown open and closed', () => {
+    const component = createComponent();
+    expect(component.isTopicsOpen()).toBe(false);
+    component.toggleTopicsDropdown();
+    expect(component.isTopicsOpen()).toBe(true);
+    component.toggleTopicsDropdown();
+    expect(component.isTopicsOpen()).toBe(false);
+  });
+
+  it('summarizes the selected topics for the trigger label', () => {
+    const component = createComponent();
+    expect(component.topicsSummary()).toBe('Seleccioná uno o más temas');
+    component.toggleTopic('APIs');
+    expect(component.topicsSummary()).toBe('APIs');
+    component.toggleTopic('SOLID');
+    expect(component.topicsSummary()).toBe('2 temas seleccionados');
   });
 
   it('shows an error when the backend responds is_success false', async () => {

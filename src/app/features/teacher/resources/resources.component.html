@@ -86,30 +86,45 @@
         </div>
 
         <div class="res__field">
-          <label for="category">Categoría</label>
-          <select id="category" formControlName="category">
-            @for (c of categories; track c) {
-              <option [value]="c">{{ categoryLabel(c) }}</option>
-            }
-          </select>
-        </div>
+          <label>Temas relacionados <span class="res__hintlabel">(marcá al menos 1)</span></label>
+          <div class="res__multiselect">
+            <button
+              type="button"
+              class="res__ms-trigger"
+              [class.res__ms-trigger--open]="isTopicsOpen()"
+              (click)="toggleTopicsDropdown()"
+            >
+              <span [class.res__ms-placeholder]="selectedTopics().length === 0">
+                {{ topicsSummary() }}
+              </span>
+              <span class="res__ms-caret" aria-hidden="true">▾</span>
+            </button>
 
-        <fieldset class="res__array" formArrayName="related_topic">
-          <legend>Temas relacionados <span class="res__hintlabel">(mín. 1)</span></legend>
-          @for (ctrl of topics.controls; track $index) {
-            <div class="res__array-row">
-              <input type="text" [formControlName]="$index" />
-              <button
-                type="button"
-                class="res__remove"
-                (click)="removeTopic($index)"
-                [disabled]="topics.length <= 1"
-                aria-label="Quitar"
-              >×</button>
-            </div>
+            @if (isTopicsOpen()) {
+              <div class="res__ms-panel">
+                @if (isLoadingTopics()) {
+                  <p class="res__hint">Cargando temas…</p>
+                } @else if (availableTopics().length === 0) {
+                  <p class="res__hint">No hay temas disponibles.</p>
+                } @else {
+                  @for (topic of availableTopics(); track topic) {
+                    <label class="res__check">
+                      <input
+                        type="checkbox"
+                        [checked]="isTopicSelected(topic)"
+                        (change)="toggleTopic(topic)"
+                      />
+                      <span>{{ topic }}</span>
+                    </label>
+                  }
+                }
+              </div>
+            }
+          </div>
+          @if (fieldError(form.controls.related_topic); as err) {
+            <span class="res__error">{{ err }}</span>
           }
-          <button type="button" class="res__add" (click)="addTopic()">+ Agregar tema</button>
-        </fieldset>
+        </div>
 
         <div class="res__actions">
           <button type="submit" class="res__submit" [disabled]="isSubmitting()">
