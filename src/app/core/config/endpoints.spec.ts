@@ -23,4 +23,13 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.reports.studentsByCategory).toBe('/reports/students-by-category');
     expect(ENDPOINTS.users.refreshSession).toBe('/users/sessions/refresh');
   });
+
+  it('builds the content search paths with encoding', () => {
+    expect(ENDPOINTS.content.byTopic('APIs')).toBe('/content/topic/APIs');
+    expect(ENDPOINTS.content.byCategory('básico')).toBe('/content/category/b%C3%A1sico');
+    expect(ENDPOINTS.content.byTitle('Intro a Python')).toBe('/content/title/Intro%20a%20Python');
+    expect(ENDPOINTS.content.byCategoryTopic('básico', 'APIs')).toBe(
+      '/content/category-topic/b%C3%A1sico/APIs',
+    );
+  });
 });

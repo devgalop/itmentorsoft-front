@@ -6,7 +6,9 @@ import { ENDPOINTS } from '@core/config/endpoints';
 import {
   ContentItem,
   GetAllContentsResponse,
+  GetContentByIdResponse,
   GetRecommendedLearningPathsResponse,
+  PagedContents,
   RecommendedTopic,
   RegisterContentPayload,
   RegisterContentResponse,
@@ -37,14 +39,82 @@ export class ContentService {
   }
 
   async getAllContents(page = 0, pageSize = 50): Promise<ContentItem[]> {
+    return (await this.getAllContentsPaged(page, pageSize)).items;
+  }
+
+  /** Igual que {@link getAllContents} pero conserva el `total` para paginar. */
+  async getAllContentsPaged(page = 0, pageSize = 50): Promise<PagedContents> {
     try {
       const response = await firstValueFrom(
         this.http.get<GetAllContentsResponse>(`${environment.apiUrl}${ENDPOINTS.content.root}`, {
           params: { page, page_size: pageSize },
         }),
       );
-      return response.items ?? [];
+      return { items: response.items ?? [], total: response.total ?? 0 };
     } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Detalle de un recurso por su ID. Devuelve null si no existe (404). */
+  async getContentById(contentId: string): Promise<ContentItem | null> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetContentByIdResponse>(
+          `${environment.apiUrl}${ENDPOINTS.content.byId(contentId)}`,
+        ),
+      );
+      return response.content ?? null;
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) {
+        return null;
+      }
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Recursos filtrados por tema (page arranca en 0). */
+  async getContentsByTopic(topic: string, page = 0, pageSize = 10): Promise<PagedContents> {
+    return this.searchContents(ENDPOINTS.content.byTopic(topic), page, pageSize);
+  }
+
+  /** Recursos filtrados por categoría (page arranca en 0). */
+  async getContentsByCategory(category: string, page = 0, pageSize = 10): Promise<PagedContents> {
+    return this.searchContents(ENDPOINTS.content.byCategory(category), page, pageSize);
+  }
+
+  /** Recursos cuyo título contiene el criterio dado (page arranca en 0). */
+  async getContentsByTitle(title: string, page = 0, pageSize = 10): Promise<PagedContents> {
+    return this.searchContents(ENDPOINTS.content.byTitle(title), page, pageSize);
+  }
+
+  /** Recursos filtrados por categoría y tema a la vez (page arranca en 0). */
+  async getContentsByCategoryTopic(
+    category: string,
+    topic: string,
+    page = 0,
+    pageSize = 10,
+  ): Promise<PagedContents> {
+    return this.searchContents(ENDPOINTS.content.byCategoryTopic(category, topic), page, pageSize);
+  }
+
+  /**
+   * GET compartido por los 4 buscadores de arriba: misma forma de respuesta
+   * (items/total) y el backend responde 404 cuando no hay coincidencias, lo
+   * cual acá se trata como "sin resultados" y no como error.
+   */
+  private async searchContents(path: string, page: number, pageSize: number): Promise<PagedContents> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetAllContentsResponse>(`${environment.apiUrl}${path}`, {
+          params: { page, page_size: pageSize },
+        }),
+      );
+      return { items: response.items ?? [], total: response.total ?? 0 };
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) {
+        return { items: [], total: 0 };
+      }
       throw this.mapHttpError(error);
     }
   }

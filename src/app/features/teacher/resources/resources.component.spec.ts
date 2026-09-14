@@ -25,6 +25,8 @@ describe('ResourcesComponent', () => {
     getAllContents: ReturnType<typeof vi.fn>;
     registerContent: ReturnType<typeof vi.fn>;
     updateContent: ReturnType<typeof vi.fn>;
+    getContentsByTitle: ReturnType<typeof vi.fn>;
+    getContentsByCategory: ReturnType<typeof vi.fn>;
   };
   let assessmentsMock: { getTopics: ReturnType<typeof vi.fn> };
 
@@ -47,6 +49,8 @@ describe('ResourcesComponent', () => {
       getAllContents: vi.fn().mockResolvedValue([]),
       registerContent: vi.fn(),
       updateContent: vi.fn(),
+      getContentsByTitle: vi.fn().mockResolvedValue({ items: [], total: 0 }),
+      getContentsByCategory: vi.fn().mockResolvedValue({ items: [], total: 0 }),
     };
     assessmentsMock = { getTopics: vi.fn().mockResolvedValue(CATEGORIES) };
   });
@@ -184,6 +188,66 @@ describe('ResourcesComponent', () => {
     expect(component.topicsSummary()).toBe('APIs');
     component.toggleTopic('SOLID');
     expect(component.topicsSummary()).toBe('2 temas seleccionados');
+  });
+
+  it('does not search until "Buscar" is clicked (or Enter), taking priority over the category filter', async () => {
+    serviceMock.getContentsByTitle.mockResolvedValue({ items: [existing], total: 1 });
+    const component = createComponent();
+    await Promise.resolve();
+
+    component.filterCategory.set('intermedio');
+    component.onTitleInput('Recurso');
+    expect(serviceMock.getContentsByTitle).not.toHaveBeenCalled();
+
+    component.onSearchSubmit();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(serviceMock.getContentsByTitle).toHaveBeenCalledWith('Recurso');
+    expect(serviceMock.getContentsByCategory).not.toHaveBeenCalled();
+    expect(component.resources()).toEqual([existing]);
+  });
+
+  it('blocks the search for titles between 1 and 2 characters', async () => {
+    const component = createComponent();
+    await Promise.resolve();
+    serviceMock.getContentsByTitle.mockClear();
+
+    component.onTitleInput('re');
+    expect(component.titleTooShort()).toBe(true);
+
+    component.onSearchSubmit();
+    await Promise.resolve();
+
+    expect(serviceMock.getContentsByTitle).not.toHaveBeenCalled();
+  });
+
+  it('filters by category immediately when the title search is empty', async () => {
+    serviceMock.getContentsByCategory.mockResolvedValue({ items: [existing], total: 1 });
+    const component = createComponent();
+    await Promise.resolve();
+
+    component.onCategoryFilterChange('intermedio');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(serviceMock.getContentsByCategory).toHaveBeenCalledWith('intermedio');
+    expect(component.resources()).toEqual([existing]);
+    expect(component.hasActiveFilter()).toBe(true);
+  });
+
+  it('falls back to getAllContents when filters are cleared', async () => {
+    serviceMock.getAllContents.mockResolvedValue([existing]);
+    const component = createComponent();
+    await Promise.resolve();
+    serviceMock.getAllContents.mockClear();
+
+    component.onCategoryFilterChange('all');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(serviceMock.getAllContents).toHaveBeenCalled();
+    expect(component.hasActiveFilter()).toBe(false);
   });
 
   it('shows an error when the backend responds is_success false', async () => {

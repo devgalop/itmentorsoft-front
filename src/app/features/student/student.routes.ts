@@ -29,6 +29,11 @@ export const STUDENT_ROUTES: Routes = [
           import('./route/student-route.component').then((m) => m.StudentRouteComponent),
       },
       {
+        path: 'explore',
+        loadComponent: () =>
+          import('./explore/student-explore.component').then((m) => m.StudentExploreComponent),
+      },
+      {
         path: 'progress',
         canActivate: [initialAssessmentGuard],
         loadComponent: () =>

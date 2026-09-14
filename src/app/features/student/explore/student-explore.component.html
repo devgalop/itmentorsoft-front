@@ -1,0 +1,114 @@
+<section class="explore">
+  <header class="explore__header">
+    <h1 class="explore__title">Explorar recursos</h1>
+    <p class="explore__subtitle">
+      Buscá entre todos los recursos educativos disponibles, más allá de tu ruta recomendada.
+    </p>
+  </header>
+
+  <div class="explore__filters">
+    <div class="explore__search-wrap">
+      <div class="explore__search-group">
+        <input
+          type="search"
+          class="explore__search"
+          aria-label="Buscar por título"
+          placeholder="Buscar por título completo…"
+          [value]="titleDraft()"
+          (input)="onTitleInput($any($event.target).value)"
+          (keyup.enter)="onSearchSubmit()"
+        />
+        <button
+          type="button"
+          class="explore__search-btn"
+          [disabled]="titleTooShort()"
+          (click)="onSearchSubmit()"
+        >
+          Buscar
+        </button>
+      </div>
+      @if (titleTooShort()) {
+        <p class="explore__field-hint">Escribí al menos 3 caracteres para buscar por título.</p>
+      }
+    </div>
+    <select
+      class="explore__select"
+      aria-label="Filtrar por categoría"
+      [value]="filterCategory()"
+      (change)="onCategoryChange($any($event.target).value)"
+    >
+      <option value="all">Todas las categorías</option>
+      @for (c of categoryOptions; track c) {
+        <option [value]="c">{{ categoryLabel(c) }}</option>
+      }
+    </select>
+    <select
+      class="explore__select"
+      aria-label="Filtrar por tema"
+      [value]="filterTopic()"
+      (change)="onTopicChange($any($event.target).value)"
+      [disabled]="isLoadingTopics() || topicOptions().length === 0"
+    >
+      <option value="all">Todos los temas</option>
+      @for (t of topicOptions(); track t) {
+        <option [value]="t">{{ t }}</option>
+      }
+    </select>
+    @if (hasActiveFilter()) {
+      <button type="button" class="explore__clear" (click)="clearFilters()">Limpiar filtros</button>
+    }
+  </div>
+
+  <div class="explore__panel">
+    @if (isLoading()) {
+      <p class="explore__hint">Buscando recursos…</p>
+    } @else if (loadError()) {
+      <p class="explore__error" role="alert">{{ loadError() }}</p>
+    } @else if (resources().length === 0) {
+      <p class="explore__hint">
+        @if (hasActiveFilter()) {
+          No se encontraron recursos para ese filtro.
+        } @else {
+          No hay recursos disponibles todavía.
+        }
+      </p>
+    } @else {
+      <div class="explore__grid">
+        @for (r of resources(); track r.content_id) {
+          <article class="explore__card">
+            <div class="explore__card-head">
+              <h2 class="explore__card-title">{{ r.title }}</h2>
+              <span class="explore__badge">{{ categoryLabel(r.category) }}</span>
+            </div>
+            <p class="explore__card-summary">{{ r.summary }}</p>
+            @if (r.related_topics.length > 0) {
+              <div class="explore__topics">
+                @for (t of r.related_topics; track t) {
+                  <span class="explore__topic">{{ t }}</span>
+                }
+              </div>
+            }
+            <a class="explore__card-link" [href]="r.url" target="_blank" rel="noopener">Abrir recurso ↗</a>
+          </article>
+        }
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="explore__pager">
+          <button type="button" class="explore__page-btn" (click)="prevPage()" [disabled]="page() === 0">
+            ← Anterior
+          </button>
+          <span class="explore__page-info">Página {{ page() + 1 }} de {{ totalPages() }}</span>
+          <button
+            type="button"
+            class="explore__page-btn"
+            (click)="nextPage()"
+            [disabled]="page() + 1 >= totalPages()"
+          >
+            Siguiente →
+          </button>
+        </div>
+      }
+    }
+  </div>
+</section>
