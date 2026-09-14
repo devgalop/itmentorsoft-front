@@ -58,6 +58,11 @@ export interface RecoverPasswordResponse {
   message: string;
 }
 
+/** Respuesta del reenvío de OTP (POST /users/resend-otp). Siempre 200 con un mensaje genérico. */
+export interface ResendOtpResponse {
+  message: string;
+}
+
 export interface ResetPasswordCredentials {
   token: string;
   id_trx: string;

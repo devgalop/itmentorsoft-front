@@ -95,6 +95,31 @@
   gap: 1rem;
 }
 
+.otp-card__resend {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--color-mid-2);
+}
+
+.otp-card__resend-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  margin-left: 0.3rem;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.otp-card__resend-btn:disabled {
+  color: var(--color-mid-2);
+  font-weight: 500;
+  cursor: not-allowed;
+}
+
 .otp-card__footer {
   text-align: center;
   margin-top: 1rem;

@@ -10,6 +10,7 @@ describe('OtpComponent', () => {
     pendingOtpUserId: ReturnType<typeof vi.fn>;
     validateOtp: ReturnType<typeof vi.fn>;
     homeRoute: ReturnType<typeof vi.fn>;
+    resendOtp: ReturnType<typeof vi.fn>;
   };
   let routerMock: { navigate: ReturnType<typeof vi.fn> };
   let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
@@ -32,6 +33,7 @@ describe('OtpComponent', () => {
       pendingOtpUserId: vi.fn().mockReturnValue('u1'),
       validateOtp: vi.fn().mockResolvedValue({ is_successful: true, token: 't', message: 'ok' }),
       homeRoute: vi.fn().mockReturnValue('/student'),
+      resendOtp: vi.fn().mockResolvedValue({ message: 'Si tu cuenta existe, te enviamos un código.' }),
     };
     routerMock = { navigate: vi.fn() };
     toastMock = { success: vi.fn(), error: vi.fn() };
@@ -87,5 +89,55 @@ describe('OtpComponent', () => {
     c.otpControl.setValue('123');
     await c.onSubmit();
     expect(authMock.validateOtp).not.toHaveBeenCalled();
+  });
+
+  describe('resendOtp', () => {
+    it('resends the code and starts a cooldown', async () => {
+      vi.useFakeTimers();
+      const c = createComponent();
+
+      await c.resendOtp();
+
+      expect(authMock.resendOtp).toHaveBeenCalledWith('u1');
+      expect(toastMock.success).toHaveBeenCalledWith('Código reenviado', expect.any(String));
+      expect(c.resendCooldown()).toBe(30);
+
+      vi.advanceTimersByTime(1000);
+      expect(c.resendCooldown()).toBe(29);
+
+      vi.advanceTimersByTime(29000);
+      expect(c.resendCooldown()).toBe(0);
+      vi.useRealTimers();
+    });
+
+    it('does not resend again while the cooldown is active', async () => {
+      vi.useFakeTimers();
+      const c = createComponent();
+
+      await c.resendOtp();
+      await c.resendOtp();
+
+      expect(authMock.resendOtp).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
+    });
+
+    it('shows an error toast when the resend fails', async () => {
+      authMock.resendOtp.mockRejectedValue(new Error('Sin conexión al servidor'));
+      const c = createComponent();
+
+      await c.resendOtp();
+
+      expect(toastMock.error).toHaveBeenCalledWith('No se pudo reenviar el código', 'Sin conexión al servidor');
+      expect(c.resendCooldown()).toBe(0);
+    });
+
+    it('does nothing when there is no pending user id', async () => {
+      authMock.pendingOtpUserId.mockReturnValue(null);
+      const c = createComponent();
+
+      await c.resendOtp();
+
+      expect(authMock.resendOtp).not.toHaveBeenCalled();
+    });
   });
 });

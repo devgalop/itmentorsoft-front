@@ -56,6 +56,7 @@ export const ENDPOINTS = {
     changePassword: '/users/change-password',
     sessions: '/users/sessions',
     otpValidate: '/users/otp/validate',
+    resendOtp: '/users/resend-otp',
     refreshSession: '/users/sessions/refresh',
     connectedTotal: '/users/connected/total',
   },

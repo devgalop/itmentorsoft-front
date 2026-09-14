@@ -298,6 +298,33 @@ describe('AuthService', () => {
     });
   });
 
+  describe('resendOtp', () => {
+    const resendUrl = `${apiUrl}/users/resend-otp`;
+
+    it('sends POST to /users/resend-otp with the user_id', async () => {
+      const resendPromise = service.resendOtp('u1');
+
+      const req = httpMock.expectOne(resendUrl);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ user_id: 'u1' });
+      req.flush({
+        message: 'If your account exists, an OTP has been sent to your registered email.',
+      });
+
+      const result = await resendPromise;
+      expect(result.message).toContain('OTP has been sent');
+    });
+
+    it('throws connection error message on network error', async () => {
+      const resendPromise = service.resendOtp('u1');
+
+      const req = httpMock.expectOne(resendUrl);
+      req.error(new ProgressEvent('Network error'));
+
+      await expect(resendPromise).rejects.toThrow('Sin conexión al servidor');
+    });
+  });
+
   describe('resetPassword', () => {
     const validResetCredentials = {
       token: 'plain-text-token-from-email',

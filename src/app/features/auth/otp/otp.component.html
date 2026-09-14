@@ -37,6 +37,24 @@
         </app-button>
       </form>
 
+      <p class="otp-card__resend">
+        ¿No te llegó el código?
+        <button
+          type="button"
+          class="otp-card__resend-btn"
+          [disabled]="isResending() || resendCooldown() > 0"
+          (click)="resendOtp()"
+        >
+          @if (isResending()) {
+            Enviando…
+          } @else if (resendCooldown() > 0) {
+            Reenviar ({{ resendCooldown() }}s)
+          } @else {
+            Reenviar código
+          }
+        </button>
+      </p>
+
       <p class="otp-card__footer">
         <a routerLink="/login">← Volver al inicio de sesión</a>
       </p>
