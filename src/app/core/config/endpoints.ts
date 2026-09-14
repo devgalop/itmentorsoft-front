@@ -31,6 +31,11 @@ export const ENDPOINTS = {
   content: {
     root: '/content/',
     byId: (id: string) => `/content/${encodeURIComponent(id)}`,
+    byTopic: (topic: string) => `/content/topic/${encodeURIComponent(topic)}`,
+    byCategory: (category: string) => `/content/category/${encodeURIComponent(category)}`,
+    byTitle: (title: string) => `/content/title/${encodeURIComponent(title)}`,
+    byCategoryTopic: (category: string, topic: string) =>
+      `/content/category-topic/${encodeURIComponent(category)}/${encodeURIComponent(topic)}`,
     recommendedLearningPaths: '/content/recommended/learning-paths',
   },
   reports: {

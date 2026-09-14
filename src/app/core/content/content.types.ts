@@ -74,6 +74,12 @@ export interface UpdateContentResponse {
   message: string;
 }
 
+export interface GetContentByIdResponse {
+  is_success: boolean;
+  message: string;
+  content: ContentItem | null;
+}
+
 export interface PagedContents {
   items: ContentItem[];
   total: number;

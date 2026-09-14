@@ -7,6 +7,43 @@
     <button type="button" class="res__new" (click)="openCreate()">+ Nuevo recurso</button>
   </header>
 
+  <div class="res__filters">
+    <div class="res__search-wrap">
+      <div class="res__search-group">
+        <input
+          type="search"
+          class="res__search"
+          aria-label="Buscar por título"
+          placeholder="Buscar por título completo…"
+          [value]="titleDraft()"
+          (input)="onTitleInput($any($event.target).value)"
+          (keyup.enter)="onSearchSubmit()"
+        />
+        <button
+          type="button"
+          class="res__search-btn"
+          [disabled]="titleTooShort()"
+          (click)="onSearchSubmit()"
+        >
+          Buscar
+        </button>
+      </div>
+      @if (titleTooShort()) {
+        <p class="res__field-hint">Escribí al menos 3 caracteres para buscar por título.</p>
+      }
+    </div>
+    <select
+      class="res__filter-select"
+      aria-label="Filtrar por categoría"
+      [value]="filterCategory()"
+      (change)="onCategoryFilterChange($any($event.target).value)"
+    >
+      <option value="all">Todas las categorías</option>
+      @for (c of categoryOptions; track c) {
+        <option [value]="c">{{ categoryLabel(c) }}</option>
+      }
+    </select>
+  </div>
 
   <div class="res__panel">
     @if (isLoading()) {
@@ -14,7 +51,13 @@
     } @else if (loadError()) {
       <p class="res__error" role="alert">{{ loadError() }}</p>
     } @else if (resources().length === 0) {
-      <p class="res__hint">No hay recursos todavía. Creá el primero con “Nuevo recurso”.</p>
+      <p class="res__hint">
+        @if (hasActiveFilter()) {
+          No se encontraron recursos para ese filtro.
+        } @else {
+          No hay recursos todavía. Creá el primero con “Nuevo recurso”.
+        }
+      </p>
     } @else {
       <table class="res__table">
         <thead>

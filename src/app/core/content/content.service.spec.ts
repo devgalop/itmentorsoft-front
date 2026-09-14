@@ -88,6 +88,111 @@ describe('ContentService', () => {
     });
   });
 
+  describe('getAllContentsPaged', () => {
+    it('GETs /content/ and returns items+total', async () => {
+      const promise = service.getAllContentsPaged(0, 12);
+      const req = httpMock.expectOne(
+        (r) => r.url === '/content/' && r.params.get('page') === '0' && r.params.get('page_size') === '12',
+      );
+      req.flush({ is_success: true, message: 'ok', items: [], total: 7 });
+      expect(await promise).toEqual({ items: [], total: 7 });
+    });
+  });
+
+  describe('getContentById', () => {
+    it('GETs /content/{id} and returns the content', async () => {
+      const promise = service.getContentById('c-1');
+      const req = httpMock.expectOne('/content/c-1');
+      expect(req.request.method).toBe('GET');
+      const content = {
+        content_id: 'c-1',
+        title: 'Recurso',
+        summary: 'resumen',
+        url: 'https://x.com',
+        category: 'principiante',
+        related_topics: ['t1'],
+      };
+      req.flush({ is_success: true, message: 'ok', content });
+      expect(await promise).toEqual(content);
+    });
+
+    it('returns null on 404 instead of throwing', async () => {
+      const promise = service.getContentById('missing');
+      httpMock
+        .expectOne('/content/missing')
+        .flush(
+          { detail: { is_success: false, message: 'not found', content: null } },
+          { status: 404, statusText: 'Not Found' },
+        );
+      expect(await promise).toBeNull();
+    });
+  });
+
+  describe('getContentsByTopic', () => {
+    it('GETs /content/topic/{criteria} with pagination and returns items+total', async () => {
+      const promise = service.getContentsByTopic('APIs');
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === '/content/topic/APIs' &&
+          r.params.get('page') === '0' &&
+          r.params.get('page_size') === '10',
+      );
+      expect(req.request.method).toBe('GET');
+      const items = [
+        {
+          content_id: 'c1',
+          title: 'Recurso',
+          summary: 'resumen',
+          url: 'https://x.com',
+          category: 'principiante',
+          related_topics: ['APIs'],
+        },
+      ];
+      req.flush({ is_success: true, message: 'ok', items, total: 1 });
+      expect(await promise).toEqual({ items, total: 1 });
+    });
+
+    it('returns an empty page on 404 instead of throwing', async () => {
+      const promise = service.getContentsByTopic('Inexistente');
+      httpMock
+        .expectOne((r) => r.url === '/content/topic/Inexistente')
+        .flush({ detail: { is_success: false, message: 'not found', items: [], total: 0 } }, { status: 404, statusText: 'Not Found' });
+      expect(await promise).toEqual({ items: [], total: 0 });
+    });
+  });
+
+  describe('getContentsByCategory', () => {
+    it('GETs /content/category/{criteria} with pagination', async () => {
+      const promise = service.getContentsByCategory('básico', 1, 20);
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === '/content/category/b%C3%A1sico' &&
+          r.params.get('page') === '1' &&
+          r.params.get('page_size') === '20',
+      );
+      req.flush({ is_success: true, message: 'ok', items: [], total: 0 });
+      expect(await promise).toEqual({ items: [], total: 0 });
+    });
+  });
+
+  describe('getContentsByTitle', () => {
+    it('GETs /content/title/{criteria} with pagination', async () => {
+      const promise = service.getContentsByTitle('Intro');
+      const req = httpMock.expectOne((r) => r.url === '/content/title/Intro');
+      req.flush({ is_success: true, message: 'ok', items: [], total: 0 });
+      expect(await promise).toEqual({ items: [], total: 0 });
+    });
+  });
+
+  describe('getContentsByCategoryTopic', () => {
+    it('GETs /content/category-topic/{category}/{topic} with pagination', async () => {
+      const promise = service.getContentsByCategoryTopic('básico', 'APIs');
+      const req = httpMock.expectOne((r) => r.url === '/content/category-topic/b%C3%A1sico/APIs');
+      req.flush({ is_success: true, message: 'ok', items: [], total: 0 });
+      expect(await promise).toEqual({ items: [], total: 0 });
+    });
+  });
+
   describe('registerContent', () => {
     const payload = {
       title: 'Un recurso',

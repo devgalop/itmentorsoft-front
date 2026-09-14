@@ -80,11 +80,42 @@
   border-radius: 0.625rem;
 }
 
+.route__item-open {
+  flex: 1;
+  display: block;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.route__item-open:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.route__item-open:hover .route__item-title,
+.route__item-open:focus-visible .route__item-title {
+  text-decoration: underline;
+}
+
 .route__item-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-weight: 600;
   color: var(--color-primary);
   margin: 0 0 0.25rem;
   font-size: 0.95rem;
+}
+
+.route__item-link {
+  flex-shrink: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--color-secondary);
 }
 
 .route__item-desc {

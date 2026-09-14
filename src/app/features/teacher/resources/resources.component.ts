@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  HostListener,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -80,6 +88,22 @@ export class ResourcesComponent {
   readonly isLoading = signal(false);
   readonly loadError = signal<string | null>(null);
 
+  /** Filtros de búsqueda: título tiene prioridad sobre categoría si ambos están activos. */
+  /** Valor del input mientras se escribe (no dispara búsqueda por sí solo). */
+  readonly titleDraft = signal('');
+  /** Título efectivamente buscado (se confirma con el botón "Buscar" o Enter). */
+  readonly searchTitle = signal('');
+  readonly filterCategory = signal('all');
+  readonly categoryOptions = CONTENT_CATEGORIES;
+  readonly hasActiveFilter = computed(
+    () => this.searchTitle().trim() !== '' || this.filterCategory() !== 'all',
+  );
+  /** El backend rechaza títulos de menos de 3 caracteres; se valida antes de buscar. */
+  readonly titleTooShort = computed(() => {
+    const len = this.titleDraft().trim().length;
+    return len > 0 && len < 3;
+  });
+
   readonly isModalOpen = signal(false);
   readonly isSubmitting = signal(false);
 
@@ -133,11 +157,36 @@ export class ResourcesComponent {
     this.topicsControl.markAsTouched();
   }
 
+  onTitleInput(value: string): void {
+    this.titleDraft.set(value);
+  }
+
+  /** Confirma la búsqueda por título (botón "Buscar" o Enter); vacío = solo filtro de categoría. */
+  onSearchSubmit(): void {
+    if (this.titleTooShort()) return;
+    this.searchTitle.set(this.titleDraft().trim());
+    void this.loadResources();
+  }
+
+  onCategoryFilterChange(value: string): void {
+    this.filterCategory.set(value);
+    void this.loadResources();
+  }
+
   async loadResources(): Promise<void> {
     this.isLoading.set(true);
     this.loadError.set(null);
     try {
-      this.resources.set(await this.content.getAllContents());
+      const title = this.searchTitle().trim();
+      const category = this.filterCategory();
+
+      if (title) {
+        this.resources.set((await this.content.getContentsByTitle(title)).items);
+      } else if (category !== 'all') {
+        this.resources.set((await this.content.getContentsByCategory(category)).items);
+      } else {
+        this.resources.set(await this.content.getAllContents());
+      }
     } catch (error) {
       this.loadError.set(error instanceof Error ? error.message : 'Error al cargar recursos');
     } finally {

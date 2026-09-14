@@ -29,10 +29,22 @@
           <ul class="route__list">
             @for (item of topic.contents; track item.content_id) {
               <li class="route__item">
-                <div class="route__item-body">
-                  <p class="route__item-title">{{ item.title }}</p>
-                  <p class="route__item-desc">{{ item.description }}</p>
-                </div>
+                <button
+                  type="button"
+                  class="route__item-open"
+                  [disabled]="openingId() === item.content_id"
+                  (click)="openResource(item.content_id)"
+                >
+                  <div class="route__item-body">
+                    <p class="route__item-title">
+                      {{ item.title }}
+                      <span class="route__item-link" aria-hidden="true">
+                        {{ openingId() === item.content_id ? 'Abriendo…' : 'Abrir ↗' }}
+                      </span>
+                    </p>
+                    <p class="route__item-desc">{{ item.description }}</p>
+                  </div>
+                </button>
                 <div class="route__item-rating" [attr.aria-label]="'Valoración ' + item.rating">
                   @for (s of [1, 2, 3, 4, 5]; track s) {
                     <span
