@@ -13,6 +13,7 @@ import {
   RecoverPasswordResponse,
   RegisterCredentials,
   RegisterResponse,
+  ResendOtpResponse,
   ResetPasswordCredentials,
   ResetPasswordResponse,
 } from './auth.types';
@@ -96,6 +97,24 @@ export class AuthService {
         sessionStorage.removeItem(PENDING_OTP_KEY);
       }
       return response;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Reenvía el OTP al correo del usuario pendiente de validar. El backend
+   * siempre responde 200 con un mensaje genérico (no revela si el user_id
+   * existe), y cada reenvío cuenta como un intento para el bloqueo por
+   * demasiados intentos fallidos — por eso el componente lo limita con un cooldown.
+   */
+  async resendOtp(userId: string): Promise<ResendOtpResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.post<ResendOtpResponse>(`${environment.apiUrl}${ENDPOINTS.users.resendOtp}`, {
+          user_id: userId,
+        }),
+      );
     } catch (error) {
       throw this.mapHttpError(error);
     }

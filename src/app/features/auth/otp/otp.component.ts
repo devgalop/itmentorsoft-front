@@ -1,10 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
+
+/** Segundos de espera entre reenvíos, para no gastar los intentos de bloqueo del backend. */
+const RESEND_COOLDOWN_SECONDS = 30;
 
 @Component({
   selector: 'app-otp',
@@ -18,8 +21,13 @@ export class OtpComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly isLoading = signal(false);
+  readonly isResending = signal(false);
+  /** Segundos restantes para poder reenviar de nuevo; 0 = botón habilitado. */
+  readonly resendCooldown = signal(0);
+  private cooldownInterval?: ReturnType<typeof setInterval>;
 
   readonly otpForm = new FormGroup({
     otp: new FormControl('', [
@@ -40,6 +48,7 @@ export class OtpComponent {
         this.otpControl.setValue(upper, { emitEvent: false });
       }
     });
+    this.destroyRef.onDestroy(() => clearInterval(this.cooldownInterval));
   }
 
   get otpControl(): FormControl {
@@ -86,5 +95,36 @@ export class OtpComponent {
       this.isLoading.set(false);
       this.otpForm.enable();
     }
+  }
+
+  async resendOtp(): Promise<void> {
+    const userId = this.authService.pendingOtpUserId();
+    if (!userId || this.isResending() || this.resendCooldown() > 0) return;
+
+    this.isResending.set(true);
+    try {
+      const response = await this.authService.resendOtp(userId);
+      this.toast.success('Código reenviado', response.message);
+      this.startResendCooldown();
+    } catch (error) {
+      this.toast.error(
+        'No se pudo reenviar el código',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
+    } finally {
+      this.isResending.set(false);
+    }
+  }
+
+  private startResendCooldown(): void {
+    this.resendCooldown.set(RESEND_COOLDOWN_SECONDS);
+    clearInterval(this.cooldownInterval);
+    this.cooldownInterval = setInterval(() => {
+      const next = this.resendCooldown() - 1;
+      this.resendCooldown.set(Math.max(next, 0));
+      if (next <= 0) {
+        clearInterval(this.cooldownInterval);
+      }
+    }, 1000);
   }
 }
