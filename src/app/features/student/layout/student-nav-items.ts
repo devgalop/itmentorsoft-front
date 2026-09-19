@@ -5,6 +5,5 @@ export const STUDENT_NAV_ITEMS: NavItem[] = [
   { label: 'Mi ruta', route: '/student/route', icon: 'route', group: 'Principal' },
   { label: 'Explorar recursos', route: '/student/explore', icon: 'search', group: 'Principal' },
   { label: 'Mi progreso', route: '/student/progress', icon: 'chart', group: 'Principal' },
-  { label: 'Mi perfil', route: '/student/profile', icon: 'user', group: 'Principal' },
   { label: 'Evaluaciones', route: '/student/assessments', icon: 'check', group: 'Aprendizaje' },
 ];

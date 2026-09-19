@@ -11,7 +11,7 @@ import { TEACHER_NAV_ITEMS } from './teacher-nav-items';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="teacher-layout">
-      <app-sidebar [navItems]="navItems" roleLabel="Docente" />
+      <app-sidebar [navItems]="navItems" roleLabel="Docente" profileRoute="/teacher/profile" />
       <main class="teacher-layout__content" [class.teacher-layout__content--collapsed]="isCollapsed()">
         <router-outlet />
       </main>

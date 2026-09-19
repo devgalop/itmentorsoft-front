@@ -11,7 +11,7 @@ import { ADMIN_NAV_ITEMS } from './admin-nav-items';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="admin-layout">
-      <app-sidebar [navItems]="navItems" roleLabel="Administrador" />
+      <app-sidebar [navItems]="navItems" roleLabel="Administrador" profileRoute="/admin/profile" />
       <main class="admin-layout__content" [class.admin-layout__content--collapsed]="isCollapsed()">
         <router-outlet />
       </main>

@@ -15,7 +15,7 @@ const GATED_ROUTES = ['/student/route', '/student/progress'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="student-layout">
-      <app-sidebar [navItems]="navItems()" roleLabel="Estudiante" />
+      <app-sidebar [navItems]="navItems()" roleLabel="Estudiante" profileRoute="/student/profile" />
       <main class="student-layout__content" [class.student-layout__content--collapsed]="isCollapsed()">
         <router-outlet />
       </main>
