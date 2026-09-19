@@ -10,11 +10,11 @@ describe('AdminLayoutComponent', () => {
   let component: AdminLayoutComponent;
   let fixture: ComponentFixture<AdminLayoutComponent>;
   let sidebarServiceMock: { isCollapsed: ReturnType<typeof vi.fn> };
-  let authServiceMock: { logout: ReturnType<typeof vi.fn> };
+  let authServiceMock: { logout: ReturnType<typeof vi.fn>; user: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     sidebarServiceMock = { isCollapsed: vi.fn(() => false) };
-    authServiceMock = { logout: vi.fn() };
+    authServiceMock = { logout: vi.fn(), user: vi.fn(() => null) };
 
     await TestBed.configureTestingModule({
       imports: [AdminLayoutComponent],

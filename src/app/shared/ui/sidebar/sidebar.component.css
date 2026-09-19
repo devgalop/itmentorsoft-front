@@ -64,27 +64,64 @@
   height: 16px;
 }
 
-.sidebar__role {
+.sidebar__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
   margin-top: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
   background: rgba(26, 188, 176, 0.12);
   border: 1px solid rgba(26, 188, 176, 0.25);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  text-decoration: none;
+  transition: background-color 0.15s;
 }
 
-.sidebar__role span {
-  display: block;
+.sidebar__profile:hover {
+  background: rgba(26, 188, 176, 0.2);
+}
+
+.sidebar--collapsed .sidebar__profile {
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.sidebar__avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(26, 188, 176, 0.25);
+  color: var(--color-accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.sidebar__profile-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar__profile-text span {
   font-size: 0.625rem;
   color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.sidebar__role strong {
+.sidebar__profile-text strong {
   font-size: 0.75rem;
   color: var(--color-accent-light);
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
 
 .sidebar__nav {
   flex: 1;
@@ -124,23 +161,31 @@
   flex-shrink: 0;
 }
 
+.sidebar--collapsed .sidebar__nav-item {
+  justify-content: center;
+}
+
 .sidebar__footer {
   padding-top: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.sidebar--collapsed .sidebar__footer app-button {
-  display: none;
-}
-
 .sidebar__footer app-button ::ng-deep button {
   border-color: var(--color-accent);
   color: var(--color-accent);
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
 }
 
 .sidebar__footer app-button ::ng-deep button:hover:not(:disabled) {
   background-color: var(--color-accent);
   color: var(--color-white);
+}
+
+.sidebar__logout-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 .sidebar__group-title {
   padding: 0 1rem;

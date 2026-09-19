@@ -11,12 +11,12 @@ describe('StudentLayoutComponent', () => {
   let component: StudentLayoutComponent;
   let fixture: ComponentFixture<StudentLayoutComponent>;
   let sidebarServiceMock: { isCollapsed: ReturnType<typeof vi.fn> };
-  let authServiceMock: { logout: ReturnType<typeof vi.fn> };
+  let authServiceMock: { logout: ReturnType<typeof vi.fn>; user: ReturnType<typeof vi.fn> };
   let initialAssessmentMock: { hasCompleted: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     sidebarServiceMock = { isCollapsed: vi.fn(() => false) };
-    authServiceMock = { logout: vi.fn() };
+    authServiceMock = { logout: vi.fn(), user: vi.fn(() => null) };
     initialAssessmentMock = { hasCompleted: vi.fn().mockResolvedValue(true) };
 
     await TestBed.configureTestingModule({
@@ -57,7 +57,6 @@ describe('StudentLayoutComponent', () => {
     const routes = f.componentInstance.navItems().map((i) => i.route);
     expect(routes).not.toContain('/student/route');
     expect(routes).not.toContain('/student/progress');
-    expect(routes).toContain('/student/profile');
     expect(routes).toContain('/student/dashboard');
   });
 
