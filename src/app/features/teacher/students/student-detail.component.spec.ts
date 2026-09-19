@@ -3,6 +3,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { vi } from 'vitest';
 import { StudentDetailComponent } from './student-detail.component';
 import { ReportsService } from '../../../core/reports/reports.service';
+import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
 
 async function flush(times = 5): Promise<void> {
   for (let i = 0; i < times; i++) {
@@ -22,7 +23,11 @@ describe('StudentDetailComponent', () => {
     feedback: 'Buen avance en POO, reforzar APIs.',
   };
 
-  function createComponent(id: string | null, detail: unknown, opts?: { reject?: Error; progress?: unknown }) {
+  function createComponent(
+    id: string | null,
+    detail: unknown,
+    opts?: { reject?: Error; progress?: unknown; quantity?: number; quantityReject?: Error },
+  ) {
     TestBed.resetTestingModule();
     const serviceMock = {
       getStudentSummary: opts?.reject
@@ -30,16 +35,22 @@ describe('StudentDetailComponent', () => {
         : vi.fn().mockResolvedValue(detail),
       getStudentProgress: vi.fn().mockResolvedValue(opts?.progress ?? null),
     };
+    const studentAssessmentMock = {
+      getQuantity: opts?.quantityReject
+        ? vi.fn().mockRejectedValue(opts.quantityReject)
+        : vi.fn().mockResolvedValue(opts?.quantity ?? 0),
+    };
     TestBed.configureTestingModule({
       imports: [StudentDetailComponent],
       providers: [
         provideRouter([]),
         { provide: ReportsService, useValue: serviceMock },
+        { provide: StudentAssessmentService, useValue: studentAssessmentMock },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap(id ? { id } : {}) } } },
       ],
     });
     const fixture = TestBed.createComponent(StudentDetailComponent);
-    return { component: fixture.componentInstance, serviceMock };
+    return { component: fixture.componentInstance, serviceMock, studentAssessmentMock };
   }
 
   it('loads the summary for the route id', async () => {
@@ -95,5 +106,21 @@ describe('StudentDetailComponent', () => {
     const { component } = createComponent('s1', null, { reject: new Error('No tenés permisos') });
     await flush();
     expect(component.loadError()).toBe('No tenés permisos');
+  });
+
+  it('loads the assessments count alongside the summary', async () => {
+    const { component, studentAssessmentMock } = createComponent('s1', summary, { quantity: 6 });
+    await flush();
+    expect(studentAssessmentMock.getQuantity).toHaveBeenCalledWith('s1');
+    expect(component.assessmentsCount()).toBe(6);
+  });
+
+  it('keeps the rest of the report working when the count fails', async () => {
+    const { component } = createComponent('s1', summary, {
+      quantityReject: new Error('Sin conexión al servidor'),
+    });
+    await flush();
+    expect(component.assessmentsCount()).toBeNull();
+    expect(component.summary()?.name).toBe('Eider Sánchez');
   });
 });

@@ -87,3 +87,9 @@ export interface GetAssessmentsSummaryResponse {
   total_assessments: number;
   assessments: AssessmentSummary[];
 }
+
+export interface GetQuantityOfAssessmentsResponse {
+  is_success: boolean;
+  message: string;
+  total_assessments: number;
+}

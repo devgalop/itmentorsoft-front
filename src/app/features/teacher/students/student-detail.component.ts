@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ReportsService } from '@core/reports/reports.service';
 import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
+import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 
 @Component({
   selector: 'app-student-detail',
@@ -14,9 +15,12 @@ import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
 export class StudentDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly reports = inject(ReportsService);
+  private readonly studentAssessment = inject(StudentAssessmentService);
 
   readonly summary = signal<StudentSummary | null>(null);
   readonly progress = signal<StudentProgress | null>(null);
+  /** Cantidad de evaluaciones realizadas. null cuando aún no cargó o falló (no es un dato crítico del reporte). */
+  readonly assessmentsCount = signal<number | null>(null);
   readonly isLoading = signal(true);
   readonly loadError = signal<string | null>(null);
 
@@ -34,12 +38,14 @@ export class StudentDetailComponent {
     this.isLoading.set(true);
     this.loadError.set(null);
     try {
-      const [summary, progress] = await Promise.all([
+      const [summary, progress, assessmentsCount] = await Promise.all([
         this.reports.getStudentSummary(id),
         this.reports.getStudentProgress(id).catch(() => null),
+        this.studentAssessment.getQuantity(id).catch(() => null),
       ]);
       this.summary.set(summary);
       this.progress.set(progress);
+      this.assessmentsCount.set(assessmentsCount);
       if (!summary) {
         this.loadError.set('No hay reporte disponible para este estudiante.');
       }

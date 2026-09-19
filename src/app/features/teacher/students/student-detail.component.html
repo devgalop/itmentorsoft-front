@@ -12,6 +12,9 @@
         <h1 class="det__name">{{ s.name }}</h1>
         <span class="det__badge">{{ classificationLabel(s.knowledge_classification) }}</span>
       </div>
+      @if (assessmentsCount() !== null) {
+        <span class="det__assessments-count">{{ assessmentsCount() }} evaluación(es) realizada(s)</span>
+      }
     </header>
 
     <div class="det__grid">

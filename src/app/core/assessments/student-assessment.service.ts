@@ -9,6 +9,7 @@ import {
   GetAssessmentByTopicResponse,
   GetAssessmentResultResponse,
   GetAssessmentsSummaryResponse,
+  GetQuantityOfAssessmentsResponse,
   GetTopicsResponse,
   QualificationStatusResponse,
   SaveAssessmentPayload,
@@ -112,6 +113,21 @@ export class StudentAssessmentService {
         ),
       );
       return response.assessments ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Cantidad total de evaluaciones realizadas por el estudiante. */
+  async getQuantity(studentId: string): Promise<number> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetQuantityOfAssessmentsResponse>(
+          `${environment.apiUrl}${ENDPOINTS.assessments.quantity}`,
+          { params: { student_id: studentId } },
+        ),
+      );
+      return response.total_assessments ?? 0;
     } catch (error) {
       throw this.mapHttpError(error);
     }
