@@ -1,8 +1,5 @@
 import { Routes } from '@angular/router';
 
-const PLACEHOLDER = () =>
-  import('./placeholder/admin-placeholder.component').then((m) => m.AdminPlaceholderComponent);
-
 export const ADMIN_ROUTES: Routes = [
   {
     path: '',
@@ -31,19 +28,13 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'config',
-        data: {
-          title: 'Configuración',
-          subtitle: 'Próximamente: parámetros generales del sistema.',
-        },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./config/admin-config.component').then((m) => m.AdminConfigComponent),
       },
       {
         path: 'analytics',
-        data: {
-          title: 'Analíticas',
-          subtitle: 'Próximamente: métricas y analíticas del sistema.',
-        },
-        loadComponent: PLACEHOLDER,
+        loadComponent: () =>
+          import('./analytics/admin-analytics.component').then((m) => m.AdminAnalyticsComponent),
       },
       {
         path: 'profile',

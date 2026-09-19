@@ -1,0 +1,81 @@
+:host { display: block; }
+
+.an__title {
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.an__subtitle {
+  color: var(--color-mid-2);
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+.an__grid {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.an__dist {
+  background: var(--color-white);
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.an__dist-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0 0 0.25rem;
+}
+
+.an__dist-total,
+.an__dist-hint {
+  font-size: 0.8rem;
+  color: var(--color-mid-2);
+  margin: 0 0 0.875rem;
+}
+
+.an__dist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.an__dist-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.an__dist-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.an__dist-count {
+  font-size: 0.8rem;
+  color: var(--color-mid-1);
+}
+
+.an__dist-bar {
+  height: 8px;
+  background: var(--color-light-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.an__dist-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}

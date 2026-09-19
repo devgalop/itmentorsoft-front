@@ -231,4 +231,59 @@ describe('AssessmentsService', () => {
     });
   });
 
+  describe('getAvailableModels', () => {
+    it('GETs /assessments/available_models and returns the model list', async () => {
+      const promise = service.getAvailableModels();
+      const req = httpMock.expectOne('/assessments/available_models');
+      expect(req.request.method).toBe('GET');
+      req.flush({ is_success: true, message: 'ok', models: ['model_1', 'model_2'] });
+      expect(await promise).toEqual(['model_1', 'model_2']);
+    });
+
+    it('returns an empty list when models is missing', async () => {
+      const promise = service.getAvailableModels();
+      httpMock.expectOne('/assessments/available_models').flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
+  describe('getModelSelected', () => {
+    it('GETs /assessments/model_selected and returns the models by process', async () => {
+      const promise = service.getModelSelected();
+      const req = httpMock.expectOne('/assessments/model_selected');
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        is_success: true,
+        message: 'ok',
+        models_by_process: [{ process: 'qualifier', model_id: 'model_1' }],
+      });
+      expect(await promise).toEqual([{ process: 'qualifier', model_id: 'model_1' }]);
+    });
+
+    it('returns an empty list when models_by_process is missing', async () => {
+      const promise = service.getModelSelected();
+      httpMock.expectOne('/assessments/model_selected').flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
+  describe('updateModel', () => {
+    it('PUTs the process and model_id to /assessments/models', async () => {
+      const promise = service.updateModel('qualifier', 'model_2');
+      const req = httpMock.expectOne('/assessments/models');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ process: 'qualifier', model_id: 'model_2' });
+      req.flush({ is_success: true, message: 'Model updated successfully' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.updateModel('qualifier', 'model_2');
+      httpMock
+        .expectOne('/assessments/models')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+    });
+  });
 });

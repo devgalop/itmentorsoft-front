@@ -9,6 +9,7 @@ import {
   GetStudentsByCategoryResponse,
   GetStudentProgressResponse,
   GetStudentSummaryResponse,
+  GetUsersByRoleResponse,
   PagedStudents,
   StudentProgress,
   StudentSummary,
@@ -91,6 +92,21 @@ export class ReportsService {
         }),
       );
       return response.summary ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Cantidad de usuarios con un rol dado (solo admin). */
+  async getUsersByRoleTotal(role: string): Promise<number> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetUsersByRoleResponse>(
+          `${environment.apiUrl}${ENDPOINTS.reports.usersByRole}`,
+          { params: { role } },
+        ),
+      );
+      return response.total_users ?? 0;
     } catch (error) {
       throw this.mapHttpError(error);
     }

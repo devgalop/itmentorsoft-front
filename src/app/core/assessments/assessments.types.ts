@@ -116,3 +116,34 @@ export interface PagedQuestions {
   questions: QuestionListItem[];
   total: number;
 }
+
+/** Procesos de IA configurables (coincide con AvailableProcesses del backend). */
+export const AI_PROCESSES = ['qualifier', 'classifier'] as const;
+export type AiProcess = (typeof AI_PROCESSES)[number];
+
+export interface GetAvailableModelsResponse {
+  is_success: boolean;
+  message: string;
+  models: string[];
+}
+
+export interface ModelByProcess {
+  process: string;
+  model_id: string;
+}
+
+export interface GetModelSelectedResponse {
+  is_success: boolean;
+  message: string;
+  models_by_process: ModelByProcess[];
+}
+
+export interface UpdateModelPayload {
+  process: string;
+  model_id: string;
+}
+
+export interface UpdateModelResponse {
+  is_success: boolean;
+  message: string;
+}

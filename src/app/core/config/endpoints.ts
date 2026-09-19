@@ -28,6 +28,9 @@ export const ENDPOINTS = {
     assessmentResult: '/assessments/assessment_result',
     summary: '/assessments/summary',
     quantity: '/assessments/quantity',
+    availableModels: '/assessments/available_models',
+    modelSelected: '/assessments/model_selected',
+    updateModel: '/assessments/models',
   },
   content: {
     root: '/content/',
@@ -45,6 +48,7 @@ export const ENDPOINTS = {
     categorySummary: '/reports/category_summary',
     studentProgress: '/reports/student_progress',
     studentSummary: '/reports/student_summary',
+    usersByRole: '/reports/users-by-role',
   },
   users: {
     root: '/users/',
