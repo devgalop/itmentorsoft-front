@@ -248,4 +248,24 @@ describe('ContentService', () => {
     });
   });
 
+  describe('rateContent', () => {
+    it('POSTs the rating payload to /content/rate', async () => {
+      const payload = { content_id: 'c-1', user_id: 'u-1', rating: 4 };
+      const promise = service.rateContent(payload);
+      const req = httpMock.expectOne('/content/rate');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'Content rated successfully.' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.rateContent({ content_id: 'c-1', user_id: 'u-1', rating: 5 });
+      httpMock
+        .expectOne('/content/rate')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+    });
+  });
 });

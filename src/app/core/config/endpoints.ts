@@ -41,6 +41,7 @@ export const ENDPOINTS = {
     byCategoryTopic: (category: string, topic: string) =>
       `/content/category-topic/${encodeURIComponent(category)}/${encodeURIComponent(topic)}`,
     recommendedLearningPaths: '/content/recommended/learning-paths',
+    rate: '/content/rate',
   },
   reports: {
     students: '/reports/students',

@@ -6,7 +6,11 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('StudentRouteComponent', () => {
-  let contentMock: { getRecommendedLearningPaths: ReturnType<typeof vi.fn>; getContentById: ReturnType<typeof vi.fn> };
+  let contentMock: {
+    getRecommendedLearningPaths: ReturnType<typeof vi.fn>;
+    getContentById: ReturnType<typeof vi.fn>;
+    rateContent: ReturnType<typeof vi.fn>;
+  };
   let authMock: { userId: ReturnType<typeof vi.fn> };
   const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
 
@@ -34,6 +38,7 @@ describe('StudentRouteComponent', () => {
     contentMock = {
       getRecommendedLearningPaths: vi.fn().mockResolvedValue(recommendation),
       getContentById: vi.fn(),
+      rateContent: vi.fn().mockResolvedValue({ is_success: true, message: 'Content rated successfully.' }),
     };
     authMock = { userId: vi.fn().mockReturnValue('s1') };
     toastMock.success.mockClear();
@@ -109,5 +114,45 @@ describe('StudentRouteComponent', () => {
     expect(c.stars(4.5)).toBe(5);
     expect(c.stars(-1)).toBe(0);
     expect(c.stars(3.2)).toBe(3);
+  });
+
+  it('rates a resource and shows a success toast', async () => {
+    const c = createComponent();
+
+    await c.rate('c1', 4);
+
+    expect(contentMock.rateContent).toHaveBeenCalledWith({ content_id: 'c1', user_id: 's1', rating: 4 });
+    expect(c.myRatings()['c1']).toBe(4);
+    expect(toastMock.success).toHaveBeenCalled();
+    expect(c.ratingId()).toBeNull();
+  });
+
+  it('does not rate when there is no logged-in user id', async () => {
+    authMock.userId.mockReturnValue(null);
+    const c = createComponent();
+
+    await c.rate('c1', 4);
+
+    expect(contentMock.rateContent).not.toHaveBeenCalled();
+  });
+
+  it('shows an error toast and does not record the rating when the request fails', async () => {
+    contentMock.rateContent.mockRejectedValue(new Error('Sin conexión al servidor'));
+    const c = createComponent();
+
+    await c.rate('c1', 4);
+
+    expect(c.myRatings()['c1']).toBeUndefined();
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo enviar tu calificación', 'Sin conexión al servidor');
+  });
+
+  it('shows an error toast when the backend responds with is_success false', async () => {
+    contentMock.rateContent.mockResolvedValue({ is_success: false, message: 'Content with ID c1 not found.' });
+    const c = createComponent();
+
+    await c.rate('c1', 4);
+
+    expect(c.myRatings()['c1']).toBeUndefined();
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo enviar tu calificación', 'Content with ID c1 not found.');
   });
 });

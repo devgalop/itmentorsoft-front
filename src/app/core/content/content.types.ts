@@ -84,3 +84,16 @@ export interface PagedContents {
   items: ContentItem[];
   total: number;
 }
+
+/** Payload de POST /content/rate (solo rol student, califica su propio user_id). */
+export interface RateContentPayload {
+  content_id: string;
+  user_id: string;
+  rating: number;
+  comment?: string | null;
+}
+
+export interface RateContentResponse {
+  is_success: boolean;
+  message?: string | null;
+}
