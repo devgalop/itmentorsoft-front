@@ -45,14 +45,32 @@
                     <p class="route__item-desc">{{ item.description }}</p>
                   </div>
                 </button>
-                <div class="route__item-rating" [attr.aria-label]="'Valoración ' + item.rating">
-                  @for (s of [1, 2, 3, 4, 5]; track s) {
-                    <span
-                      class="route__star"
-                      [class.route__star--on]="s <= stars(item.rating)"
-                      aria-hidden="true"
-                    >★</span>
-                  }
+                <div class="route__item-ratings">
+                  <div class="route__item-rating" [attr.aria-label]="'Valoración ' + item.rating">
+                    @for (s of [1, 2, 3, 4, 5]; track s) {
+                      <span
+                        class="route__star"
+                        [class.route__star--on]="s <= stars(item.rating)"
+                        aria-hidden="true"
+                      >★</span>
+                    }
+                  </div>
+
+                  <fieldset class="route__item-myrating" [disabled]="ratingId() === item.content_id">
+                    <legend class="route__myrating-label">Tu calificación:</legend>
+                    @for (s of [1, 2, 3, 4, 5]; track s) {
+                      <button
+                        type="button"
+                        class="route__star-btn"
+                        [class.route__star-btn--on]="s <= (myRatings()[item.content_id] ?? 0)"
+                        [attr.aria-label]="'Calificar con ' + s + ' estrella(s)'"
+                        (click)="rate(item.content_id, s)"
+                      >★</button>
+                    }
+                    @if (myRatings()[item.content_id]) {
+                      <span class="route__myrating-done">¡Gracias!</span>
+                    }
+                  </fieldset>
                 </div>
               </li>
             }

@@ -9,6 +9,8 @@ import {
   GetContentByIdResponse,
   GetRecommendedLearningPathsResponse,
   PagedContents,
+  RateContentPayload,
+  RateContentResponse,
   RecommendedTopic,
   RegisterContentPayload,
   RegisterContentResponse,
@@ -139,6 +141,17 @@ export class ContentService {
           `${environment.apiUrl}${ENDPOINTS.content.byId(contentId)}`,
           payload,
         ),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Califica un recurso (1-5 estrellas). Solo rol student, sobre su propio user_id. */
+  async rateContent(payload: RateContentPayload): Promise<RateContentResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.post<RateContentResponse>(`${environment.apiUrl}${ENDPOINTS.content.rate}`, payload),
       );
     } catch (error) {
       throw this.mapHttpError(error);

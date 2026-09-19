@@ -125,8 +125,15 @@
   line-height: 1.4;
 }
 
-.route__item-rating {
+.route__item-ratings {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.route__item-rating {
   display: flex;
   gap: 1px;
   font-size: 0.9rem;
@@ -139,4 +146,51 @@
 
 .route__star--on {
   color: var(--color-warning);
+}
+
+.route__item-myrating {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.route__myrating-label {
+  padding: 0;
+  font-size: 0.7rem;
+  color: var(--color-mid-2);
+  margin-right: 0.3rem;
+}
+
+.route__star-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--color-light-1);
+  cursor: pointer;
+}
+
+.route__star-btn:hover,
+.route__star-btn:focus-visible {
+  color: var(--color-warning);
+  opacity: 0.7;
+}
+
+.route__star-btn--on {
+  color: var(--color-warning);
+}
+
+.route__item-myrating:disabled .route__star-btn,
+.route__item-myrating[disabled] .route__star-btn {
+  cursor: wait;
+}
+
+.route__myrating-done {
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--color-success, var(--color-secondary));
 }

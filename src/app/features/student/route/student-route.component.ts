@@ -23,6 +23,11 @@ export class StudentRouteComponent {
   /** content_id del recurso que se está abriendo (para mostrar el spinner en ese item). */
   readonly openingId = signal<string | null>(null);
 
+  /** content_id del recurso que se está calificando (deshabilita sus estrellas mientras tanto). */
+  readonly ratingId = signal<string | null>(null);
+  /** Calificación que el estudiante ya envió en esta sesión, por content_id (no hay GET para traerla). */
+  readonly myRatings = signal<Record<string, number>>({});
+
   /** Cantidad total de contenidos recomendados en toda la ruta. */
   readonly totalContents = computed(() =>
     this.topics().reduce((acc, t) => acc + t.contents.length, 0),
@@ -56,6 +61,32 @@ export class StudentRouteComponent {
   /** Estrellas llenas (0–5) a partir del rating. */
   stars(rating: number): number {
     return Math.max(0, Math.min(5, Math.round(rating)));
+  }
+
+  /** Envía la calificación del estudiante (1-5) para un recurso. */
+  async rate(contentId: string, value: number): Promise<void> {
+    const userId = this.auth.userId();
+    if (!userId || this.ratingId()) return;
+    this.ratingId.set(contentId);
+    try {
+      const response = await this.content.rateContent({
+        content_id: contentId,
+        user_id: userId,
+        rating: value,
+      });
+      if (!response.is_success) {
+        throw new Error(response.message || 'No se pudo enviar tu calificación.');
+      }
+      this.myRatings.update((ratings) => ({ ...ratings, [contentId]: value }));
+      this.toast.success('¡Gracias por calificar!', 'Tu opinión ayuda a mejorar la ruta.');
+    } catch (error) {
+      this.toast.error(
+        'No se pudo enviar tu calificación',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
+    } finally {
+      this.ratingId.set(null);
+    }
   }
 
   /**
