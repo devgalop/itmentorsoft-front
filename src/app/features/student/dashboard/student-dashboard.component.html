@@ -14,7 +14,7 @@
   </div>
 
   <div class="dash__stats">
-    @for (s of stats; track s.label) {
+    @for (s of stats(); track s.label) {
       @if (s.route) {
         <a [routerLink]="s.route" class="dash__stat dash__stat--link">
           <span class="dash__stat-value">{{ s.value }}</span>

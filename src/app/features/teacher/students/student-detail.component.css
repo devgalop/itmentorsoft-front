@@ -57,6 +57,17 @@
   border-radius: 999px;
 }
 
+.det__assessments-count {
+  margin-left: auto;
+  background: var(--color-light-2);
+  color: var(--color-mid-1);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 .det__grid {
   display: grid;
   grid-template-columns: 1.5fr 1fr;

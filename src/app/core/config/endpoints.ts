@@ -27,6 +27,7 @@ export const ENDPOINTS = {
     qualificationStatus: '/assessments/qualification-status',
     assessmentResult: '/assessments/assessment_result',
     summary: '/assessments/summary',
+    quantity: '/assessments/quantity',
   },
   content: {
     root: '/content/',
