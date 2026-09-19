@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import { StudentDashboardComponent } from './student-dashboard.component';
 import { AuthService } from '../../../core/auth/auth.service';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
+import { ReportsService } from '../../../core/reports/reports.service';
 
 async function flush(times = 3): Promise<void> {
   for (let i = 0; i < times; i++) {
@@ -16,10 +17,17 @@ describe('StudentDashboardComponent', () => {
   let fixture: ComponentFixture<StudentDashboardComponent>;
   let authServiceMock: { user: ReturnType<typeof vi.fn>; userId: ReturnType<typeof vi.fn> };
   let studentAssessmentMock: { getQuantity: ReturnType<typeof vi.fn> };
+  let reportsMock: { getStudentProgress: ReturnType<typeof vi.fn> };
 
   function setup(
     user: { userName: string; role: string } | null,
-    opts?: { userId?: string | null; quantity?: number; reject?: Error },
+    opts?: {
+      userId?: string | null;
+      quantity?: number;
+      reject?: Error;
+      progress?: { classification: string } | null;
+      progressReject?: Error;
+    },
   ): void {
     const userId = opts && 'userId' in opts ? opts.userId : 's1';
     authServiceMock = {
@@ -31,6 +39,11 @@ describe('StudentDashboardComponent', () => {
         ? vi.fn().mockRejectedValue(opts.reject)
         : vi.fn().mockResolvedValue(opts?.quantity ?? 0),
     };
+    reportsMock = {
+      getStudentProgress: opts?.progressReject
+        ? vi.fn().mockRejectedValue(opts.progressReject)
+        : vi.fn().mockResolvedValue(opts?.progress ?? null),
+    };
 
     TestBed.configureTestingModule({
       imports: [StudentDashboardComponent],
@@ -38,6 +51,7 @@ describe('StudentDashboardComponent', () => {
         provideRouter([]),
         { provide: AuthService, useValue: authServiceMock },
         { provide: StudentAssessmentService, useValue: studentAssessmentMock },
+        { provide: ReportsService, useValue: reportsMock },
       ],
     });
 
@@ -99,5 +113,71 @@ describe('StudentDashboardComponent', () => {
     await flush();
 
     expect(component.stats()[2].value).toBe('0');
+  });
+
+  it('loads the real classification and shows it in the first stat card', async () => {
+    setup(
+      { userName: 'eider_student', role: 'student' },
+      { userId: 's1', progress: { classification: 'Intermedio' } },
+    );
+    await flush();
+    fixture.detectChanges();
+
+    expect(reportsMock.getStudentProgress).toHaveBeenCalledWith('s1');
+    expect(component.stats()[0].value).toBe('Intermedio');
+    expect(component.stats()[0].hint).toBe('Según tu evaluación inicial');
+  });
+
+  it('keeps the classification at "—" when there is no progress yet', async () => {
+    setup({ userName: 'eider_student', role: 'student' }, { userId: 's1', progress: null });
+    await flush();
+
+    expect(component.stats()[0].value).toBe('—');
+    expect(component.stats()[0].hint).toBe('Pendiente evaluación');
+  });
+
+  it('keeps the classification at "—" when the request fails', async () => {
+    setup(
+      { userName: 'eider_student', role: 'student' },
+      { userId: 's1', progressReject: new Error('Sin conexión al servidor') },
+    );
+    await flush();
+
+    expect(component.stats()[0].value).toBe('—');
+  });
+
+  it('does not request the classification when there is no logged-in user id', async () => {
+    setup({ userName: 'eider_student', role: 'student' }, { userId: null });
+    await flush();
+
+    expect(reportsMock.getStudentProgress).not.toHaveBeenCalled();
+    expect(component.stats()[0].value).toBe('—');
+  });
+
+  it('shows the "sin categoría" banner and CTA when there is no classification yet', async () => {
+    setup({ userName: 'eider_student', role: 'student' }, { userId: 's1', progress: null });
+    await flush();
+    fixture.detectChanges();
+
+    const badge = fixture.nativeElement.querySelector('.dash__badge');
+    const ctaTitle = fixture.nativeElement.querySelector('.dash__card--cta .dash__card-title');
+    expect(badge?.textContent?.trim()).toBe('Sin categoría asignada aún');
+    expect(ctaTitle?.textContent?.trim()).toBe('Aún sin categoría');
+  });
+
+  it('shows the real classification in the banner and CTA once it loads', async () => {
+    setup(
+      { userName: 'eider_student', role: 'student' },
+      { userId: 's1', progress: { classification: 'Intermedio' } },
+    );
+    await flush();
+    fixture.detectChanges();
+
+    const badge = fixture.nativeElement.querySelector('.dash__badge');
+    const ctaTitle = fixture.nativeElement.querySelector('.dash__card--cta .dash__card-title');
+    const ctaLink = fixture.nativeElement.querySelector('.dash__card--cta a');
+    expect(badge?.textContent?.trim()).toBe('Categoría: Intermedio');
+    expect(ctaTitle?.textContent?.trim()).toBe('Tu categoría: Intermedio');
+    expect(ctaLink?.textContent?.trim()).toBe('Ver mi progreso');
   });
 });
