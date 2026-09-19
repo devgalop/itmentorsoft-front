@@ -85,6 +85,39 @@ describe('ReportsService', () => {
     });
   });
 
+  describe('getUsersByRoleTotal', () => {
+    it('GETs /reports/users-by-role with the role and returns the total', async () => {
+      const promise = service.getUsersByRoleTotal('teacher');
+      const req = httpMock.expectOne(
+        (r) => r.url === '/reports/users-by-role' && r.params.get('role') === 'teacher',
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        is_success: true,
+        message: 'ok',
+        total_users: 3,
+        users: [{ user_id: 'u1', role: 'teacher' }],
+      });
+      expect(await promise).toBe(3);
+    });
+
+    it('returns 0 when total_users is missing', async () => {
+      const promise = service.getUsersByRoleTotal('admin');
+      httpMock
+        .expectOne((r) => r.url === '/reports/users-by-role')
+        .flush({ is_success: true, message: 'ok', users: [] });
+      expect(await promise).toBe(0);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.getUsersByRoleTotal('student');
+      httpMock
+        .expectOne((r) => r.url === '/reports/users-by-role')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+    });
+  });
+
   describe('getStudentProgress', () => {
     it('GETs student_progress with the id', async () => {
       const promise = service.getStudentProgress('s1');

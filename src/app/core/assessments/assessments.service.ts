@@ -6,14 +6,18 @@ import { ENDPOINTS } from '@core/config/endpoints';
 import {
   EvaluativeQuestion,
   GetAllQuestionsResponse,
+  GetAvailableModelsResponse,
   GetCategoriesResponse,
+  GetModelSelectedResponse,
   GetTopicsResponse,
   GetQuestionByIdResponse,
   GetQuestionsResponse,
+  ModelByProcess,
   PagedQuestions,
   QuestionDetail,
   RegisterQuestionPayload,
   RegisterQuestionResponse,
+  UpdateModelResponse,
   UpdateQuestionResponse,
 } from './assessments.types';
 
@@ -122,6 +126,48 @@ export class AssessmentsService {
           `${environment.apiUrl}${ENDPOINTS.assessments.questionById(questionId)}`,
           payload,
         ),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Modelos de IA disponibles en el proveedor LLM (solo admin). */
+  async getAvailableModels(): Promise<string[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetAvailableModelsResponse>(
+          `${environment.apiUrl}${ENDPOINTS.assessments.availableModels}`,
+        ),
+      );
+      return response.models ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Modelo seleccionado actualmente para cada proceso de IA (solo admin). */
+  async getModelSelected(): Promise<ModelByProcess[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetModelSelectedResponse>(
+          `${environment.apiUrl}${ENDPOINTS.assessments.modelSelected}`,
+        ),
+      );
+      return response.models_by_process ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Cambia el modelo de IA usado para un proceso (solo admin). */
+  async updateModel(process: string, modelId: string): Promise<UpdateModelResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.put<UpdateModelResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.updateModel}`, {
+          process,
+          model_id: modelId,
+        }),
       );
     } catch (error) {
       throw this.mapHttpError(error);

@@ -75,3 +75,16 @@ export interface GetStudentSummaryResponse {
   message: string;
   summary: StudentSummary | null;
 }
+
+export interface UserByRole {
+  user_id: string;
+  role: string;
+}
+
+/** Respuesta de /reports/users-by-role (solo admin). */
+export interface GetUsersByRoleResponse {
+  is_success: boolean;
+  message: string;
+  total_users: number;
+  users: UserByRole[];
+}
