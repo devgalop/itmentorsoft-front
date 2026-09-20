@@ -190,6 +190,12 @@
   }
 }
 
+@media (max-width: 640px) {
+  .dash__stats {
+    grid-template-columns: 1fr;
+  }
+}
+
 .dash__stat--link {
   text-decoration: none;
   cursor: pointer;

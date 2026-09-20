@@ -9,8 +9,8 @@
   background-color: var(--color-primary);
   color: var(--color-white);
   padding: 1.5rem;
-  transition: width 0.3s ease, padding 0.3s ease;
-  z-index: 100;
+  transition: width 0.3s ease, padding 0.3s ease, transform 0.3s ease;
+  z-index: 160;
 }
 
 .sidebar--collapsed {
@@ -195,4 +195,63 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-white) 55%, transparent);
+}
+
+/* ===== Mobile: el sidebar pasa a ser un drawer superpuesto ===== */
+
+.sidebar__mobile-trigger {
+  display: none;
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.sidebar__mobile-trigger svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar__backdrop {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sidebar__toggle {
+    display: none;
+  }
+
+  .sidebar__mobile-trigger {
+    display: flex;
+  }
+
+  /* "Colapsado" pasa a significar "drawer cerrado": oculto por completo (translateX
+     mueve el 100% del ancho propio del elemento, así que esto vale tanto para el
+     ancho de 60px del riel de íconos como para el de 250px ya abierto). Al abrirse
+     se le quita la clase --collapsed, así que recupera el ancho de 250px normal. */
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar:not(.sidebar--collapsed) {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .sidebar__backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 150;
+  }
 }

@@ -38,6 +38,14 @@ const GATED_ROUTES = ['/student/route', '/student/progress'];
     .student-layout__content--collapsed {
       margin-left: 60px;
     }
+
+    @media (max-width: 900px) {
+      .student-layout__content,
+      .student-layout__content--collapsed {
+        margin-left: 0;
+        padding: 4.5rem 1rem 1.5rem;
+      }
+    }
   `,
 })
 export class StudentLayoutComponent {

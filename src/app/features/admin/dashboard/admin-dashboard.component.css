@@ -217,6 +217,18 @@
   }
 }
 
+@media (max-width: 640px) {
+  .dash__stats {
+    grid-template-columns: 1fr;
+  }
+
+  /* La columna "Estudiante" es redundante en esta tabla (todas las filas son
+     estudiantes) — se oculta para dejarle espacio a la clasificación, que sí aporta. */
+  .dash__mini-table td:nth-child(2) {
+    display: none;
+  }
+}
+
 .dash__stat--link {
   text-decoration: none;
   cursor: pointer;

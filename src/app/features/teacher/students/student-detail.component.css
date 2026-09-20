@@ -146,7 +146,7 @@
   line-height: 1.55;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .det__grid {
     grid-template-columns: 1fr;
   }
