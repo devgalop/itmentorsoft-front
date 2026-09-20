@@ -81,7 +81,7 @@ describe('StudentAssessmentComponent', () => {
     const c = createComponent();
     await Promise.resolve();
     await c.startAssessment();
-    expect(serviceMock.generateByTopic).toHaveBeenCalledWith('POO', 'u1', 5);
+    expect(serviceMock.generateByTopic).toHaveBeenCalledWith('POO', 'u1');
     expect(c.step()).toBe('answering');
     expect(c.questions()).toHaveLength(2);
   });

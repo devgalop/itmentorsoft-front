@@ -12,7 +12,6 @@ import {
 
 type Step = 'setup' | 'answering' | 'grading' | 'history' | 'result';
 
-const NUMBER_OF_QUESTIONS = 5;
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS = 40; // ~2 min de espera máxima
 
@@ -106,11 +105,7 @@ export class StudentAssessmentComponent {
     this.error.set(null);
     this.isBusy.set(true);
     try {
-      const generated = await this.assessments.generateByTopic(
-        this.selectedTopic(),
-        userId,
-        NUMBER_OF_QUESTIONS,
-      );
+      const generated = await this.assessments.generateByTopic(this.selectedTopic(), userId);
       if (generated.questions.length === 0) {
         this.error.set('No hay preguntas disponibles para este tema.');
         return;
