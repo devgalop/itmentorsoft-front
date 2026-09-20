@@ -34,15 +34,11 @@ export class StudentAssessmentService {
   }
 
   /** Genera una evaluación para un tema. Devuelve el assessment_id y las preguntas. */
-  async generateByTopic(
-    topic: string,
-    userId: string,
-    numberOfQuestions: number,
-  ): Promise<GeneratedAssessment> {
+  async generateByTopic(topic: string, userId: string): Promise<GeneratedAssessment> {
     try {
       const response = await firstValueFrom(
         this.http.get<GetAssessmentByTopicResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.topic}`, {
-          params: { topic, user_id: userId, number_of_questions: numberOfQuestions },
+          params: { topic, user_id: userId },
         }),
       );
       if (!response.is_success || !response.assessment_id) {
