@@ -218,3 +218,19 @@
   border-radius: 999px;
   transition: width 0.3s ease;
 }
+
+@media (max-width: 640px) {
+  .rep__row--head {
+    display: none;
+  }
+
+  .rep__row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    align-items: flex-start;
+  }
+
+  .rep__actions-col {
+    text-align: left;
+  }
+}

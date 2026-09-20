@@ -406,3 +406,13 @@
   color: var(--color-mid-2);
   font-style: italic;
 }
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 1.5rem 0.5rem;
+  }
+
+  .modal__box {
+    padding: 1.25rem;
+  }
+}

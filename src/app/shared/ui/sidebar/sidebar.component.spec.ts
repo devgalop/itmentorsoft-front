@@ -200,6 +200,44 @@ describe('SidebarComponent', () => {
     expect(sidebarServiceMock.toggle).toHaveBeenCalledTimes(1);
   });
 
+  it('calls sidebarService.toggle() when the mobile trigger is clicked', () => {
+    sidebarServiceMock.isCollapsed.mockReturnValue(true);
+    fixture.detectChanges();
+
+    const mobileTrigger = fixture.nativeElement.querySelector('.sidebar__mobile-trigger');
+    mobileTrigger.click();
+
+    expect(sidebarServiceMock.toggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the mobile trigger once the drawer is open, since the backdrop already closes it', () => {
+    sidebarServiceMock.isCollapsed.mockReturnValue(false);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.sidebar__mobile-trigger')).toBeNull();
+  });
+
+  it('does not show the backdrop when collapsed', () => {
+    sidebarServiceMock.isCollapsed.mockReturnValue(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.sidebar__backdrop')).toBeNull();
+  });
+
+  it('shows the backdrop when the drawer is open (not collapsed)', () => {
+    sidebarServiceMock.isCollapsed.mockReturnValue(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.sidebar__backdrop')).toBeTruthy();
+  });
+
+  it('closes the drawer when the backdrop is clicked', () => {
+    sidebarServiceMock.isCollapsed.mockReturnValue(false);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.sidebar__backdrop').click();
+
+    expect(sidebarServiceMock.toggle).toHaveBeenCalledTimes(1);
+  });
+
   it('calls authService.logout() when logout button is clicked', () => {
     fixture.detectChanges();
 

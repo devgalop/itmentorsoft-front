@@ -34,6 +34,14 @@ import { TEACHER_NAV_ITEMS } from './teacher-nav-items';
     .teacher-layout__content--collapsed {
       margin-left: 60px;
     }
+
+    @media (max-width: 900px) {
+      .teacher-layout__content,
+      .teacher-layout__content--collapsed {
+        margin-left: 0;
+        padding: 4.5rem 1rem 1.5rem;
+      }
+    }
   `,
 })
 export class TeacherLayoutComponent {

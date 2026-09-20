@@ -38,3 +38,13 @@
 }
 .stu__page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .stu__page-info { color: var(--color-mid-2); font-size: 0.82rem; }
+
+@media (max-width: 640px) {
+  .stu__panel {
+    overflow-x: auto;
+  }
+
+  .stu__table {
+    min-width: 480px;
+  }
+}

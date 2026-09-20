@@ -451,3 +451,13 @@
   font-size: 0.78rem;
   color: var(--color-error);
 }
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 1.5rem 0.5rem;
+  }
+
+  .modal__box {
+    padding: 1.25rem;
+  }
+}
