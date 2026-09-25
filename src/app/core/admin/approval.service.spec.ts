@@ -77,4 +77,69 @@ describe('ApprovalService', () => {
       await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
     });
   });
+
+  describe('error mapping', () => {
+    const payload = {
+      question_id: 'q-1',
+      reviewer_id: 'admin-1',
+      review_comments: 'Comentario de revisión.',
+      status: 'archived' as const,
+    };
+
+    it.each([
+      [0, 'Sin conexión al servidor'],
+      [401, 'Sesión expirada, iniciá sesión de nuevo'],
+      [403, 'No tenés permisos para esta acción'],
+      [500, 'Error en el servidor, intentá más tarde'],
+    ])('maps HTTP %i to "%s"', async (status, message) => {
+      const promise = service.getPending();
+      httpMock
+        .expectOne((r) => r.url === '/assessments/pending-approval-questions')
+        .flush({ detail: 'x' }, { status, statusText: 'error' });
+      await expect(promise).rejects.toThrow(message);
+    });
+
+    it('uses the string detail of a 422', async () => {
+      const promise = service.reviewQuestion(payload);
+      httpMock
+        .expectOne('/assessments/review')
+        .flush({ detail: 'Pregunta no encontrada' }, { status: 422, statusText: 'Unprocessable' });
+      await expect(promise).rejects.toThrow('Pregunta no encontrada');
+    });
+
+    it('uses the first validation message of a 422 and strips "Value error, "', async () => {
+      const promise = service.reviewQuestion(payload);
+      httpMock
+        .expectOne('/assessments/review')
+        .flush(
+          { detail: [{ msg: 'Value error, El comentario es muy corto' }] },
+          { status: 422, statusText: 'Unprocessable' },
+        );
+      await expect(promise).rejects.toThrow('El comentario es muy corto');
+    });
+
+    it('falls back to a generic message when a 422 has no usable detail', async () => {
+      const promise = service.reviewQuestion(payload);
+      httpMock
+        .expectOne('/assessments/review')
+        .flush({ detail: [{}] }, { status: 422, statusText: 'Unprocessable' });
+      await expect(promise).rejects.toThrow('Datos inválidos');
+    });
+
+    it('falls back to a generic message when a 400 has no detail', async () => {
+      const promise = service.reviewQuestion(payload);
+      httpMock
+        .expectOne('/assessments/review')
+        .flush({}, { status: 400, statusText: 'Bad Request' });
+      await expect(promise).rejects.toThrow('Datos inválidos');
+    });
+
+    it('lets a network failure surface as no connection', async () => {
+      const promise = service.getPending();
+      httpMock
+        .expectOne((r) => r.url === '/assessments/pending-approval-questions')
+        .error(new ProgressEvent('error'));
+      await expect(promise).rejects.toThrow('Sin conexión al servidor');
+    });
+  });
 });
