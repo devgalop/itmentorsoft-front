@@ -32,6 +32,23 @@ jobs:
       - name: Build
         run: npm run build
 
+      # TEMPORAL: muestra los claims que GitHub envía a AWS (no imprime el token).
+      - name: Debug OIDC claims
+        run: |
+          python3 - <<'EOF'
+          import os, json, base64, urllib.request
+          req = urllib.request.Request(
+              os.environ['ACTIONS_ID_TOKEN_REQUEST_URL'] + '&audience=sts.amazonaws.com',
+              headers={'Authorization': 'bearer ' + os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']},
+          )
+          token = json.load(urllib.request.urlopen(req))['value']
+          payload = token.split('.')[1]
+          payload += '=' * (-len(payload) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(payload))
+          for k in ('sub', 'aud', 'repository', 'repository_owner', 'ref', 'job_workflow_ref'):
+              print(k, '=', claims.get(k))
+          EOF
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
