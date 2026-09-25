@@ -135,4 +135,52 @@ describe('UsersService', () => {
       await expect(promise).rejects.toThrow('Datos inválidos');
     });
   });
+
+  describe('error mapping', () => {
+    it.each([
+      [0, 'Sin conexión al servidor'],
+      [400, 'Datos inválidos'],
+      [401, 'Sesión expirada, iniciá sesión de nuevo'],
+      [403, 'No tenés permisos para esta acción'],
+      [404, 'No se encontró el usuario'],
+      [422, 'Datos inválidos'],
+      [500, 'Error en el servidor, intentá más tarde'],
+    ])('maps HTTP %i to "%s"', async (status, message) => {
+      const promise = service.getAvailableRoles();
+      httpMock
+        .expectOne('/users/available-roles')
+        .flush({ detail: 'x' }, { status, statusText: 'error' });
+      await expect(promise).rejects.toThrow(message);
+    });
+
+    const calls: [string, string, () => Promise<unknown>][] = [
+      ['getAvailableRoles', '/users/available-roles', () => service.getAvailableRoles()],
+      ['getConnectedTotal', '/users/connected/total', () => service.getConnectedTotal()],
+      ['getUser', '/users/u1', () => service.getUser('u1')],
+      ['assignRole', '/users/assign-role', () => service.assignRole('u1', 'teacher')],
+      [
+        'updateProfile',
+        '/users/profile',
+        () => service.updateProfile({ user_id: 'u1', username: 'user', name: 'Nombre' }),
+      ],
+      [
+        'createUser',
+        '/users/create_user_from_admin',
+        () => service.createUser({ email: 'a@b.co', username: 'user', role: 'student' }),
+      ],
+    ];
+
+    it.each(calls)('%s rejects with the mapped error on a server failure', async (_name, url, call) => {
+      const promise = call();
+      httpMock.expectOne(url).flush({ detail: 'x' }, { status: 500, statusText: 'error' });
+      await expect(promise).rejects.toThrow('Error en el servidor, intentá más tarde');
+    });
+
+    it('keeps an Error that did not come from HTTP and names unknown failures', () => {
+      const map = (service as unknown as { mapHttpError(e: unknown): Error }).mapHttpError.bind(service);
+      const original = new Error('propio');
+      expect(map(original)).toBe(original);
+      expect(map('boom').message).toBe('Error desconocido');
+    });
+  });
 });
