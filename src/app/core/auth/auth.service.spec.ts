@@ -15,16 +15,39 @@ describe('AuthService', () => {
 
   const apiUrl = '';
   const sessionUrl = `${apiUrl}/users/sessions`;
+  const otpUrl = `${apiUrl}/users/otp/validate`;
 
   const VALID_STUDENT_TOKEN =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiJlaWRlcl90ZXN0Iiwicm9sZSI6InN0dWRlbnQiLCJleHAiOjE3ODIxMDY5OTV9.C29WG-n07km4acqGC5yyh_GOTLFM03cbdYeZ7Y-T5pM';
 
+  // Paso 1 (login): sin token, solo user_id.
   const mockResponse: LoginResponse = {
     is_successful: true,
+    user_id: 'user-abc-123',
+    is_temporarily_blocked: false,
+    blocked_until: 0,
+    is_definitively_blocked: false,
+  };
+
+  // Paso 2 (OTP validado): devuelve el token.
+  const otpResponse = {
+    is_successful: true,
+    message: 'ok',
     token: VALID_STUDENT_TOKEN,
     expiration_time: 1700000000,
     refresh_token: 'refresh-token-456',
+    user_id: 'user-abc-123',
   };
+
+  /** Autentica completo (login + OTP) para tests que necesitan sesión iniciada. */
+  async function authenticate(): Promise<void> {
+    const loginPromise = service.login(validCredentials);
+    httpMock.expectOne(sessionUrl).flush(mockResponse);
+    await loginPromise;
+    const otpPromise = service.validateOtp('user-abc-123', '123456');
+    httpMock.expectOne(otpUrl).flush(otpResponse);
+    await otpPromise;
+  }
 
   const validCredentials = {
     email: 'test@example.com',
@@ -62,29 +85,42 @@ describe('AuthService', () => {
     req.flush(mockResponse);
 
     await loginPromise;
-    expect(sessionStorage.getItem('auth_token')).toBe(VALID_STUDENT_TOKEN);
+    // Paso 1: no hay token todavía; queda el user_id pendiente de OTP.
+    expect(service.token()).toBeNull();
+    expect(service.pendingOtpUserId()).toBe('user-abc-123');
   });
 
-  it('login() stores token in sessionStorage and updates isAuthenticated on success', async () => {
+  it('login() does NOT authenticate on its own (needs OTP)', async () => {
     expect(service.isAuthenticated()).toBe(false);
 
     const loginPromise = service.login(validCredentials);
-    const req = httpMock.expectOne(sessionUrl);
-    req.flush(mockResponse);
+    httpMock.expectOne(sessionUrl).flush(mockResponse);
 
     await loginPromise;
-    expect(service.isAuthenticated()).toBe(true);
-    expect(service.token()).toBe(VALID_STUDENT_TOKEN);
+    expect(service.isAuthenticated()).toBe(false);
   });
 
-  it('login() exposes decoded user and role from the JWT', async () => {
-    const loginPromise = service.login(validCredentials);
-    const req = httpMock.expectOne(sessionUrl);
-    req.flush(mockResponse);
+  it('validateOtp() stores the token and authenticates', async () => {
+    await authenticate();
+    expect(service.isAuthenticated()).toBe(true);
+    expect(service.token()).toBe(VALID_STUDENT_TOKEN);
+    expect(sessionStorage.getItem('auth_token')).toBe(VALID_STUDENT_TOKEN);
+    expect(service.pendingOtpUserId()).toBeNull();
+  });
 
-    await loginPromise;
+  it('validateOtp() exposes decoded user and role from the JWT', async () => {
+    await authenticate();
     expect(service.role()).toBe('student');
     expect(service.user()).toEqual({ userName: 'eider_test', role: 'student' });
+  });
+
+  it('validateOtp() sends POST to /users/otp/validate with user_id and otp', async () => {
+    const otpPromise = service.validateOtp('user-abc-123', '123456');
+    const req = httpMock.expectOne(otpUrl);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ user_id: 'user-abc-123', otp: '123456' });
+    req.flush(otpResponse);
+    await otpPromise;
   });
 
   it('login() throws error with mapped message on 401', async () => {
@@ -97,6 +133,26 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
+  it('login() surfaces the backend validation message on 422', async () => {
+    const loginPromise = service.login(validCredentials);
+
+    const req = httpMock.expectOne(sessionUrl);
+    req.flush(
+      {
+        detail: [
+          {
+            type: 'value_error',
+            loc: ['body', 'password'],
+            msg: 'Value error, La contraseña debe incluir al menos una letra',
+          },
+        ],
+      },
+      { status: 422, statusText: 'Unprocessable Entity' },
+    );
+
+    await expect(loginPromise).rejects.toThrow('La contraseña debe incluir al menos una letra');
+  });
+
   it('login() throws connection error message on network error', async () => {
     const loginPromise = service.login(validCredentials);
 
@@ -107,10 +163,7 @@ describe('AuthService', () => {
   });
 
   it('logout() clears sessionStorage and resets signals', async () => {
-    const loginPromise = service.login(validCredentials);
-    const req = httpMock.expectOne(sessionUrl);
-    req.flush(mockResponse);
-    await loginPromise;
+    await authenticate();
 
     expect(service.isAuthenticated()).toBe(true);
     expect(sessionStorage.getItem('auth_token')).toBe(VALID_STUDENT_TOKEN);
@@ -154,11 +207,11 @@ describe('AuthService', () => {
 
       const req = httpMock.expectOne(registerUrl);
       req.flush(
-        { detail: { message: { is_success: false, message: 'Email already in use', user_id: null } } },
+        { detail: { message: { is_success: false, message: 'Este correo ya está registrado', user_id: null } } },
         { status: 400, statusText: 'Bad Request' },
       );
 
-      await expect(registerPromise).rejects.toThrow('Email already in use');
+      await expect(registerPromise).rejects.toThrow('Este correo ya está registrado');
     });
 
     it('throws validation error message on 422 invalid password', async () => {
@@ -168,13 +221,13 @@ describe('AuthService', () => {
       req.flush(
         {
           detail: [
-            { type: 'value_error', loc: ['body', 'password'], msg: 'Value error, Password must be at least 6 characters long' },
+            { type: 'value_error', loc: ['body', 'password'], msg: 'Value error, La contraseña debe tener al menos 6 caracteres' },
           ],
         },
         { status: 422, statusText: 'Unprocessable Entity' },
       );
 
-      await expect(registerPromise).rejects.toThrow('Password must be at least 6 characters long');
+      await expect(registerPromise).rejects.toThrow('La contraseña debe tener al menos 6 caracteres');
     });
 
     it('throws connection error message on network error', async () => {
@@ -226,13 +279,13 @@ describe('AuthService', () => {
       req.flush(
         {
           detail: [
-            { type: 'value_error', loc: ['body', 'email'], msg: 'Value error, Invalid email format' },
+            { type: 'value_error', loc: ['body', 'email'], msg: 'Value error, El formato del correo no es válido' },
           ],
         },
         { status: 422, statusText: 'Unprocessable Entity' },
       );
 
-      await expect(recoverPromise).rejects.toThrow('Invalid email format');
+      await expect(recoverPromise).rejects.toThrow('El formato del correo no es válido');
     });
 
     it('throws connection error message on network error', async () => {
@@ -242,6 +295,33 @@ describe('AuthService', () => {
       req.error(new ProgressEvent('Network error'));
 
       await expect(recoverPromise).rejects.toThrow('Sin conexión al servidor');
+    });
+  });
+
+  describe('resendOtp', () => {
+    const resendUrl = `${apiUrl}/users/resend-otp`;
+
+    it('sends POST to /users/resend-otp with the user_id', async () => {
+      const resendPromise = service.resendOtp('u1');
+
+      const req = httpMock.expectOne(resendUrl);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ user_id: 'u1' });
+      req.flush({
+        message: 'If your account exists, an OTP has been sent to your registered email.',
+      });
+
+      const result = await resendPromise;
+      expect(result.message).toContain('OTP has been sent');
+    });
+
+    it('throws connection error message on network error', async () => {
+      const resendPromise = service.resendOtp('u1');
+
+      const req = httpMock.expectOne(resendUrl);
+      req.error(new ProgressEvent('Network error'));
+
+      await expect(resendPromise).rejects.toThrow('Sin conexión al servidor');
     });
   });
 
@@ -256,9 +336,13 @@ describe('AuthService', () => {
     it('sends PUT to /users/change-password with correct payload', async () => {
       const resetPromise = service.resetPassword(validResetCredentials);
 
-      const req = httpMock.expectOne(resetUrl);
-      expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual(validResetCredentials);
+      const req = httpMock.expectOne(
+        (r) => r.url === resetUrl && r.method === 'PUT',
+      );
+      // token e id_trx van como query params; el body solo lleva new_password.
+      expect(req.request.params.get('token')).toBe(validResetCredentials.token);
+      expect(req.request.params.get('id_trx')).toBe(validResetCredentials.id_trx);
+      expect(req.request.body).toEqual({ new_password: validResetCredentials.new_password });
       req.flush({ is_success: true, message: 'Password changed successfully' });
 
       const result = await resetPromise;
@@ -268,7 +352,7 @@ describe('AuthService', () => {
     it('returns is_success false with message when token is invalid or expired (200 OK)', async () => {
       const resetPromise = service.resetPassword(validResetCredentials);
 
-      const req = httpMock.expectOne(resetUrl);
+      const req = httpMock.expectOne((r) => r.url === resetUrl && r.method === 'PUT');
       req.flush({ is_success: false, message: 'Invalid or expired token' });
 
       const result = await resetPromise;
@@ -279,26 +363,94 @@ describe('AuthService', () => {
     it('throws validation error message on 422 invalid new_password', async () => {
       const resetPromise = service.resetPassword(validResetCredentials);
 
-      const req = httpMock.expectOne(resetUrl);
+      const req = httpMock.expectOne((r) => r.url === resetUrl && r.method === 'PUT');
       req.flush(
         {
           detail: [
-            { type: 'value_error', loc: ['body', 'new_password'], msg: 'Value error, Password must be at least 6 characters long' },
+            { type: 'value_error', loc: ['body', 'new_password'], msg: 'Value error, La contraseña debe tener al menos 6 caracteres' },
           ],
         },
         { status: 422, statusText: 'Unprocessable Entity' },
       );
 
-      await expect(resetPromise).rejects.toThrow('Password must be at least 6 characters long');
+      await expect(resetPromise).rejects.toThrow('La contraseña debe tener al menos 6 caracteres');
     });
 
     it('throws connection error message on network error', async () => {
       const resetPromise = service.resetPassword(validResetCredentials);
 
-      const req = httpMock.expectOne(resetUrl);
+      const req = httpMock.expectOne((r) => r.url === resetUrl && r.method === 'PUT');
       req.error(new ProgressEvent('Network error'));
 
       await expect(resetPromise).rejects.toThrow('Sin conexión al servidor');
     });
   });
+
+  it('login() stores the pending user_id for the OTP step', async () => {
+    const loginPromise = service.login(validCredentials);
+    const req = httpMock.expectOne('/users/sessions');
+    req.flush(mockResponse);
+    await loginPromise;
+    expect(service.pendingOtpUserId()).toBe('user-abc-123');
+    // El userId "real" recién se fija al validar el OTP.
+    expect(service.userId()).toBeNull();
+  });
+
+  it('logout() clears the stored user_id', async () => {
+    const loginPromise = service.login(validCredentials);
+    httpMock.expectOne('/users/sessions').flush(mockResponse);
+    await loginPromise;
+    service.logout();
+    expect(service.userId()).toBeNull();
+    expect(sessionStorage.getItem('auth_user_id')).toBeNull();
+  });
+
+
+  describe('refreshSession', () => {
+    async function loginFirst() {
+      const p = service.login({ email: 'a@b.co', password: 'x' } as never);
+      httpMock.expectOne('/users/sessions').flush(mockResponse);
+      await p;
+      const otp = service.validateOtp('user-abc-123', '123456');
+      httpMock.expectOne('/users/otp/validate').flush(otpResponse);
+      await otp;
+    }
+
+    it('returns null when there is no current token', async () => {
+      // sin login previo: no hay token actual
+      const token = await service.refreshSession();
+      expect(token).toBeNull();
+    });
+
+    it('refreshes the token with header + withCredentials and stores the new one', async () => {
+      await loginFirst();
+      const promise = service.refreshSession();
+      const req = httpMock.expectOne('/users/sessions/refresh');
+      expect(req.request.method).toBe('POST');
+      // El refresh no manda el token en el body: va en la cookie (withCredentials) y el header.
+      expect(req.request.withCredentials).toBe(true);
+      expect(req.request.headers.get('Authorization')).toContain('Bearer ');
+      req.flush({
+        is_successful: true,
+        access_token: 'NEW.jwt.token',
+        refresh_token: 'new-refresh-789',
+        expiration_time: 1700000000,
+        user_id: 'user-abc-123',
+      });
+      const token = await promise;
+      expect(token).toBe('NEW.jwt.token');
+      expect(sessionStorage.getItem('auth_token')).toBe('NEW.jwt.token');
+      expect(sessionStorage.getItem('auth_refresh_token')).toBe('new-refresh-789');
+    });
+
+    it('returns null when the refresh call fails', async () => {
+      await loginFirst();
+      const promise = service.refreshSession();
+      httpMock
+        .expectOne('/users/sessions/refresh')
+        .flush({ detail: 'invalid' }, { status: 401, statusText: 'Unauthorized' });
+      expect(await promise).toBeNull();
+    });
+  });
+
 });

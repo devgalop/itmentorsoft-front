@@ -1,0 +1,69 @@
+/**
+ * Rutas (paths) de todos los endpoints del backend, centralizadas.
+ *
+ * Los paths son iguales en todos los ambientes; lo único que cambia por ambiente
+ * es `environment.apiUrl` (el host). Por eso los paths viven acá y no dentro de
+ * cada `environment.*.ts` (así no se duplican ni se desincronizan).
+ *
+ * Uso en un service:
+ *   this.http.get(`${environment.apiUrl}${ENDPOINTS.assessments.topics}`)
+ *   this.http.get(`${environment.apiUrl}${ENDPOINTS.users.byId(userId)}`)
+ */
+export const ENDPOINTS = {
+  assessments: {
+    root: '/assessments/',
+    topics: '/assessments/topics',
+    topic: '/assessments/topic',
+    categories: '/assessments/categories',
+    questions: '/assessments/questions',
+    registerQuestion: '/assessments/questions/register',
+    questionById: (id: string) => `/assessments/questions/${encodeURIComponent(id)}`,
+    questionsByLevel: (difficulty: string) =>
+      `/assessments/questions/level/${encodeURIComponent(difficulty)}`,
+    questionsByCategory: (category: string) =>
+      `/assessments/questions/category/${encodeURIComponent(category)}`,
+    review: '/assessments/review',
+    pendingApprovalQuestions: '/assessments/pending-approval-questions',
+    qualificationStatus: '/assessments/qualification-status',
+    assessmentResult: '/assessments/assessment_result',
+    summary: '/assessments/summary',
+    quantity: '/assessments/quantity',
+    availableModels: '/assessments/available_models',
+    modelSelected: '/assessments/model_selected',
+    updateModel: '/assessments/models',
+  },
+  content: {
+    root: '/content/',
+    byId: (id: string) => `/content/${encodeURIComponent(id)}`,
+    byTopic: (topic: string) => `/content/topic/${encodeURIComponent(topic)}`,
+    byCategory: (category: string) => `/content/category/${encodeURIComponent(category)}`,
+    byTitle: (title: string) => `/content/title/${encodeURIComponent(title)}`,
+    byCategoryTopic: (category: string, topic: string) =>
+      `/content/category-topic/${encodeURIComponent(category)}/${encodeURIComponent(topic)}`,
+    recommendedLearningPaths: '/content/recommended/learning-paths',
+    rate: '/content/rate',
+  },
+  reports: {
+    students: '/reports/students',
+    studentsByCategory: '/reports/students-by-category',
+    categorySummary: '/reports/category_summary',
+    studentProgress: '/reports/student_progress',
+    studentSummary: '/reports/student_summary',
+    usersByRole: '/reports/users-by-role',
+  },
+  users: {
+    root: '/users/',
+    byId: (id: string) => `/users/${encodeURIComponent(id)}`,
+    availableRoles: '/users/available-roles',
+    assignRole: '/users/assign-role',
+    profile: '/users/profile',
+    createUserFromAdmin: '/users/create_user_from_admin',
+    recoveryPassword: '/users/recovery-password',
+    changePassword: '/users/change-password',
+    sessions: '/users/sessions',
+    otpValidate: '/users/otp/validate',
+    resendOtp: '/users/resend-otp',
+    refreshSession: '/users/sessions/refresh',
+    connectedTotal: '/users/connected/total',
+  },
+} as const;

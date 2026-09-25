@@ -69,12 +69,6 @@
           <a routerLink="/recover-password">&iquest;Olvidaste tu contrase&ntilde;a?</a>
         </div>
 
-        @if (serverError()) {
-          <div class="login-form__server-error" role="alert">
-            {{ serverError() }}
-          </div>
-        }
-
         <app-button type="submit" variant="primary" [loading]="isLoading()">
           Iniciar sesi&oacute;n
         </app-button>

@@ -1,8 +1,48 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  ReactiveFormsModule,
+  FormControl,
+  FormGroup,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
+
+/** Mismo set de caracteres especiales que valida el backend. */
+const SPECIAL_CHAR = /[!@#$%^&*()_+\-=\[\]{}|;':",.<>/?]/;
+
+interface PasswordRule {
+  readonly key: string;
+  readonly label: string;
+  readonly test: (value: string) => boolean;
+}
+
+/** Reglas de contraseña, replicando exactamente las del backend (create_user). */
+const PASSWORD_RULES: readonly PasswordRule[] = [
+  { key: 'length', label: 'Entre 6 y 20 caracteres', test: (v) => v.length >= 6 && v.length <= 20 },
+  { key: 'letter', label: 'Al menos una letra', test: (v) => /[a-zA-Z]/.test(v) },
+  { key: 'digit', label: 'Al menos un número', test: (v) => /\d/.test(v) },
+  {
+    key: 'special',
+    label: 'Al menos un carácter especial (!@#$%…)',
+    test: (v) => SPECIAL_CHAR.test(v),
+  },
+];
+
+/** Valida que la contraseña cumpla todas las reglas del backend. */
+function passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
+  const value: string = control.value ?? '';
+  if (!value) {
+    return null; // el 'required' lo maneja Validators.required
+  }
+  const failed = PASSWORD_RULES.filter((rule) => !rule.test(value)).map((rule) => rule.key);
+  return failed.length ? { passwordStrength: failed } : null;
+}
 
 @Component({
   selector: 'app-register',
@@ -15,8 +55,14 @@ import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui'
 export class RegisterComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
 
   readonly registerForm = new FormGroup({
+    name: new FormControl('', [
+      Validators.required,
+      Validators.minLength(3),
+      Validators.maxLength(100),
+    ]),
     username: new FormControl('', [
       Validators.required,
       Validators.minLength(3),
@@ -24,13 +70,29 @@ export class RegisterComponent {
       Validators.pattern(/^\w+$/),
     ]),
     email: new FormControl('', [Validators.required, Validators.email]),
-    password: new FormControl('', [Validators.required, Validators.minLength(6)]),
+    password: new FormControl('', [Validators.required, passwordStrengthValidator]),
     confirmPassword: new FormControl('', [Validators.required]),
   });
 
   readonly isLoading = signal(false);
-  readonly serverError = signal<string | null>(null);
-  readonly successMessage = signal<string | null>(null);
+
+  /** Valor actual de la contraseña, como señal, para el checklist en vivo. */
+  private readonly passwordValue = toSignal(this.registerForm.controls.password.valueChanges, {
+    initialValue: '',
+  });
+
+  /** Estado de cada regla de contraseña (para pintarlas en verde al cumplirse). */
+  readonly passwordChecks = computed(() => {
+    const value = this.passwordValue() ?? '';
+    return PASSWORD_RULES.map((rule) => ({ label: rule.label, met: rule.test(value) }));
+  });
+
+  /** El checklist aparece en cuanto el usuario empieza a escribir. */
+  readonly showPasswordChecks = computed(() => (this.passwordValue() ?? '').length > 0);
+
+  get nameControl(): FormControl {
+    return this.registerForm.get('name') as FormControl;
+  }
 
   get usernameControl(): FormControl {
     return this.registerForm.get('username') as FormControl;
@@ -46,6 +108,15 @@ export class RegisterComponent {
 
   get confirmPasswordControl(): FormControl {
     return this.registerForm.get('confirmPassword') as FormControl;
+  }
+
+  getNameError(): string | null {
+    const ctrl = this.nameControl;
+    if (!ctrl.touched) return null;
+    if (ctrl.hasError('required')) return 'El nombre es requerido';
+    if (ctrl.hasError('minlength')) return 'Mínimo 3 caracteres';
+    if (ctrl.hasError('maxlength')) return 'Máximo 100 caracteres';
+    return null;
   }
 
   getUsernameError(): string | null {
@@ -68,9 +139,9 @@ export class RegisterComponent {
 
   getPasswordError(): string | null {
     const ctrl = this.passwordControl;
+    // El detalle de reglas lo muestra el checklist; aquí solo el 'requerido'.
     if (!ctrl.touched) return null;
     if (ctrl.hasError('required')) return 'La contraseña es requerida';
-    if (ctrl.hasError('minlength')) return 'Mínimo 6 caracteres';
     return null;
   }
 
@@ -89,34 +160,34 @@ export class RegisterComponent {
   }
 
   async onSubmit(): Promise<void> {
-    this.serverError.set(null);
-    this.successMessage.set(null);
     this.registerForm.markAllAsTouched();
 
     if (this.registerForm.invalid || this.passwordsDoNotMatch()) {
       return;
     }
 
-    const { username, email, password } = this.registerForm.value;
+    const { name, username, email, password } = this.registerForm.value;
 
     this.isLoading.set(true);
     this.registerForm.disable();
 
     try {
       const response = await this.authService.register({
+        name: name!,
         username: username!,
         email: email!,
         password: password!,
       });
 
       if (response.is_success) {
-        this.successMessage.set('Cuenta creada exitosamente. Ya podés iniciar sesión.');
-        setTimeout(() => this.router.navigate(['/login']), 2000);
+        this.toast.success('Cuenta creada', 'Ya podés iniciar sesión.');
+        setTimeout(() => this.router.navigate(['/login']), 1500);
       } else {
-        this.serverError.set(response.message);
+        this.toast.error('No se pudo crear la cuenta', response.message);
       }
     } catch (error) {
-      this.serverError.set(error instanceof Error ? error.message : 'Error inesperado');
+      const message = error instanceof Error ? error.message : 'Error inesperado';
+      this.toast.error('No se pudo crear la cuenta', message);
     } finally {
       this.isLoading.set(false);
       this.registerForm.enable();

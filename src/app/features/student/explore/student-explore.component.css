@@ -1,0 +1,232 @@
+:host {
+  display: block;
+}
+
+.explore {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.explore__header {
+  margin-bottom: 1.25rem;
+}
+
+.explore__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0 0 0.25rem;
+}
+
+.explore__subtitle {
+  color: var(--color-mid-1);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.explore__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.explore__search-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 260px;
+}
+
+.explore__search-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.explore__search {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--color-dark);
+  font-family: inherit;
+}
+
+.explore__search-btn {
+  flex-shrink: 0;
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0 1.1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.explore__search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.explore__field-hint {
+  margin: 0;
+  color: var(--color-mid-2);
+  font-size: 0.78rem;
+}
+
+.explore__select {
+  min-width: 170px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--color-dark);
+  background: var(--color-white);
+  font-family: inherit;
+}
+
+.explore__select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.explore__clear {
+  border: 1px solid var(--color-light-1);
+  background: var(--color-white);
+  color: var(--color-mid-1);
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.explore__panel {
+  min-height: 140px;
+}
+
+.explore__hint {
+  color: var(--color-mid-2);
+  font-size: 0.9rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--color-light-3);
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.75rem;
+}
+
+.explore__error {
+  color: var(--color-error);
+  padding: 1.5rem;
+  text-align: center;
+  background: color-mix(in srgb, var(--color-error) 6%, var(--color-white));
+  border: 1px solid var(--color-error);
+  border-radius: 0.75rem;
+}
+
+.explore__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.explore__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.75rem;
+}
+
+.explore__card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.explore__card-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.explore__badge {
+  flex-shrink: 0;
+  background: var(--color-accent-pale);
+  color: var(--color-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.explore__card-summary {
+  color: var(--color-mid-1);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0;
+  flex: 1;
+}
+
+.explore__topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.explore__topic {
+  background: var(--color-light-2);
+  border: 1px solid var(--color-light-1);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+  color: var(--color-mid-2);
+}
+
+.explore__card-link {
+  align-self: flex-start;
+  color: var(--color-secondary);
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.explore__pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem 0 0.25rem;
+}
+
+.explore__page-btn {
+  border: 1px solid var(--color-light-1);
+  background: var(--color-white);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.explore__page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.explore__page-info {
+  color: var(--color-mid-2);
+  font-size: 0.82rem;
+}

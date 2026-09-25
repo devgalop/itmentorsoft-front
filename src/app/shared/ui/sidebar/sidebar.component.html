@@ -1,3 +1,21 @@
+@if (isCollapsed()) {
+  <button
+    class="sidebar__mobile-trigger"
+    type="button"
+    (click)="toggle()"
+    aria-label="Abrir menú"
+    aria-expanded="false"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  </button>
+} @else {
+  <div class="sidebar__backdrop" (click)="toggle()"></div>
+}
+
 <aside class="sidebar" [class.sidebar--collapsed]="isCollapsed()">
   <div class="sidebar__header">
     <span class="sidebar__brand">ITMentorSoft</span>
@@ -14,27 +32,45 @@
     </button>
   </div>
 
-  @if (roleLabel && !isCollapsed()) {
-    <div class="sidebar__role">
-      <span>Rol activo</span>
-      <strong>{{ roleLabel }}</strong>
-    </div>
+  @if (profileRoute) {
+    <a class="sidebar__profile" [routerLink]="profileRoute" routerLinkActive="sidebar__profile--active">
+      <span class="sidebar__avatar">{{ userInitials() }}</span>
+      @if (!isCollapsed()) {
+        <span class="sidebar__profile-text">
+          <span>Rol activo</span>
+          <strong>{{ roleLabel }}</strong>
+        </span>
+      }
+    </a>
   }
 
   <nav class="sidebar__nav">
-    @for (item of navItems; track item.route) {
-      <a class="sidebar__nav-item" [routerLink]="item.route" routerLinkActive="sidebar__nav-item--active">
-        <span class="sidebar__nav-icon" [attr.data-icon]="item.icon"></span>
-        @if (!isCollapsed()) {
-          <span class="sidebar__nav-label">{{ item.label }}</span>
-        }
-      </a>
+    @for (group of navGroups; track group.title) {
+      @if (group.title && !isCollapsed()) {
+        <p class="sidebar__group-title">{{ group.title }}</p>
+      }
+      @for (item of group.items; track item.route) {
+        <a
+          class="sidebar__nav-item"
+          [routerLink]="item.route"
+          routerLinkActive="sidebar__nav-item--active"
+          [title]="item.label"
+        >
+          <span class="sidebar__nav-icon"><app-sidebar-icon [name]="item.icon" /></span>
+          @if (!isCollapsed()) {
+            <span class="sidebar__nav-label">{{ item.label }}</span>
+          }
+        </a>
+      }
     }
   </nav>
 
   <div class="sidebar__footer">
-    <app-button variant="outline" type="button" (buttonClick)="onLogout()">
-      Cerrar sesión
+    <app-button variant="outline" type="button" title="Cerrar sesión" (buttonClick)="onLogout()">
+      <span class="sidebar__logout-icon"><app-sidebar-icon name="logout" /></span>
+      @if (!isCollapsed()) {
+        <span>Cerrar sesión</span>
+      }
     </app-button>
   </div>
 </aside>

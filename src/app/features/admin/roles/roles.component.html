@@ -1,0 +1,27 @@
+<section class="roles">
+  <header class="roles__header">
+    <h1 class="roles__title">Roles del sistema</h1>
+    <p class="roles__subtitle">Estos son los roles disponibles en ITMentorSoft.</p>
+  </header>
+
+  @if (rolesError()) {
+    <div class="roles__banner-error" role="alert">{{ rolesError() }}</div>
+  }
+
+  <div class="roles__panel">
+    @if (isLoading()) {
+      <p class="roles__hint">Cargando roles…</p>
+    } @else if (availableRoles().length === 0) {
+      <p class="roles__hint">No hay roles configurados.</p>
+    } @else {
+      <ul class="roles__list">
+        @for (role of availableRoles(); track role) {
+          <li class="roles__item">
+            <span class="roles__badge">{{ roleLabel(role) }}</span>
+            <span class="roles__code">{{ role }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</section>

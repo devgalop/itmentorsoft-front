@@ -1,0 +1,295 @@
+import { TestBed } from '@angular/core/testing';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { AssessmentsService } from './assessments.service';
+
+describe('AssessmentsService', () => {
+  let service: AssessmentsService;
+  let httpMock: HttpTestingController;
+
+  const base = '/assessments/questions';
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        AssessmentsService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    service = TestBed.inject(AssessmentsService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  describe('getQuestionsByLevel', () => {
+    it('GETs the encoded difficulty and returns the questions array', async () => {
+      const promise = service.getQuestionsByLevel('básico');
+
+      const req = httpMock.expectOne(`${base}/level/${encodeURIComponent('básico')}`);
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        is_success: true,
+        message: 'ok',
+        questions: [{ question_id: 'q1', text_to_evaluate: '¿Qué es SOLID?' }],
+      });
+
+      const result = await promise;
+      expect(result).toEqual([{ question_id: 'q1', text_to_evaluate: '¿Qué es SOLID?' }]);
+    });
+
+    it('returns an empty array when the backend omits questions', async () => {
+      const promise = service.getQuestionsByLevel('avanzado');
+      const req = httpMock.expectOne(`${base}/level/avanzado`);
+      req.flush({ is_success: true, message: 'ok', questions: [] });
+      expect(await promise).toEqual([]);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.getQuestionsByLevel('intermedio');
+      const req = httpMock.expectOne(`${base}/level/intermedio`);
+      req.flush({ detail: 'Not enough permissions' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+    });
+  });
+
+  describe('getQuestionsByCategory', () => {
+    it('GETs the encoded category (accents/spaces) and returns questions', async () => {
+      const category = 'Diseño orientado a objetos';
+      const promise = service.getQuestionsByCategory(category);
+
+      const req = httpMock.expectOne(`${base}/category/${encodeURIComponent(category)}`);
+      expect(req.request.method).toBe('GET');
+      req.flush({ is_success: true, message: 'ok', questions: [] });
+
+      expect(await promise).toEqual([]);
+    });
+  });
+
+  describe('getQuestionById', () => {
+    it('GETs the id and returns the question detail', async () => {
+      const promise = service.getQuestionById('q1');
+
+      const req = httpMock.expectOne(`${base}/q1`);
+      expect(req.request.method).toBe('GET');
+      const detail = {
+        question_id: 'q1',
+        text: 'Explica el principio de responsabilidad única',
+        concept: 'SRP',
+        definition: 'Una clase debe tener una sola razón para cambiar',
+        simple_explanation: 'Cada clase, una responsabilidad',
+        correct_sample: 'Separar persistencia de la lógica de negocio',
+        wrong_sample: 'Una clase que valida, persiste y notifica',
+        common_misconception: ['Confundir SRP con métodos cortos', 'Creer que es una sola función'],
+        rubric: [{ score: 3, explanation: 'Explica y ejemplifica correctamente' }],
+        semantic_keywords: ['cohesión', 'responsabilidad'],
+        status: 'published',
+        difficulty: 'básico',
+        topic: 'SOLID',
+      };
+      req.flush({ is_success: true, message: 'ok', question: detail });
+
+      expect(await promise).toEqual(detail);
+    });
+
+    it('returns null when the question is not present', async () => {
+      const promise = service.getQuestionById('missing');
+      const req = httpMock.expectOne(`${base}/missing`);
+      req.flush({ is_success: false, message: 'not found', question: null });
+      expect(await promise).toBeNull();
+    });
+
+    it('maps a 404 into a not-found error', async () => {
+      const promise = service.getQuestionById('x');
+      const req = httpMock.expectOne(`${base}/x`);
+      req.flush({ detail: 'not found' }, { status: 404, statusText: 'Not Found' });
+      await expect(promise).rejects.toThrow('No se encontraron resultados');
+    });
+  });
+
+  describe('getCategories', () => {
+    it('GETs /assessments/categories and returns the categories array', async () => {
+      const promise = service.getCategories();
+      const req = httpMock.expectOne(
+        (r) => r.url === '/assessments/categories' && r.params.get('version') === '1',
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({ is_success: true, message: 'ok', categories: ['Fundamentos', 'SOLID'] });
+      expect(await promise).toEqual(['Fundamentos', 'SOLID']);
+    });
+
+    it('returns an empty array when categories is missing', async () => {
+      const promise = service.getCategories();
+      httpMock
+        .expectOne((r) => r.url === '/assessments/categories' && r.params.get('version') === '1')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
+
+  describe('registerQuestion', () => {
+    const payload = {
+      text: 'x'.repeat(25),
+      concept: 'concepto ok',
+      definition: 'y'.repeat(25),
+      simple_explanation: 'z'.repeat(25),
+      correct_sample: 'a'.repeat(25),
+      wrong_sample: 'b'.repeat(25),
+      common_misconception: ['m'.repeat(25), 'n'.repeat(25)],
+      rubric: [{ score: 3, criteria: 'criterio valido' }],
+      semantic_keywords: ['kw'],
+      difficulty: 'básico',
+      topic: 'POO',
+    };
+
+    it('POSTs the payload to /assessments/questions/register', async () => {
+      const promise = service.registerQuestion(payload);
+      const req = httpMock.expectOne('/assessments/questions/register');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'Question registered', question_id: 'q-1' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+      expect(res.question_id).toBe('q-1');
+    });
+
+    it('maps a 422 into a validation error', async () => {
+      const promise = service.registerQuestion(payload);
+      httpMock
+        .expectOne('/assessments/questions/register')
+        .flush({ detail: 'invalid' }, { status: 422, statusText: 'Unprocessable Entity' });
+      await expect(promise).rejects.toThrow();
+    });
+  });
+
+
+  describe('updateQuestion', () => {
+    const payload = {
+      text: 'x'.repeat(25),
+      concept: 'concepto ok',
+      definition: 'y'.repeat(25),
+      simple_explanation: 'z'.repeat(25),
+      correct_sample: 'a'.repeat(25),
+      wrong_sample: 'b'.repeat(25),
+      common_misconception: ['m'.repeat(25), 'n'.repeat(25)],
+      rubric: [{ score: 2, criteria: 'criterio valido' }],
+      semantic_keywords: ['kw'],
+      difficulty: 'básico',
+      topic: 'POO',
+    };
+
+    it('PUTs the payload to /assessments/questions/{id}', async () => {
+      const promise = service.updateQuestion('q-9', payload);
+      const req = httpMock.expectOne('/assessments/questions/q-9');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'Question updated' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+    });
+
+    it('encodes the question id in the URL', async () => {
+      const promise = service.updateQuestion('a/b', payload);
+      const req = httpMock.expectOne('/assessments/questions/a%2Fb');
+      req.flush({ is_success: true, message: 'ok' });
+      await promise;
+      expect(req.request.method).toBe('PUT');
+    });
+  });
+
+
+  describe('getAllQuestions', () => {
+    it('GETs the paginated list with page and page_size', async () => {
+      const promise = service.getAllQuestions(0, 10);
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === '/assessments/questions' &&
+          r.params.get('page') === '0' &&
+          r.params.get('page_size') === '10',
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        is_success: true,
+        message: 'ok',
+        questions: [{ question_id: 'q1', text_to_evaluate: 't', difficulty: 'básico', classification: 'Cat' }],
+        total: 1,
+      });
+      const res = await promise;
+      expect(res.total).toBe(1);
+      expect(res.questions).toHaveLength(1);
+    });
+
+    it('returns empty results when the payload has no questions', async () => {
+      const promise = service.getAllQuestions(2, 5);
+      httpMock
+        .expectOne((r) => r.params.get('page') === '2' && r.params.get('page_size') === '5')
+        .flush({ is_success: true, message: 'ok' });
+      const res = await promise;
+      expect(res.questions).toEqual([]);
+      expect(res.total).toBe(0);
+    });
+  });
+
+  describe('getAvailableModels', () => {
+    it('GETs /assessments/available_models and returns the model list', async () => {
+      const promise = service.getAvailableModels();
+      const req = httpMock.expectOne('/assessments/available_models');
+      expect(req.request.method).toBe('GET');
+      req.flush({ is_success: true, message: 'ok', models: ['model_1', 'model_2'] });
+      expect(await promise).toEqual(['model_1', 'model_2']);
+    });
+
+    it('returns an empty list when models is missing', async () => {
+      const promise = service.getAvailableModels();
+      httpMock.expectOne('/assessments/available_models').flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
+  describe('getModelSelected', () => {
+    it('GETs /assessments/model_selected and returns the models by process', async () => {
+      const promise = service.getModelSelected();
+      const req = httpMock.expectOne('/assessments/model_selected');
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        is_success: true,
+        message: 'ok',
+        models_by_process: [{ process: 'qualifier', model_id: 'model_1' }],
+      });
+      expect(await promise).toEqual([{ process: 'qualifier', model_id: 'model_1' }]);
+    });
+
+    it('returns an empty list when models_by_process is missing', async () => {
+      const promise = service.getModelSelected();
+      httpMock.expectOne('/assessments/model_selected').flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
+  describe('updateModel', () => {
+    it('PUTs the process and model_id to /assessments/models', async () => {
+      const promise = service.updateModel('qualifier', 'model_2');
+      const req = httpMock.expectOne('/assessments/models');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ process: 'qualifier', model_id: 'model_2' });
+      req.flush({ is_success: true, message: 'Model updated successfully' });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.updateModel('qualifier', 'model_2');
+      httpMock
+        .expectOne('/assessments/models')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+    });
+  });
+});

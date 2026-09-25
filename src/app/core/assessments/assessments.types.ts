@@ -1,0 +1,153 @@
+export const QUESTION_DIFFICULTIES = ['básico', 'intermedio', 'avanzado'] as const;
+export type QuestionDifficulty = (typeof QUESTION_DIFFICULTIES)[number];
+
+export const QUESTION_CATEGORIES = [
+  'APIs y sistemas distribuidos',
+  'Diseño orientado a objetos',
+  'Fundamentos y paradigmas',
+  'Principios de arquitectura y mantenibilidad',
+] as const;
+export type QuestionCategory = (typeof QUESTION_CATEGORIES)[number];
+
+/** Item de la lista devuelta por level/category (mínimo). */
+export interface EvaluativeQuestion {
+  question_id: string;
+  text_to_evaluate: string;
+}
+
+export interface GetQuestionsResponse {
+  is_success: boolean;
+  message: string;
+  questions: EvaluativeQuestion[];
+}
+
+/** Detalle completo de una pregunta (GET /questions/{id}). */
+export interface QuestionRubricScore {
+  score: number;
+  explanation: string;
+}
+
+export interface QuestionDetail {
+  question_id: string;
+  text: string;
+  concept: string;
+  definition: string;
+  simple_explanation: string;
+  correct_sample: string;
+  wrong_sample: string;
+  common_misconception: string[];
+  rubric: QuestionRubricScore[];
+  semantic_keywords: string[];
+  status: string;
+  difficulty: string;
+  topic: string;
+}
+
+export interface GetQuestionByIdResponse {
+  is_success: boolean;
+  message: string;
+  question: QuestionDetail | null;
+}
+
+export interface GetCategoriesResponse {
+  is_success: boolean;
+  message: string;
+  categories: string[];
+}
+
+export interface GetTopicsResponse {
+  is_success: boolean;
+  message: string;
+  topics: string[];
+}
+
+export interface RubricCriterion {
+  score: number;
+  criteria: string;
+}
+
+export interface RegisterQuestionPayload {
+  text: string;
+  concept: string;
+  definition: string;
+  simple_explanation: string;
+  correct_sample: string;
+  wrong_sample: string;
+  common_misconception: string[];
+  rubric: RubricCriterion[];
+  semantic_keywords: string[];
+  difficulty: string;
+  topic: string;
+}
+
+export interface RegisterQuestionResponse {
+  is_success: boolean;
+  message: string;
+  question_id?: string | null;
+}
+
+export interface UpdateQuestionResponse {
+  is_success: boolean;
+  message: string;
+}
+
+/** Pregunta completa devuelta por GET /assessments/questions (listado paginado). */
+export interface QuestionListItem {
+  question_id: string;
+  text_to_evaluate: string;
+  concept: string;
+  definition: string;
+  simple_explanation: string;
+  correct_sample: string;
+  wrong_sample: string;
+  common_misconceptions: string[];
+  rubric: QuestionRubricScore[];
+  semantic_keywords: string[];
+  status: string;
+  difficulty: string;
+  classification: string;
+  version: number;
+}
+
+export interface GetAllQuestionsResponse {
+  is_success: boolean;
+  message: string;
+  questions: QuestionListItem[];
+  total: number;
+}
+
+export interface PagedQuestions {
+  questions: QuestionListItem[];
+  total: number;
+}
+
+/** Procesos de IA configurables (coincide con AvailableProcesses del backend). */
+export const AI_PROCESSES = ['qualifier', 'classifier'] as const;
+export type AiProcess = (typeof AI_PROCESSES)[number];
+
+export interface GetAvailableModelsResponse {
+  is_success: boolean;
+  message: string;
+  models: string[];
+}
+
+export interface ModelByProcess {
+  process: string;
+  model_id: string;
+}
+
+export interface GetModelSelectedResponse {
+  is_success: boolean;
+  message: string;
+  models_by_process: ModelByProcess[];
+}
+
+export interface UpdateModelPayload {
+  process: string;
+  model_id: string;
+}
+
+export interface UpdateModelResponse {
+  is_success: boolean;
+  message: string;
+}

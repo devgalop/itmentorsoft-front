@@ -1,0 +1,64 @@
+<section class="an">
+  <header class="an__header">
+    <h1 class="an__title">Analíticas</h1>
+    <p class="an__subtitle">Distribución de usuarios y estudiantes en el sistema.</p>
+  </header>
+
+  <div class="an__grid">
+    <div class="an__dist">
+      <h2 class="an__dist-title">Usuarios por rol</h2>
+      @if (isLoadingUsersByRole()) {
+        <p class="an__dist-hint">Cargando distribución…</p>
+      } @else if (usersByRole().length === 0) {
+        <p class="an__dist-hint">No se pudo cargar la distribución de usuarios.</p>
+      } @else {
+        <p class="an__dist-total">{{ usersByRoleTotal() }} usuarios en total</p>
+        <ul class="an__dist-list">
+          @for (d of usersByRole(); track d.value) {
+            <li class="an__dist-item">
+              <div class="an__dist-row">
+                <span class="an__dist-label">{{ d.label }}</span>
+                <span class="an__dist-count">
+                  {{ d.count }} ({{ percent(d.count, usersByRoleTotal()) }}%)
+                </span>
+              </div>
+              <div class="an__dist-bar">
+                <div
+                  class="an__dist-fill"
+                  [style.width.%]="percent(d.count, usersByRoleTotal())"
+                ></div>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="an__dist">
+      <h2 class="an__dist-title">Estudiantes por categoría</h2>
+      @if (isLoadingStudentsByCategory()) {
+        <p class="an__dist-hint">Cargando distribución…</p>
+      } @else {
+        <p class="an__dist-total">{{ studentsByCategoryTotal() }} estudiantes clasificados en total</p>
+        <ul class="an__dist-list">
+          @for (d of studentsByCategory(); track d.value) {
+            <li class="an__dist-item">
+              <div class="an__dist-row">
+                <span class="an__dist-label">{{ d.label }}</span>
+                <span class="an__dist-count">
+                  {{ d.count }} ({{ percent(d.count, studentsByCategoryTotal()) }}%)
+                </span>
+              </div>
+              <div class="an__dist-bar">
+                <div
+                  class="an__dist-fill"
+                  [style.width.%]="percent(d.count, studentsByCategoryTotal())"
+                ></div>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+</section>

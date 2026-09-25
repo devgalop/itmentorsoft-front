@@ -1,0 +1,36 @@
+<section class="cfg">
+  <header class="cfg__header">
+    <h1 class="cfg__title">Configuración</h1>
+    <p class="cfg__subtitle">Modelo de IA usado en cada proceso del sistema.</p>
+  </header>
+
+  @if (isLoading()) {
+    <p class="cfg__hint">Cargando configuración…</p>
+  } @else if (loadError()) {
+    <div class="cfg__error" role="alert">{{ loadError() }}</div>
+  } @else {
+    <div class="cfg__list">
+      @for (p of processes(); track p.process) {
+        <div class="cfg__row">
+          <div class="cfg__row-text">
+            <span class="cfg__row-label">{{ p.label }}</span>
+            <span class="cfg__row-hint">Proceso: {{ p.process }}</span>
+          </div>
+          <select
+            class="cfg__select"
+            [value]="p.currentModel ?? ''"
+            [disabled]="savingProcess() === p.process"
+            (change)="onModelChange(p.process, $any($event.target).value)"
+          >
+            @if (!p.currentModel) {
+              <option value="" disabled selected>Sin modelo asignado</option>
+            }
+            @for (m of availableModels(); track m) {
+              <option [value]="m">{{ m }}</option>
+            }
+          </select>
+        </div>
+      }
+    </div>
+  }
+</section>

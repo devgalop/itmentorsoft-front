@@ -1,18 +1,33 @@
 import { TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let authServiceMock: { login: ReturnType<typeof vi.fn>; role: ReturnType<typeof vi.fn> };
   let routerMock: { navigate: ReturnType<typeof vi.fn> };
+  let toastMock: {
+    success: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+    info: ReturnType<typeof vi.fn>;
+  };
+
+  const SUCCESS = {
+    is_successful: true,
+    user_id: 'u1',
+    is_temporarily_blocked: false,
+    blocked_until: 0,
+    is_definitively_blocked: false,
+  };
 
   beforeEach(() => {
     authServiceMock = { login: vi.fn(), role: vi.fn().mockReturnValue(null) };
     routerMock = { navigate: vi.fn() };
+    toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [ReactiveFormsModule],
@@ -20,6 +35,11 @@ describe('LoginComponent', () => {
         LoginComponent,
         { provide: AuthService, useValue: authServiceMock },
         { provide: Router, useValue: routerMock },
+        { provide: ToastService, useValue: toastMock },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: () => null } } },
+        },
       ],
     });
 
@@ -64,7 +84,7 @@ describe('LoginComponent', () => {
   });
 
   it('on successful login, calls AuthService.login()', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
+    authServiceMock.login.mockResolvedValue(SUCCESS);
     component.loginForm.setValue({
       email: 'test@example.com',
       password: 'password123',
@@ -78,9 +98,8 @@ describe('LoginComponent', () => {
     });
   });
 
-  it('on successful login, redirects to role-specific route', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
-    authServiceMock.role.mockReturnValue('student');
+  it('on successful login (step 1), navigates to /otp for the code', async () => {
+    authServiceMock.login.mockResolvedValue(SUCCESS);
     component.loginForm.setValue({
       email: 'test@example.com',
       password: 'password123',
@@ -88,49 +107,42 @@ describe('LoginComponent', () => {
 
     await component.onSubmit();
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/student']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/otp']);
   });
 
-  it('on successful login with admin role, redirects to /admin', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
-    authServiceMock.role.mockReturnValue('admin');
-    component.loginForm.setValue({
-      email: 'test@example.com',
-      password: 'password123',
+  it('does not navigate to /otp when the account is temporarily blocked', async () => {
+    authServiceMock.login.mockResolvedValue({
+      is_successful: false,
+      user_id: 'u1',
+      is_temporarily_blocked: true,
+      blocked_until: 999,
+      is_definitively_blocked: false,
     });
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
 
     await component.onSubmit();
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/admin']);
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+    expect(toastMock.error).toHaveBeenCalled();
   });
 
-  it('on successful login with teacher role, redirects to /teacher', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
-    authServiceMock.role.mockReturnValue('teacher');
-    component.loginForm.setValue({
-      email: 'test@example.com',
-      password: 'password123',
+  it('does not navigate when the account is definitively blocked', async () => {
+    authServiceMock.login.mockResolvedValue({
+      is_successful: false,
+      user_id: 'u1',
+      is_temporarily_blocked: false,
+      blocked_until: 0,
+      is_definitively_blocked: true,
     });
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
 
     await component.onSubmit();
 
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/teacher']);
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+    expect(toastMock.error).toHaveBeenCalled();
   });
 
-  it('on successful login with unknown role, redirects to /', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
-    authServiceMock.role.mockReturnValue('user');
-    component.loginForm.setValue({
-      email: 'test@example.com',
-      password: 'password123',
-    });
-
-    await component.onSubmit();
-
-    expect(routerMock.navigate).toHaveBeenCalledWith(['/']);
-  });
-
-  it('on 401 error, shows error message', async () => {
+  it('on 401 error, shows an error toast', async () => {
     authServiceMock.login.mockRejectedValue(new Error('Credenciales inválidas'));
     component.loginForm.setValue({
       email: 'test@example.com',
@@ -139,7 +151,7 @@ describe('LoginComponent', () => {
 
     await component.onSubmit();
 
-    expect(component.serverError()).toBe('Credenciales inválidas');
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo iniciar sesión', 'Credenciales inválidas');
   });
 
   it('on error, does not redirect', async () => {
@@ -155,7 +167,7 @@ describe('LoginComponent', () => {
   });
 
   it('on successful login, resets loading state', async () => {
-    authServiceMock.login.mockResolvedValue(undefined);
+    authServiceMock.login.mockResolvedValue(SUCCESS);
     component.loginForm.setValue({
       email: 'test@example.com',
       password: 'password123',

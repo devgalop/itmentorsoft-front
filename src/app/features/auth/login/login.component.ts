@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
 
 @Component({
@@ -15,6 +16,8 @@ import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui'
 export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly toast = inject(ToastService);
 
   readonly loginForm = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
@@ -22,7 +25,15 @@ export class LoginComponent {
   });
 
   readonly isLoading = signal(false);
-  readonly serverError = signal<string | null>(null);
+
+  constructor() {
+    if (this.route.snapshot.queryParamMap.get('expired') === '1') {
+      this.toast.info(
+        'Sesión expirada',
+        'Tu sesión expiró por inactividad. Iniciá sesión de nuevo para continuar.',
+      );
+    }
+  }
 
   get emailControl(): FormControl {
     return this.loginForm.get('email') as FormControl;
@@ -55,7 +66,6 @@ export class LoginComponent {
   }
 
   async onSubmit(): Promise<void> {
-    this.serverError.set(null);
     this.loginForm.markAllAsTouched();
 
     if (this.loginForm.invalid) {
@@ -68,29 +78,37 @@ export class LoginComponent {
     this.loginForm.disable();
 
     try {
-      await this.authService.login({ email: email!, password: password! });
-      await this.redirectByRole();
+      const response = await this.authService.login({ email: email!, password: password! });
+
+      if (response.is_definitively_blocked) {
+        this.toast.error(
+          'Cuenta bloqueada',
+          'Tu cuenta fue bloqueada por seguridad. Contactá al administrador.',
+        );
+        return;
+      }
+      if (response.is_temporarily_blocked) {
+        this.toast.error(
+          'Cuenta bloqueada temporalmente',
+          'Demasiados intentos. Esperá unos minutos e intentá de nuevo.',
+        );
+        return;
+      }
+      if (response.is_successful && response.user_id) {
+        this.toast.info('Verificá tu correo', 'Te enviamos un código para completar el ingreso.');
+        await this.router.navigate(['/otp']);
+        return;
+      }
+
+      this.toast.error('No se pudo iniciar sesión', 'Revisá tus credenciales e intentá de nuevo.');
     } catch (error) {
-      this.serverError.set(error instanceof Error ? error.message : 'Error inesperado');
+      this.toast.error(
+        'No se pudo iniciar sesión',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
     } finally {
       this.isLoading.set(false);
       this.loginForm.enable();
-    }
-  }
-
-  private async redirectByRole(): Promise<void> {
-    switch (this.authService.role()) {
-      case 'admin':
-        await this.router.navigate(['/admin']);
-        break;
-      case 'teacher':
-        await this.router.navigate(['/teacher']);
-        break;
-      case 'student':
-        await this.router.navigate(['/student']);
-        break;
-      default:
-        await this.router.navigate(['/']);
     }
   }
 }

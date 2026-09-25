@@ -186,24 +186,41 @@
   gap: 1rem;
 }
 
-.register-form__server-error {
-  padding: 0.6875rem 0.875rem;
-  background: color-mix(in srgb, var(--color-error) 8%, var(--color-white));
-  border: 1px solid var(--color-error);
+.register-form__password-rules {
+  list-style: none;
+  margin: -0.5rem 0 0;
+  padding: 0.625rem 0.875rem;
+  background: var(--color-light-3);
+  border: 1px solid var(--color-light-1);
   border-radius: 0.5rem;
-  color: var(--color-error);
-  font-size: 0.8125rem;
-  text-align: center;
+  display: grid;
+  gap: 0.375rem;
 }
 
-.register-form__success {
-  padding: 0.6875rem 0.875rem;
-  background: color-mix(in srgb, var(--color-success) 8%, var(--color-white));
-  border: 1px solid var(--color-success);
-  border-radius: 0.5rem;
+.register-form__rule {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--color-mid-1);
+  transition: color 0.15s ease;
+}
+
+.register-form__rule-icon {
+  display: inline-flex;
+  width: 1rem;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--color-mid-2);
+  transition: color 0.15s ease;
+}
+
+.register-form__rule--met {
   color: var(--color-success);
-  font-size: 0.8125rem;
-  text-align: center;
+}
+
+.register-form__rule--met .register-form__rule-icon {
+  color: var(--color-success);
 }
 
 .register-card__footer {

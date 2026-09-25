@@ -1,0 +1,186 @@
+<section class="res">
+  <header class="res__header">
+    <div>
+      <h1 class="res__title">Recursos</h1>
+      <p class="res__subtitle">Gestioná los recursos educativos disponibles para los estudiantes.</p>
+    </div>
+    <button type="button" class="res__new" (click)="openCreate()">+ Nuevo recurso</button>
+  </header>
+
+  <div class="res__filters">
+    <div class="res__search-wrap">
+      <div class="res__search-group">
+        <input
+          type="search"
+          class="res__search"
+          aria-label="Buscar por título"
+          placeholder="Buscar por título completo…"
+          [value]="titleDraft()"
+          (input)="onTitleInput($any($event.target).value)"
+          (keyup.enter)="onSearchSubmit()"
+        />
+        <button
+          type="button"
+          class="res__search-btn"
+          [disabled]="titleTooShort()"
+          (click)="onSearchSubmit()"
+        >
+          Buscar
+        </button>
+      </div>
+      @if (titleTooShort()) {
+        <p class="res__field-hint">Escribí al menos 3 caracteres para buscar por título.</p>
+      }
+    </div>
+    <select
+      class="res__filter-select"
+      aria-label="Filtrar por categoría"
+      [value]="filterCategory()"
+      (change)="onCategoryFilterChange($any($event.target).value)"
+    >
+      <option value="all">Todas las categorías</option>
+      @for (c of categoryOptions; track c) {
+        <option [value]="c">{{ categoryLabel(c) }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="res__panel">
+    @if (isLoading()) {
+      <p class="res__hint">Cargando recursos…</p>
+    } @else if (loadError()) {
+      <p class="res__error" role="alert">{{ loadError() }}</p>
+    } @else if (resources().length === 0) {
+      <p class="res__hint">
+        @if (hasActiveFilter()) {
+          No se encontraron recursos para ese filtro.
+        } @else {
+          No hay recursos todavía. Creá el primero con “Nuevo recurso”.
+        }
+      </p>
+    } @else {
+      <table class="res__table">
+        <thead>
+          <tr>
+            <th class="res__th">Título</th>
+            <th class="res__th">Categoría</th>
+            <th class="res__th">Temas</th>
+            <th class="res__th">Enlace</th>
+            <th class="res__th">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of resources(); track r.content_id) {
+            <tr class="res__row">
+              <td class="res__cell">
+                <span class="res__name">{{ r.title }}</span>
+                <span class="res__summary">{{ r.summary }}</span>
+              </td>
+              <td class="res__cell"><span class="res__badge">{{ categoryLabel(r.category) }}</span></td>
+              <td class="res__cell res__topics">
+                @for (t of r.related_topics; track t) {
+                  <span class="res__topic">{{ t }}</span>
+                }
+              </td>
+              <td class="res__cell">
+                <a class="res__link" [href]="r.url" target="_blank" rel="noopener">Abrir ↗</a>
+              </td>
+              <td class="res__cell">
+                <button type="button" class="res__edit" (click)="openEdit(r)">Editar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</section>
+
+@if (isModalOpen()) {
+  <div class="modal" (click)="closeModal()">
+    <div class="modal__box" (click)="$event.stopPropagation()">
+      <button type="button" class="modal__close" (click)="closeModal()" aria-label="Cerrar">×</button>
+      <h2 class="modal__title">{{ editingId() ? 'Editar recurso' : 'Nuevo recurso' }}</h2>
+
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="res__form">
+        <div class="res__field">
+          <label for="title">Título <span class="res__hintlabel">(5–150)</span></label>
+          <input id="title" type="text" formControlName="title" />
+          @if (fieldError(form.get('title')); as err) {
+            <p class="res__field-error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="res__field">
+          <label for="description">Descripción <span class="res__hintlabel">(10–300)</span></label>
+          <textarea id="description" rows="3" formControlName="description"></textarea>
+          @if (fieldError(form.get('description')); as err) {
+            <p class="res__field-error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="res__field">
+          <label for="url">URL <span class="res__hintlabel">(https://…)</span></label>
+          <input id="url" type="text" formControlName="url" placeholder="https://" />
+          @if (fieldError(form.get('url')); as err) {
+            <p class="res__field-error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="res__field">
+          <label>Temas relacionados <span class="res__hintlabel">(marcá al menos 1)</span></label>
+          <div class="res__multiselect">
+            <button
+              type="button"
+              class="res__ms-trigger"
+              [class.res__ms-trigger--open]="isTopicsOpen()"
+              (click)="toggleTopicsDropdown()"
+            >
+              <span [class.res__ms-placeholder]="selectedTopics().length === 0">
+                {{ topicsSummary() }}
+              </span>
+              <span class="res__ms-caret" aria-hidden="true">▾</span>
+            </button>
+
+            @if (isTopicsOpen()) {
+              <div class="res__ms-panel">
+                @if (isLoadingTopics()) {
+                  <p class="res__hint">Cargando temas…</p>
+                } @else if (availableTopics().length === 0) {
+                  <p class="res__hint">No hay temas disponibles.</p>
+                } @else {
+                  @for (topic of availableTopics(); track topic) {
+                    <label class="res__check">
+                      <input
+                        type="checkbox"
+                        [checked]="isTopicSelected(topic)"
+                        (change)="toggleTopic(topic)"
+                      />
+                      <span>{{ topic }}</span>
+                    </label>
+                  }
+                }
+              </div>
+            }
+          </div>
+          @if (fieldError(form.controls.related_topic); as err) {
+            <span class="res__error">{{ err }}</span>
+          }
+        </div>
+
+        <div class="res__actions">
+          <button type="submit" class="res__submit" [disabled]="isSubmitting()">
+            {{
+              isSubmitting()
+                ? 'Guardando…'
+                : editingId()
+                  ? 'Guardar cambios'
+                  : 'Crear recurso'
+            }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

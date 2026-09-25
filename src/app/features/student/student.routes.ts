@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { initialAssessmentGuard } from '@core/guards/initial-assessment.guard';
 
 export const STUDENT_ROUTES: Routes = [
   {
@@ -13,6 +14,35 @@ export const STUDENT_ROUTES: Routes = [
           import('./dashboard/student-dashboard.component').then(
             (m) => m.StudentDashboardComponent,
           ),
+      },
+      {
+        path: 'assessments',
+        loadComponent: () =>
+          import('./assessment/student-assessment.component').then(
+            (m) => m.StudentAssessmentComponent,
+          ),
+      },
+      {
+        path: 'route',
+        canActivate: [initialAssessmentGuard],
+        loadComponent: () =>
+          import('./route/student-route.component').then((m) => m.StudentRouteComponent),
+      },
+      {
+        path: 'explore',
+        loadComponent: () =>
+          import('./explore/student-explore.component').then((m) => m.StudentExploreComponent),
+      },
+      {
+        path: 'progress',
+        canActivate: [initialAssessmentGuard],
+        loadComponent: () =>
+          import('./progress/student-progress.component').then((m) => m.StudentProgressComponent),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('@shared/profile/profile.component').then((m) => m.ProfileComponent),
       },
     ],
   },

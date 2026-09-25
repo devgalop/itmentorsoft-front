@@ -1,0 +1,63 @@
+<div class="otp-page">
+  <div class="otp-card">
+    <div class="otp-card__top-bar">
+      <a routerLink="/login" class="otp-card__back" aria-label="Volver al inicio de sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <h3 class="otp-card__top-title">Verificación en dos pasos</h3>
+    </div>
+
+    <div class="otp-card__body">
+      <div class="otp-card__icon-wrapper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="otp-card__icon">
+          <rect x="3" y="11" width="18" height="11" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      </div>
+
+      <p class="otp-card__title">Ingresá el código</p>
+      <p class="otp-card__subtitle">
+        Te enviamos un código de verificación a tu correo. Ingresalo para completar el ingreso.
+      </p>
+
+      <form [formGroup]="otpForm" (ngSubmit)="onSubmit()" class="otp-form">
+        <app-form-field label="Código de verificación" forId="otp" [error]="getOtpError()">
+          <app-input
+            id="otp"
+            type="text"
+            placeholder="Ej: A3F9C2"
+            [control]="otpForm.controls.otp"
+          />
+        </app-form-field>
+
+        <app-button type="submit" variant="primary" [loading]="isLoading()">
+          Verificar e ingresar
+        </app-button>
+      </form>
+
+      <p class="otp-card__resend">
+        ¿No te llegó el código?
+        <button
+          type="button"
+          class="otp-card__resend-btn"
+          [disabled]="isResending() || resendCooldown() > 0"
+          (click)="resendOtp()"
+        >
+          @if (isResending()) {
+            Enviando…
+          } @else if (resendCooldown() > 0) {
+            Reenviar ({{ resendCooldown() }}s)
+          } @else {
+            Reenviar código
+          }
+        </button>
+      </p>
+
+      <p class="otp-card__footer">
+        <a routerLink="/login">← Volver al inicio de sesión</a>
+      </p>
+    </div>
+  </div>
+</div>

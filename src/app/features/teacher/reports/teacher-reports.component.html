@@ -1,0 +1,80 @@
+<section class="rep">
+  <header class="rep__header">
+    <h1 class="rep__title">Reportes</h1>
+    <p class="rep__subtitle">Estudiantes agrupados por nivel de conocimiento.</p>
+  </header>
+
+  <!-- Distribución por categoría -->
+  <div class="rep__dist">
+    <h2 class="rep__dist-title">Estudiantes por categoría</h2>
+    @if (isLoadingDistribution()) {
+      <p class="rep__dist-hint">Cargando distribución…</p>
+    } @else {
+      <p class="rep__dist-total">{{ distributionTotal() }} estudiantes clasificados en total</p>
+      <ul class="rep__dist-list">
+        @for (d of distribution(); track d.value) {
+          <li class="rep__dist-item">
+            <div class="rep__dist-row">
+              <span class="rep__dist-label">{{ d.label }}</span>
+              <span class="rep__dist-count">{{ d.count }} ({{ percent(d.count) }}%)</span>
+            </div>
+            <div class="rep__dist-bar">
+              <div class="rep__dist-fill" [style.width.%]="percent(d.count)"></div>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  <div class="rep__filters">
+    <label for="rep-cat">Categoría</label>
+    <select
+      id="rep-cat"
+      [value]="selectedCategory()"
+      (change)="onCategoryChange($any($event.target).value)"
+    >
+      @for (c of categories; track c.value) {
+        <option [value]="c.value">{{ c.label }}</option>
+      }
+    </select>
+  </div>
+
+  @if (isLoading()) {
+    <p class="rep__hint">Cargando estudiantes…</p>
+  } @else if (loadError()) {
+    <div class="rep__error" role="alert">{{ loadError() }}</div>
+  } @else if (students().length === 0) {
+    <div class="rep__empty">
+      <p>No hay estudiantes en la categoría "{{ classificationLabel(selectedCategory()) }}".</p>
+    </div>
+  } @else {
+    <p class="rep__count">{{ total() }} estudiante(s) en "{{ classificationLabel(selectedCategory()) }}"</p>
+
+    <div class="rep__table">
+      <div class="rep__row rep__row--head">
+        <span>Estudiante</span>
+        <span>Clasificación</span>
+        <span class="rep__actions-col">Acciones</span>
+      </div>
+      @for (s of students(); track s.student_id) {
+        <div class="rep__row">
+          <span class="rep__student">
+            <span class="rep__avatar">{{ initials(s.student_name) }}</span>
+            {{ s.student_name }}
+          </span>
+          <span><span class="rep__badge">{{ classificationLabel(s.knowledge_classification) }}</span></span>
+          <span class="rep__actions-col">
+            <a [routerLink]="['/teacher/students', s.student_id]" class="rep__link">Ver reporte</a>
+          </span>
+        </div>
+      }
+    </div>
+
+    <div class="rep__pager">
+      <button type="button" (click)="prev()" [disabled]="!canPrev()">← Anterior</button>
+      <span>Página {{ page() + 1 }} de {{ totalPages() }}</span>
+      <button type="button" (click)="next()" [disabled]="!canNext()">Siguiente →</button>
+    </div>
+  }
+</section>

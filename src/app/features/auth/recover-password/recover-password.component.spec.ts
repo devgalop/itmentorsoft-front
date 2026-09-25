@@ -3,19 +3,23 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { vi } from 'vitest';
 import { RecoverPasswordComponent } from './recover-password.component';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('RecoverPasswordComponent', () => {
   let component: RecoverPasswordComponent;
   let authServiceMock: { recoverPassword: ReturnType<typeof vi.fn> };
+  let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     authServiceMock = { recoverPassword: vi.fn() };
+    toastMock = { success: vi.fn(), error: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [ReactiveFormsModule],
       providers: [
         RecoverPasswordComponent,
         { provide: AuthService, useValue: authServiceMock },
+        { provide: ToastService, useValue: toastMock },
       ],
     });
 
@@ -81,25 +85,31 @@ describe('RecoverPasswordComponent', () => {
       expect(authServiceMock.recoverPassword).toHaveBeenCalledWith({ email: 'test@example.com' });
     });
 
-    it('shows success message with the backend response on success', async () => {
-      const backendMessage = 'If the email exists in our system, you will receive a password recovery email shortly.';
-      authServiceMock.recoverPassword.mockResolvedValue({ message: backendMessage });
+    it('sets submitted and shows a success toast on success', async () => {
+      authServiceMock.recoverPassword.mockResolvedValue({ message: 'ok' });
       component.recoverForm.setValue({ email: 'test@example.com' });
 
       await component.onSubmit();
 
-      expect(component.successMessage()).toBe(backendMessage);
-      expect(component.serverError()).toBeNull();
+      expect(component.submitted()).toBe(true);
+      expect(toastMock.success).toHaveBeenCalledWith(
+        'Solicitud enviada',
+        'Si el correo existe, te enviamos un enlace para restablecer tu contraseña.',
+        6000,
+      );
     });
 
-    it('shows error message when recoverPassword() throws (network/validation error)', async () => {
+    it('shows an error toast when recoverPassword() throws', async () => {
       authServiceMock.recoverPassword.mockRejectedValue(new Error('Sin conexión al servidor'));
       component.recoverForm.setValue({ email: 'test@example.com' });
 
       await component.onSubmit();
 
-      expect(component.serverError()).toBe('Sin conexión al servidor');
-      expect(component.successMessage()).toBeNull();
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'No se pudo enviar la solicitud',
+        'Sin conexión al servidor',
+      );
+      expect(component.submitted()).toBe(false);
     });
 
     it('resets loading state after submit completes', async () => {
@@ -117,17 +127,15 @@ describe('RecoverPasswordComponent', () => {
       expect(component.recoverForm.enabled).toBe(true);
     });
 
-    it('clears previous messages on new submit attempt', async () => {
-      authServiceMock.recoverPassword.mockResolvedValue({ message: 'first message' });
+    it('fires a success toast on each successful submit', async () => {
+      authServiceMock.recoverPassword.mockResolvedValue({ message: 'ok' });
       component.recoverForm.setValue({ email: 'test@example.com' });
-      await component.onSubmit();
-      expect(component.successMessage()).toBe('first message');
 
-      authServiceMock.recoverPassword.mockRejectedValue(new Error('Sin conexión al servidor'));
+      await component.onSubmit();
       await component.onSubmit();
 
-      expect(component.successMessage()).toBeNull();
-      expect(component.serverError()).toBe('Sin conexión al servidor');
+      expect(toastMock.success).toHaveBeenCalledTimes(2);
+      expect(component.submitted()).toBe(true);
     });
   });
 });

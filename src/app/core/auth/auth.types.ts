@@ -7,12 +7,38 @@ export interface LoginCredentials {
 
 export interface LoginResponse {
   is_successful: boolean;
-  token: string;
+  user_id: string | null;
+  is_temporarily_blocked: boolean;
+  blocked_until: number;
+  is_definitively_blocked: boolean;
+}
+
+export interface ConfirmOtpCredentials {
+  user_id: string;
+  otp: string;
+}
+
+export interface ConfirmOtpResponse {
+  is_successful: boolean;
+  message: string;
+  token: string | null;
   expiration_time: number;
-  refresh_token: string;
+  refresh_token: string | null;
+  user_id: string | null;
+}
+
+/** Respuesta del refresh de sesión (POST /users/sessions/refresh). */
+export interface RefreshResponse {
+  is_successful: boolean;
+  token?: string | null;
+  access_token?: string | null;
+  refresh_token?: string | null;
+  expiration_time?: number;
+  user_id?: string | null;
 }
 
 export interface RegisterCredentials {
+  name: string;
   email: string;
   username: string;
   password: string;
@@ -29,6 +55,11 @@ export interface RecoverPasswordCredentials {
 }
 
 export interface RecoverPasswordResponse {
+  message: string;
+}
+
+/** Respuesta del reenvío de OTP (POST /users/resend-otp). Siempre 200 con un mensaje genérico. */
+export interface ResendOtpResponse {
   message: string;
 }
 

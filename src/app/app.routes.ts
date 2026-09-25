@@ -9,6 +9,10 @@ export const routes: Routes = [
       import('@features/auth/login/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'otp',
+    loadComponent: () => import('@features/auth/otp/otp.component').then((m) => m.OtpComponent),
+  },
+  {
     path: 'register',
     loadComponent: () =>
       import('@features/auth/register/register.component').then((m) => m.RegisterComponent),
@@ -21,10 +25,29 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('@features/auth/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent,
+      ),
+  },
+  {
     path: 'student',
     canActivate: [authGuard, roleGuard('student')],
     loadChildren: () =>
       import('@features/student/student.routes').then((m) => m.STUDENT_ROUTES),
+  },
+  {
+    path: 'teacher',
+    canActivate: [authGuard, roleGuard('teacher')],
+    loadChildren: () =>
+      import('@features/teacher/teacher.routes').then((m) => m.TEACHER_ROUTES),
+  },
+  {
+    path: 'admin',
+    canActivate: [authGuard, roleGuard('admin')],
+    loadChildren: () =>
+      import('@features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
   },
   {
     path: '',

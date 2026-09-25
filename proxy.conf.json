@@ -1,7 +1,22 @@
 {
-  "/users": {
-    "target": "http://127.0.0.1:8000",
-    "changeOrigin": true,
-    "secure": false
-  }
+    "/users":  {
+                   "target":  "http://127.0.0.1:8000",
+                   "changeOrigin":  true,
+                   "secure":  false
+               },
+    "/assessments":  {
+                         "target":  "http://127.0.0.1:8000",
+                         "changeOrigin":  true,
+                         "secure":  false
+                     },
+    "/content":  {
+                     "target":  "http://127.0.0.1:8000",
+                     "secure":  false,
+                     "changeOrigin":  true
+                 },
+    "/reports":  {
+                     "target":  "http://127.0.0.1:8000",
+                     "secure":  false,
+                     "changeOrigin":  true
+                 }
 }
