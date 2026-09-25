@@ -56,7 +56,6 @@ Thumbs.db
 
 # Node modules and dependency files
 /node_modules/
-/package-lock.json
 /yarn.lock
 
 # Environment files
