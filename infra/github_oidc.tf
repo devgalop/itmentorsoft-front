@@ -35,7 +35,11 @@ data "aws_iam_policy_document" "github_assume" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/${var.github_deploy_branch}"]
+      values = [
+        # Formato actual de GitHub (con IDs) y el clásico, por si vuelve a cambiar.
+        "repo:${var.github_repository_with_ids}:ref:refs/heads/${var.github_deploy_branch}",
+        "repo:${var.github_repository}:ref:refs/heads/${var.github_deploy_branch}",
+      ]
     }
   }
 }

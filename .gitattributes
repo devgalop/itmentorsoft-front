@@ -1,0 +1,3 @@
+# Terraform: saltos de línea LF siempre (el código de la CloudFront Function
+# va en un heredoc y CRLF haría que Terraform detecte cambios falsos).
+infra/*.tf text eol=lf

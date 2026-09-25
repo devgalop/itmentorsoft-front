@@ -43,6 +43,16 @@ variable "github_repository" {
   default     = "devgalop/itmentorsoft-front"
 }
 
+variable "github_repository_with_ids" {
+  description = <<-EOT
+    Repositorio como lo emite GitHub en el claim "sub" del token OIDC, con los IDs
+    numéricos del dueño y del repo (owner@ownerId/repo@repoId).
+    Se ve en los claims del job: sub = repo:<este valor>:ref:refs/heads/<rama>.
+  EOT
+  type        = string
+  default     = "devgalop@103542712/itmentorsoft-front@1256635525"
+}
+
 variable "github_deploy_branch" {
   description = "Rama desde la que el workflow puede asumir el rol de despliegue."
   type        = string
