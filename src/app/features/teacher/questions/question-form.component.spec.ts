@@ -17,6 +17,8 @@ const validDetail = {
   rubric: [{ score: 2, explanation: 'criterio de rubrica valido' }],
   semantic_keywords: ['alpha', 'beta'],
   status: 'published',
+  difficulty: 'intermedio',
+  topic: 'POO',
 };
 
 const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
@@ -57,6 +59,8 @@ describe('QuestionFormComponent', () => {
         simple_explanation: 'z'.repeat(25),
         correct_sample: 'a'.repeat(25),
         wrong_sample: 'b'.repeat(25),
+        difficulty: 'básico',
+        topic: 'POO',
       });
       component.misconceptions.at(0).setValue('m'.repeat(25));
       component.misconceptions.at(1).setValue('n'.repeat(25));

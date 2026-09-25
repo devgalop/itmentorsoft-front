@@ -66,6 +66,28 @@
       </div>
     </div>
 
+    <div class="qform__grid2">
+      <div class="qform__field">
+        <label for="difficulty">Dificultad</label>
+        <select id="difficulty" formControlName="difficulty">
+          <option value="" disabled>Seleccioná una dificultad</option>
+          @for (d of difficulties; track d) {
+            <option [value]="d">{{ d }}</option>
+          }
+        </select>
+        @if (fieldError(form.get('difficulty')); as err) {
+          <p class="qform__error">{{ err }}</p>
+        }
+      </div>
+      <div class="qform__field">
+        <label for="topic">Tema <span class="qform__hint">(2–100)</span></label>
+        <input id="topic" type="text" formControlName="topic" />
+        @if (fieldError(form.get('topic')); as err) {
+          <p class="qform__error">{{ err }}</p>
+        }
+      </div>
+    </div>
+
     <!-- Errores comunes (mín. 2) -->
     <fieldset class="qform__array" formArrayName="common_misconception">
       <legend>Errores comunes <span class="qform__hint">(mín. 2 · cada uno 20–300)</span></legend>
