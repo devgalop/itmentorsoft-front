@@ -39,6 +39,8 @@ export interface QuestionDetail {
   rubric: QuestionRubricScore[];
   semantic_keywords: string[];
   status: string;
+  difficulty: string;
+  topic: string;
 }
 
 export interface GetQuestionByIdResponse {
@@ -74,6 +76,8 @@ export interface RegisterQuestionPayload {
   common_misconception: string[];
   rubric: RubricCriterion[];
   semantic_keywords: string[];
+  difficulty: string;
+  topic: string;
 }
 
 export interface RegisterQuestionResponse {

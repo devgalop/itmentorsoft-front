@@ -90,6 +90,8 @@ describe('AssessmentsService', () => {
         rubric: [{ score: 3, explanation: 'Explica y ejemplifica correctamente' }],
         semantic_keywords: ['cohesión', 'responsabilidad'],
         status: 'published',
+        difficulty: 'básico',
+        topic: 'SOLID',
       };
       req.flush({ is_success: true, message: 'ok', question: detail });
 
@@ -143,6 +145,8 @@ describe('AssessmentsService', () => {
       common_misconception: ['m'.repeat(25), 'n'.repeat(25)],
       rubric: [{ score: 3, criteria: 'criterio valido' }],
       semantic_keywords: ['kw'],
+      difficulty: 'básico',
+      topic: 'POO',
     };
 
     it('POSTs the payload to /assessments/questions/register', async () => {
@@ -177,6 +181,8 @@ describe('AssessmentsService', () => {
       common_misconception: ['m'.repeat(25), 'n'.repeat(25)],
       rubric: [{ score: 2, criteria: 'criterio valido' }],
       semantic_keywords: ['kw'],
+      difficulty: 'básico',
+      topic: 'POO',
     };
 
     it('PUTs the payload to /assessments/questions/{id}', async () => {

@@ -45,6 +45,9 @@ export class QuestionFormComponent {
 
   readonly isSubmitting = signal(false);
 
+  /** Niveles aceptados por el backend (QuestionDifficulty). */
+  readonly difficulties = ['básico', 'intermedio', 'avanzado'];
+
   readonly form = this.fb.nonNullable.group({
     text: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(500)]],
     concept: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(150)]],
@@ -62,6 +65,8 @@ export class QuestionFormComponent {
       [this.newMisconception(), this.newMisconception()],
       minItems(2),
     ),
+    difficulty: ['', [Validators.required]],
+    topic: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     semantic_keywords: this.fb.array([this.newKeyword()], minItems(1)),
     rubric: this.fb.array([this.newRubric()], minItems(1)),
   });
@@ -139,6 +144,8 @@ export class QuestionFormComponent {
       simple_explanation: q.simple_explanation,
       correct_sample: q.correct_sample,
       wrong_sample: q.wrong_sample,
+      difficulty: q.difficulty,
+      topic: q.topic,
     });
 
     const misconceptions = (q.common_misconception ?? []).filter((m) => m && m.trim().length > 0);
