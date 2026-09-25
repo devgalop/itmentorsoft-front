@@ -292,4 +292,78 @@ describe('AssessmentsService', () => {
       await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
     });
   });
+
+  describe('getTopics', () => {
+    it('GETs /assessments/topics and returns the list', async () => {
+      const promise = service.getTopics();
+      const req = httpMock.expectOne('/assessments/topics');
+      expect(req.request.method).toBe('GET');
+      req.flush({ is_success: true, message: 'ok', topics: ['POO', 'SOLID'] });
+      expect(await promise).toEqual(['POO', 'SOLID']);
+    });
+
+    it('returns an empty list when topics is missing', async () => {
+      const promise = service.getTopics();
+      httpMock.expectOne('/assessments/topics').flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
+  describe('error mapping', () => {
+    it.each([
+      [0, 'Sin conexión al servidor'],
+      [401, 'Sesión expirada, iniciá sesión de nuevo'],
+      [403, 'No tenés permisos para ver este contenido'],
+      [404, 'No se encontraron resultados'],
+      [500, 'Error en el servidor, intentá más tarde'],
+    ])('maps HTTP %i to "%s"', async (status, message) => {
+      const promise = service.getTopics();
+      httpMock
+        .expectOne('/assessments/topics')
+        .flush({ detail: 'x' }, { status, statusText: 'error' });
+      await expect(promise).rejects.toThrow(message);
+    });
+
+    const payload = {
+      text: 'x'.repeat(25),
+      concept: 'concepto ok',
+      definition: 'y'.repeat(25),
+      simple_explanation: 'z'.repeat(25),
+      correct_sample: 'a'.repeat(25),
+      wrong_sample: 'b'.repeat(25),
+      common_misconception: ['m'.repeat(25), 'n'.repeat(25)],
+      rubric: [{ score: 3, criteria: 'criterio valido' }],
+      semantic_keywords: ['kw'],
+      difficulty: 'básico',
+      topic: 'POO',
+    };
+
+    const calls: [string, string, () => Promise<unknown>][] = [
+      ['getQuestionsByLevel', '/assessments/questions/level/b%C3%A1sico', () => service.getQuestionsByLevel('básico')],
+      ['getQuestionsByCategory', '/assessments/questions/category/POO', () => service.getQuestionsByCategory('POO')],
+      ['getQuestionById', '/assessments/questions/q1', () => service.getQuestionById('q1')],
+      ['getAllQuestions', '/assessments/questions', () => service.getAllQuestions()],
+      ['getCategories', '/assessments/categories', () => service.getCategories()],
+      ['registerQuestion', '/assessments/questions/register', () => service.registerQuestion(payload)],
+      ['updateQuestion', '/assessments/questions/q1', () => service.updateQuestion('q1', payload)],
+      ['getAvailableModels', '/assessments/available_models', () => service.getAvailableModels()],
+      ['getModelSelected', '/assessments/model_selected', () => service.getModelSelected()],
+      ['updateModel', '/assessments/models', () => service.updateModel('qualifier', 'model_2')],
+    ];
+
+    it.each(calls)('%s rejects with the mapped error on a server failure', async (_name, url, call) => {
+      const promise = call();
+      httpMock
+        .expectOne((r) => r.url === url)
+        .flush({ detail: 'x' }, { status: 500, statusText: 'error' });
+      await expect(promise).rejects.toThrow('Error en el servidor, intentá más tarde');
+    });
+
+    it('keeps an Error that did not come from HTTP and names unknown failures', () => {
+      const map = (service as unknown as { mapHttpError(e: unknown): Error }).mapHttpError.bind(service);
+      const original = new Error('propio');
+      expect(map(original)).toBe(original);
+      expect(map('boom').message).toBe('Error desconocido');
+    });
+  });
 });

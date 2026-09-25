@@ -268,4 +268,95 @@ describe('ContentService', () => {
       await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
     });
   });
+
+  describe('missing fields', () => {
+    it('getAllContentsPaged defaults to an empty page', async () => {
+      const promise = service.getAllContentsPaged();
+      httpMock
+        .expectOne((r) => r.url === '/content/')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual({ items: [], total: 0 });
+    });
+
+    it('a search defaults to an empty page when items and total are missing', async () => {
+      const promise = service.getContentsByTitle('Intro');
+      httpMock
+        .expectOne((r) => r.url === '/content/title/Intro')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual({ items: [], total: 0 });
+    });
+
+    it('getContentById returns null when the response has no content', async () => {
+      const promise = service.getContentById('c-1');
+      httpMock.expectOne('/content/c-1').flush({ is_success: true, message: 'ok', content: null });
+      expect(await promise).toBeNull();
+    });
+  });
+
+  describe('error mapping', () => {
+    it.each([
+      [0, 'Sin conexión al servidor'],
+      [401, 'Sesión expirada, iniciá sesión de nuevo'],
+      [403, 'No tenés permisos para esta acción'],
+      [422, 'Datos inválidos'],
+      [500, 'Error en el servidor, intentá más tarde'],
+    ])('maps HTTP %i to "%s"', async (status, message) => {
+      const promise = service.getRecommendedLearningPaths('u1');
+      httpMock
+        .expectOne((r) => r.url === '/content/recommended/learning-paths')
+        .flush({ detail: 'x' }, { status, statusText: 'error' });
+      await expect(promise).rejects.toThrow(message);
+    });
+
+    it('getContentById still throws on errors other than 404', async () => {
+      const promise = service.getContentById('c-1');
+      httpMock.expectOne('/content/c-1').flush({ detail: 'x' }, { status: 500, statusText: 'error' });
+      await expect(promise).rejects.toThrow('Error en el servidor, intentá más tarde');
+    });
+
+    it.each([
+      ['getContentsByTopic', '/content/topic/APIs', () => service.getContentsByTopic('APIs')],
+      ['getContentsByCategory', '/content/category/x', () => service.getContentsByCategory('x')],
+      ['getContentsByTitle', '/content/title/Intro', () => service.getContentsByTitle('Intro')],
+      [
+        'getContentsByCategoryTopic',
+        '/content/category-topic/x/APIs',
+        () => service.getContentsByCategoryTopic('x', 'APIs'),
+      ],
+    ] as [string, string, () => Promise<unknown>][])(
+      '%s still throws on errors other than 404',
+      async (_name, url, call) => {
+        const promise = call();
+        httpMock.expectOne((r) => r.url === url).flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+        await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      },
+    );
+
+    it('getAllContentsPaged rejects with the mapped error', async () => {
+      const promise = service.getAllContentsPaged();
+      httpMock
+        .expectOne((r) => r.url === '/content/')
+        .flush({ detail: 'x' }, { status: 401, statusText: 'Unauthorized' });
+      await expect(promise).rejects.toThrow('Sesión expirada, iniciá sesión de nuevo');
+    });
+
+    it('updateContent rejects with the mapped error', async () => {
+      const promise = service.updateContent('c-1', {
+        title: 'Un recurso',
+        description: 'descripción válida',
+        url: 'https://ejemplo.com',
+        category: 'principiante',
+        related_topic: ['APIs'],
+      });
+      httpMock.expectOne('/content/c-1').flush({ detail: 'x' }, { status: 422, statusText: 'Unprocessable' });
+      await expect(promise).rejects.toThrow('Datos inválidos');
+    });
+
+    it('keeps an Error that did not come from HTTP and names unknown failures', () => {
+      const map = (service as unknown as { mapHttpError(e: unknown): Error }).mapHttpError.bind(service);
+      const original = new Error('propio');
+      expect(map(original)).toBe(original);
+      expect(map('boom').message).toBe('Error desconocido');
+    });
+  });
 });

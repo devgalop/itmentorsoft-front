@@ -451,6 +451,208 @@ describe('AuthService', () => {
         .flush({ detail: 'invalid' }, { status: 401, statusText: 'Unauthorized' });
       expect(await promise).toBeNull();
     });
+
+    it('returns null when the backend answers without success', async () => {
+      await loginFirst();
+      const promise = service.refreshSession();
+      httpMock.expectOne('/users/sessions/refresh').flush({ is_successful: false });
+      expect(await promise).toBeNull();
+    });
+
+    it('returns null when the response has no token', async () => {
+      await loginFirst();
+      const promise = service.refreshSession();
+      httpMock.expectOne('/users/sessions/refresh').flush({ is_successful: true });
+      expect(await promise).toBeNull();
+    });
+
+    it('falls back to "token" when "access_token" is missing and refreshes the user name', async () => {
+      await loginFirst();
+      const renewed = fakeJwt({ user_name: 'nuevo_user', role: 'student', exp: 9999999999 });
+      const promise = service.refreshSession();
+      httpMock.expectOne('/users/sessions/refresh').flush({ is_successful: true, token: renewed });
+
+      expect(await promise).toBe(renewed);
+      expect(sessionStorage.getItem('auth_user_name')).toBe('nuevo_user');
+    });
+
+    it('keeps the previous user_id and refresh token when the response omits them', async () => {
+      await loginFirst();
+      const renewed = fakeJwt({ user_name: 'x', role: 'student', exp: 9999999999 });
+      const promise = service.refreshSession();
+      httpMock
+        .expectOne('/users/sessions/refresh')
+        .flush({ is_successful: true, access_token: renewed });
+      await promise;
+
+      expect(sessionStorage.getItem('auth_user_id')).toBe('user-abc-123');
+      expect(sessionStorage.getItem('auth_refresh_token')).toBe('refresh-token-456');
+    });
+  });
+
+  /** JWT sin firma válida: jwt-decode solo lee el payload. */
+  function fakeJwt(payload: Record<string, unknown>): string {
+    const b64 = (value: unknown) =>
+      btoa(JSON.stringify(value)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    return `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64(payload)}.firma`;
+  }
+
+  async function signInWith(token: string, extra: Record<string, unknown> = {}): Promise<void> {
+    const promise = service.validateOtp('user-abc-123', '123456');
+    httpMock.expectOne(otpUrl).flush({ ...otpResponse, token, ...extra });
+    await promise;
+  }
+
+  describe('homeRoute', () => {
+    it('is "/" without a session', () => {
+      expect(service.homeRoute()).toBe('/');
+    });
+
+    it.each([
+      ['admin', '/admin'],
+      ['teacher', '/teacher'],
+      ['student', '/student'],
+    ])('sends a %s to %s', async (role, route) => {
+      await signInWith(fakeJwt({ user_name: 'u', role, exp: 9999999999 }));
+      expect(service.homeRoute()).toBe(route);
+    });
+
+    it('is "/" for a role it does not know', async () => {
+      await signInWith(fakeJwt({ user_name: 'u', role: 'auditor', exp: 9999999999 }));
+      expect(service.homeRoute()).toBe('/');
+    });
+  });
+
+  describe('validateOtp session handling', () => {
+    it('clears the pending OTP user after a successful validation', async () => {
+      const login = service.login(validCredentials);
+      httpMock.expectOne(sessionUrl).flush(mockResponse);
+      await login;
+      expect(service.pendingOtpUserId()).toBe('user-abc-123');
+
+      await signInWith(VALID_STUDENT_TOKEN);
+
+      expect(service.pendingOtpUserId()).toBeNull();
+      expect(sessionStorage.getItem('auth_pending_otp_user')).toBeNull();
+    });
+
+    it('does not start a session when the OTP is not successful', async () => {
+      const promise = service.validateOtp('user-abc-123', '000000');
+      httpMock.expectOne(otpUrl).flush({ is_successful: false, message: 'OTP inválido' });
+      const response = await promise;
+
+      expect(response.is_successful).toBe(false);
+      expect(service.isAuthenticated()).toBe(false);
+      expect(sessionStorage.getItem('auth_token')).toBeNull();
+    });
+
+    it('stores only the token when the response has no user_id or refresh token', async () => {
+      await signInWith(VALID_STUDENT_TOKEN, { user_id: null, refresh_token: null });
+
+      expect(sessionStorage.getItem('auth_token')).toBe(VALID_STUDENT_TOKEN);
+      expect(sessionStorage.getItem('auth_user_id')).toBeNull();
+      expect(sessionStorage.getItem('auth_refresh_token')).toBeNull();
+    });
+
+    it('does not store a user name when the token cannot be decoded', async () => {
+      await signInWith('no-es-un-jwt');
+      expect(sessionStorage.getItem('auth_user_name')).toBeNull();
+    });
+
+    it('throws the mapped error when the request fails', async () => {
+      const promise = service.validateOtp('user-abc-123', '123456');
+      httpMock.expectOne(otpUrl).flush({ detail: 'x' }, { status: 401, statusText: 'Unauthorized' });
+      await expect(promise).rejects.toThrow('Credenciales inválidas');
+    });
+  });
+
+  describe('expireSession', () => {
+    it('logs out and redirects to the login with the expired flag', async () => {
+      await authenticate();
+
+      service.expireSession();
+
+      expect(service.isAuthenticated()).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith(['/login']);
+      expect(router.navigate).toHaveBeenLastCalledWith(['/login'], { queryParams: { expired: '1' } });
+    });
+  });
+
+  describe('logout cookies', () => {
+    it('removes the cookies of the page', () => {
+      document.cookie = 'sesion_prueba=abc; path=/';
+      expect(document.cookie).toContain('sesion_prueba=abc');
+
+      service.logout();
+
+      expect(document.cookie).not.toContain('sesion_prueba');
+    });
+  });
+
+  describe('session restore', () => {
+    it('restores the session and the pending OTP user from sessionStorage', () => {
+      sessionStorage.setItem('auth_token', VALID_STUDENT_TOKEN);
+      sessionStorage.setItem('auth_user_id', 'user-abc-123');
+      sessionStorage.setItem('auth_pending_otp_user', 'pending-1');
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [HttpClientTestingModule],
+        providers: [AuthService, JwtService, { provide: Router, useValue: { navigate: vi.fn() } }],
+      });
+
+      const restored = TestBed.inject(AuthService);
+
+      expect(restored.isAuthenticated()).toBe(true);
+      expect(restored.token()).toBe(VALID_STUDENT_TOKEN);
+      expect(restored.userId()).toBe('user-abc-123');
+      expect(restored.pendingOtpUserId()).toBe('pending-1');
+      expect(restored.role()).toBe('student');
+    });
+  });
+
+  describe('error mapping', () => {
+    async function failLogin(status: number, body: unknown): Promise<Error> {
+      const promise = service.login(validCredentials);
+      httpMock.expectOne(sessionUrl).flush(body, { status, statusText: 'error' });
+      return promise.then(
+        () => new Error('no falló'),
+        (error: Error) => error,
+      );
+    }
+
+    it('maps 403 to "Acceso denegado"', async () => {
+      expect((await failLogin(403, { detail: 'x' })).message).toBe('Acceso denegado');
+    });
+
+    it('maps other server errors to a generic message', async () => {
+      expect((await failLogin(500, { detail: 'x' })).message).toBe(
+        'Error en el servidor, intentá más tarde',
+      );
+    });
+
+    it('maps a 400 without a business message to a generic one', async () => {
+      expect((await failLogin(400, { detail: 'x' })).message).toBe('Solicitud inválida');
+    });
+
+    it('uses the business message of a 400 when there is one', async () => {
+      const error = await failLogin(400, { detail: { message: { message: 'Correo duplicado' } } });
+      expect(error.message).toBe('Correo duplicado');
+    });
+
+    it('maps a 422 without validation details to a generic message', async () => {
+      expect((await failLogin(422, { detail: 'x' })).message).toBe('Datos inválidos');
+    });
+
+    it('maps a 422 whose first detail has no message to a generic message', async () => {
+      expect((await failLogin(422, { detail: [{}] })).message).toBe('Datos inválidos');
+    });
+
+    it('keeps an Error that did not come from HTTP and names unknown failures', () => {
+      const map = (service as unknown as { mapHttpError(e: unknown): Error }).mapHttpError.bind(service);
+      const original = new Error('propio');
+      expect(map(original)).toBe(original);
+      expect(map('boom').message).toBe('Error desconocido');
+    });
   });
 
 });
