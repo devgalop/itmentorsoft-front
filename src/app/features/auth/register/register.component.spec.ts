@@ -150,6 +150,93 @@ describe('RegisterComponent', () => {
     });
   });
 
+  describe('error messages', () => {
+    it('return null until the field is touched', () => {
+      expect(component.getNameError()).toBeNull();
+      expect(component.getUsernameError()).toBeNull();
+      expect(component.getEmailError()).toBeNull();
+      expect(component.getPasswordError()).toBeNull();
+    });
+
+    describe('getNameError', () => {
+      it.each([
+        ['', 'El nombre es requerido'],
+        ['Jo', 'Mínimo 3 caracteres'],
+        ['a'.repeat(101), 'Máximo 100 caracteres'],
+      ])('returns the message for "%s"', (value, message) => {
+        component.nameControl.setValue(value);
+        component.nameControl.markAsTouched();
+        expect(component.getNameError()).toBe(message);
+      });
+
+      it('returns null for a valid name', () => {
+        component.nameControl.setValue('Juan Pérez');
+        component.nameControl.markAsTouched();
+        expect(component.getNameError()).toBeNull();
+      });
+    });
+
+    describe('getUsernameError', () => {
+      it.each([
+        ['', 'El nombre de usuario es requerido'],
+        ['ab', 'Mínimo 3 caracteres'],
+        ['a'.repeat(21), 'Máximo 20 caracteres'],
+        ['juan-test!', 'Solo letras, números y guion bajo'],
+      ])('returns the message for "%s"', (value, message) => {
+        component.usernameControl.setValue(value);
+        component.usernameControl.markAsTouched();
+        expect(component.getUsernameError()).toBe(message);
+      });
+
+      it('returns null for a valid username', () => {
+        component.usernameControl.setValue('juan_test');
+        component.usernameControl.markAsTouched();
+        expect(component.getUsernameError()).toBeNull();
+      });
+    });
+
+    describe('getEmailError', () => {
+      it.each([
+        ['', 'El email es requerido'],
+        ['not-an-email', 'Ingresá un email válido'],
+      ])('returns the message for "%s"', (value, message) => {
+        component.emailControl.setValue(value);
+        component.emailControl.markAsTouched();
+        expect(component.getEmailError()).toBe(message);
+      });
+
+      it('returns null for a valid email', () => {
+        component.emailControl.setValue('juan@test.com');
+        component.emailControl.markAsTouched();
+        expect(component.getEmailError()).toBeNull();
+      });
+    });
+
+    describe('getPasswordError', () => {
+      it('asks for the password when it is empty and touched', () => {
+        component.passwordControl.setValue('');
+        component.passwordControl.markAsTouched();
+        expect(component.getPasswordError()).toBe('La contraseña es requerida');
+      });
+
+      it('leaves the rule details to the checklist (returns null for a weak password)', () => {
+        component.passwordControl.setValue('123456');
+        component.passwordControl.markAsTouched();
+        expect(component.getPasswordError()).toBeNull();
+      });
+    });
+
+    it('getConfirmPasswordError asks to confirm when empty and touched', () => {
+      component.confirmPasswordControl.setValue('');
+      component.confirmPasswordControl.markAsTouched();
+      expect(component.getConfirmPasswordError()).toBe('Confirmá tu contraseña');
+    });
+
+    it('getConfirmPasswordError returns null until touched', () => {
+      expect(component.getConfirmPasswordError()).toBeNull();
+    });
+  });
+
   describe('onSubmit', () => {
     const validFormData = {
       name: 'Juan Pérez',
@@ -239,6 +326,15 @@ describe('RegisterComponent', () => {
         'No se pudo crear la cuenta',
         'Sin conexión al servidor',
       );
+    });
+
+    it('shows a generic message when register() throws something that is not an Error', async () => {
+      authServiceMock.register.mockRejectedValue('boom');
+      component.registerForm.setValue(validFormData);
+
+      await component.onSubmit();
+
+      expect(toastMock.error).toHaveBeenCalledWith('No se pudo crear la cuenta', 'Error inesperado');
     });
 
     it('resets loading state after submit completes', async () => {
