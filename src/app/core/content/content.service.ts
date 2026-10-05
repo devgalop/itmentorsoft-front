@@ -21,6 +21,8 @@ import {
   UpdateContentResponse,
   UpdateRatingPayload,
   UpdateRatingResponse,
+  UpdateResourceStatusPayload,
+  UpdateResourceStatusResponse,
 } from './content.types';
 
 @Injectable({ providedIn: 'root' })
@@ -207,6 +209,27 @@ export class ContentService {
       return response.items ?? [];
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) return [];
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Activa o desactiva un recurso (solo admin). Un recurso desactivado deja de aparecer en
+   * todos los listados y búsquedas.
+   */
+  async updateResourceStatus(
+    contentId: string,
+    status: boolean,
+  ): Promise<UpdateResourceStatusResponse> {
+    try {
+      const payload: UpdateResourceStatusPayload = { content_id: contentId, status };
+      return await firstValueFrom(
+        this.http.put<UpdateResourceStatusResponse>(
+          `${environment.apiUrl}${ENDPOINTS.content.updateStatus}`,
+          payload,
+        ),
+      );
+    } catch (error) {
       throw this.mapHttpError(error);
     }
   }

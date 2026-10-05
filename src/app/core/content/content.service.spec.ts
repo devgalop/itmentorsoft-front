@@ -297,6 +297,27 @@ describe('ContentService', () => {
     });
   });
 
+  describe('updateResourceStatus', () => {
+    it('PUTs the content id and the new status to /content/update/status', async () => {
+      const promise = service.updateResourceStatus('c-12345', false);
+      const req = httpMock.expectOne('/content/update/status');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ content_id: 'c-12345', status: false });
+      req.flush({ is_success: true, message: 'ok', content_id: 'c-12345', new_status: false });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+      expect(res.new_status).toBe(false);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.updateResourceStatus('c-12345', false);
+      httpMock
+        .expectOne('/content/update/status')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+    });
+  });
+
   describe('top content', () => {
     const item = { content_id: 'c-1', title: 'T', summary: 'S', rating: 4.8 };
 

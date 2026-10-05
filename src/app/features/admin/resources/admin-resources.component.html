@@ -1,0 +1,91 @@
+<section class="adres">
+  <header class="adres__header">
+    <h1 class="adres__title">Recursos</h1>
+    <p class="adres__subtitle">{{ total() }} recurso(s) activo(s)</p>
+  </header>
+
+  <div class="adres__panel">
+    @if (isLoading()) {
+      <p class="adres__hint">Cargando recursos…</p>
+    } @else if (loadError()) {
+      <p class="adres__error" role="alert">{{ loadError() }}</p>
+    } @else if (resources().length === 0) {
+      <p class="adres__hint">No hay recursos para mostrar.</p>
+    } @else {
+      <ul class="adres__list">
+        @for (r of resources(); track r.content_id) {
+          <li class="adres__item">
+            <div class="adres__info">
+              <a class="adres__link" [href]="r.url" target="_blank" rel="noopener noreferrer">{{ r.title }}</a>
+              <p class="adres__summary">{{ r.summary }}</p>
+              <div class="adres__tags">
+                <span class="adres__tag adres__tag--cat">{{ categoryLabel(r.category) }}</span>
+                @for (t of r.related_topics; track t) {
+                  <span class="adres__tag">{{ t }}</span>
+                }
+              </div>
+            </div>
+            <button type="button" class="adres__disable" (click)="askDisable(r.content_id)">
+              Desactivar
+            </button>
+          </li>
+        }
+      </ul>
+
+      @if (totalPages() > 1) {
+        <div class="adres__pager">
+          <button type="button" class="adres__page-btn" (click)="prevPage()" [disabled]="page() === 0">
+            ← Anterior
+          </button>
+          <span class="adres__page-info">Página {{ page() + 1 }} de {{ totalPages() }}</span>
+          <button
+            type="button"
+            class="adres__page-btn"
+            (click)="nextPage()"
+            [disabled]="page() + 1 >= totalPages()"
+          >
+            Siguiente →
+          </button>
+        </div>
+      }
+    }
+  </div>
+</section>
+
+@if (confirmingResource(); as r) {
+  <div class="adres__overlay" (click)="cancelDisable()">
+    <div
+      class="adres__modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="res-disable-title"
+      aria-describedby="res-disable-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="res-disable-title" class="adres__modal-title">Desactivar recurso</h2>
+      <p id="res-disable-desc" class="adres__modal-text">
+        El recurso dejará de aparecer en los listados, las búsquedas y las rutas de aprendizaje.
+        Desde esta pantalla no podrás volver a activarlo.
+      </p>
+      <blockquote class="adres__quote">{{ r.title }}</blockquote>
+      <div class="adres__modal-actions">
+        <button
+          type="button"
+          class="adres__page-btn"
+          (click)="cancelDisable()"
+          [disabled]="disablingId() === r.content_id"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="adres__disable adres__disable--solid"
+          (click)="disableResource(r.content_id)"
+          [disabled]="disablingId() === r.content_id"
+        >
+          {{ disablingId() === r.content_id ? 'Desactivando…' : 'Desactivar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

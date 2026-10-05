@@ -27,6 +27,11 @@ export const ADMIN_ROUTES: Routes = [
           import('./approval/admin-approval.component').then((m) => m.AdminApprovalComponent),
       },
       {
+        path: 'resources',
+        loadComponent: () =>
+          import('./resources/admin-resources.component').then((m) => m.AdminResourcesComponent),
+      },
+      {
         path: 'config',
         loadComponent: () =>
           import('./config/admin-config.component').then((m) => m.AdminConfigComponent),
