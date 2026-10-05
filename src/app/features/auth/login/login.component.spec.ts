@@ -140,7 +140,7 @@ describe('LoginComponent', () => {
 
     expect(toastMock.error).toHaveBeenCalledWith(
       'Cuenta bloqueada temporalmente',
-      expect.stringContaining('Podés intentar de nuevo a las'),
+      expect.stringContaining('Puedes intentar de nuevo a las'),
     );
   });
 
@@ -158,7 +158,7 @@ describe('LoginComponent', () => {
 
     expect(toastMock.error).toHaveBeenCalledWith(
       'Cuenta bloqueada temporalmente',
-      'Demasiados intentos. Esperá unos minutos e intentá de nuevo.',
+      'Demasiados intentos. Espera unos minutos e intenta de nuevo.',
     );
   });
 
@@ -228,13 +228,13 @@ describe('LoginComponent', () => {
   it('getEmailError returns required message when empty and touched', () => {
     component.emailControl.markAsTouched();
     component.emailControl.setValue('');
-    expect(component.getEmailError()).toBe('El email es requerido');
+    expect(component.getEmailError()).toBe('El correo electrónico es requerido');
   });
 
   it('getEmailError returns email format message when invalid and touched', () => {
     component.emailControl.markAsTouched();
     component.emailControl.setValue('not-an-email');
-    expect(component.getEmailError()).toBe('Ingresá un email válido');
+    expect(component.getEmailError()).toBe('Ingresa un correo electrónico válido');
   });
 
   it('getPasswordError returns required message when empty and touched', () => {

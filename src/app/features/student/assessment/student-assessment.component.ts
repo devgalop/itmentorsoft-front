@@ -102,11 +102,11 @@ export class StudentAssessmentComponent {
   async startAssessment(): Promise<void> {
     const userId = this.userId;
     if (!userId) {
-      this.error.set('No se pudo identificar tu usuario. Iniciá sesión de nuevo.');
+      this.error.set('No se pudo identificar tu usuario. Inicia sesión de nuevo.');
       return;
     }
     if (!this.selectedTopic()) {
-      this.error.set('Elegí un tema para comenzar.');
+      this.error.set('Elige un tema para comenzar.');
       return;
     }
 
@@ -154,7 +154,7 @@ export class StudentAssessmentComponent {
     event.preventDefault();
     this.toast.warning(
       'Acción no permitida',
-      `No se puede ${action} en la evaluación. Escribí tu respuesta con tus palabras.`,
+      `No se puede ${action} en la evaluación. Escribe tu respuesta con tus palabras.`,
     );
   }
 
@@ -199,7 +199,7 @@ export class StudentAssessmentComponent {
     this.recordTime();
     const userId = this.userId;
     if (!userId || !this.assessmentId) {
-      this.error.set('No se pudo enviar la evaluación. Iniciá sesión de nuevo.');
+      this.error.set('No se pudo enviar la evaluación. Inicia sesión de nuevo.');
       return;
     }
 
@@ -259,7 +259,7 @@ export class StudentAssessmentComponent {
       await this.delay(POLL_INTERVAL_MS);
     }
     this.gradingMessage.set(
-      'La calificación está tardando más de lo esperado. Podés revisar el resultado más tarde.',
+      'La calificación está tardando más de lo esperado. Puedes revisar el resultado más tarde.',
     );
   }
 

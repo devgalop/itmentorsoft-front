@@ -166,7 +166,7 @@ describe('StudentDashboardComponent', () => {
     await flush();
 
     expect(component.stats()[0].value).toBe('—');
-    expect(component.stats()[0].hint).toBe('Pendiente evaluación');
+    expect(component.stats()[0].hint).toBe('Evaluación pendiente');
   });
 
   it('keeps the classification at "—" when the request fails', async () => {

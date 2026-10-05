@@ -177,7 +177,7 @@ describe('QuestionFormComponent', () => {
 
       await component.submit();
 
-      expect(toastMock.error).toHaveBeenCalledWith('No se pudo guardar', 'Intentá nuevamente.');
+      expect(toastMock.error).toHaveBeenCalledWith('No se pudo guardar', 'Intenta nuevamente.');
     });
 
     it('uses a generic message when the service throws something that is not an Error', async () => {

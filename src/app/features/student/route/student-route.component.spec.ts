@@ -142,7 +142,7 @@ describe('StudentRouteComponent', () => {
   });
 
   it('still shows the route when the ratings cannot be loaded', async () => {
-    contentMock.getRatingsByUser.mockRejectedValue(new Error('Error en el servidor, intentá más tarde'));
+    contentMock.getRatingsByUser.mockRejectedValue(new Error('Error en el servidor, intenta más tarde'));
     const c = createComponent();
     await vi.waitFor(() => expect(c.isLoading()).toBe(false));
     expect(c.topics()).toEqual(recommendation);

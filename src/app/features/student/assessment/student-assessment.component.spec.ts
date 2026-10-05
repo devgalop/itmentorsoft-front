@@ -268,7 +268,7 @@ describe('StudentAssessmentComponent', () => {
       const c = createComponent();
       await flush();
       await c.startAssessment();
-      expect(c.error()).toBe('Elegí un tema para comenzar.');
+      expect(c.error()).toBe('Elige un tema para comenzar.');
       expect(serviceMock.generateByTopic).not.toHaveBeenCalled();
     });
 
@@ -365,7 +365,7 @@ describe('StudentAssessmentComponent', () => {
       const c = await started();
       authMock.userId.mockReturnValue(null);
       await c.submit();
-      expect(c.error()).toBe('No se pudo enviar la evaluación. Iniciá sesión de nuevo.');
+      expect(c.error()).toBe('No se pudo enviar la evaluación. Inicia sesión de nuevo.');
       expect(serviceMock.saveAnswers).not.toHaveBeenCalled();
     });
 
@@ -373,7 +373,7 @@ describe('StudentAssessmentComponent', () => {
       const c = createComponent();
       await flush();
       await c.submit();
-      expect(c.error()).toBe('No se pudo enviar la evaluación. Iniciá sesión de nuevo.');
+      expect(c.error()).toBe('No se pudo enviar la evaluación. Inicia sesión de nuevo.');
     });
 
     it('counts the missing answers', async () => {

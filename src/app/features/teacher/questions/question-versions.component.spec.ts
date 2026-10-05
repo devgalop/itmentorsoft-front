@@ -75,10 +75,10 @@ describe('QuestionVersionsComponent', () => {
   });
 
   it('shows the error message when loading fails', async () => {
-    serviceMock.getQuestionVersions.mockRejectedValue(new Error('Sesión expirada, iniciá sesión de nuevo'));
+    serviceMock.getQuestionVersions.mockRejectedValue(new Error('Sesión expirada, inicia sesión de nuevo'));
     const c = setup();
     c.toggle();
-    await vi.waitFor(() => expect(c.error()).toBe('Sesión expirada, iniciá sesión de nuevo'));
+    await vi.waitFor(() => expect(c.error()).toBe('Sesión expirada, inicia sesión de nuevo'));
     expect(c.versions()).toEqual([]);
     expect(c.isLoading()).toBe(false);
   });

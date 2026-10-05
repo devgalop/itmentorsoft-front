@@ -2,7 +2,7 @@
   <header class="res__header">
     <div>
       <h1 class="res__title">Recursos</h1>
-      <p class="res__subtitle">Gestioná los recursos educativos disponibles para los estudiantes.</p>
+      <p class="res__subtitle">Gestiona los recursos educativos disponibles para los estudiantes.</p>
     </div>
     <button type="button" class="res__new" (click)="openCreate()">+ Nuevo recurso</button>
   </header>
@@ -29,7 +29,7 @@
         </button>
       </div>
       @if (titleTooShort()) {
-        <p class="res__field-hint">Escribí al menos 3 caracteres para buscar por título.</p>
+        <p class="res__field-hint">Escribe al menos 3 caracteres para buscar por título.</p>
       }
     </div>
     <select
@@ -55,7 +55,7 @@
         @if (hasActiveFilter()) {
           No se encontraron recursos para ese filtro.
         } @else {
-          No hay recursos todavía. Creá el primero con “Nuevo recurso”.
+          No hay recursos todavía. Crea el primero con “Nuevo recurso”.
         }
       </p>
     } @else {
@@ -129,7 +129,7 @@
         </div>
 
         <div class="res__field">
-          <label>Temas relacionados <span class="res__hintlabel">(marcá al menos 1)</span></label>
+          <label>Temas relacionados <span class="res__hintlabel">(marca al menos 1)</span></label>
           <div class="res__multiselect">
             <button
               type="button"

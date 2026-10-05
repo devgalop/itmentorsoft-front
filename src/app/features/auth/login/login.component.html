@@ -47,7 +47,7 @@
       <p class="login-card__subtitle">Ingres&aacute; tus credenciales para continuar</p>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
-        <app-form-field label="Email" forId="email" [error]="getEmailError()">
+        <app-form-field label="Correo electrónico" forId="email" [error]="getEmailError()">
           <app-input
             id="email"
             type="email"

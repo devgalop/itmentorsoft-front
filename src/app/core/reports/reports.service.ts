@@ -138,15 +138,15 @@ export class ReportsService {
         case 0:
           return new Error('Sin conexión al servidor');
         case 401:
-          return new Error('Sesión expirada, iniciá sesión de nuevo');
+          return new Error('Sesión expirada, inicia sesión de nuevo');
         case 403:
-          return new Error('No tenés permisos para esta acción');
+          return new Error('No tienes permisos para esta acción');
         case 404:
           return new Error('No se encontró el estudiante');
         case 422:
           return new Error('Parámetros inválidos');
         default:
-          return new Error('Error en el servidor, intentá más tarde');
+          return new Error('Error en el servidor, intenta más tarde');
       }
     }
     return error instanceof Error ? error : new Error('Error desconocido');

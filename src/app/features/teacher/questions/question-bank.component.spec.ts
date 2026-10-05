@@ -136,13 +136,13 @@ describe('QuestionBankComponent', () => {
   });
 
   it('captures the error and clears the list on failure', async () => {
-    serviceMock.getAllQuestions.mockRejectedValue(new Error('No tenés permisos'));
+    serviceMock.getAllQuestions.mockRejectedValue(new Error('No tienes permisos'));
     const component = createComponent();
     await Promise.resolve();
     await Promise.resolve();
 
     expect(component.rows()).toEqual([]);
-    expect(component.listError()).toBe('No tenés permisos');
+    expect(component.listError()).toBe('No tienes permisos');
   });
 
   it('opens the modal and loads the question detail', async () => {
@@ -445,13 +445,13 @@ describe('QuestionBankComponent', () => {
     });
 
     it('captures the error message when loading the detail fails', async () => {
-      serviceMock.getQuestionById.mockRejectedValue(new Error('No tenés permisos'));
+      serviceMock.getQuestionById.mockRejectedValue(new Error('No tienes permisos'));
       const c = createComponent();
       await flush();
 
       await c.selectQuestion('q1');
 
-      expect(c.detailError()).toBe('No tenés permisos');
+      expect(c.detailError()).toBe('No tienes permisos');
     });
 
     it('uses a generic message when the detail fails with something that is not an Error', async () => {
@@ -573,12 +573,12 @@ describe('QuestionBankComponent', () => {
 
     it('shows an error toast and keeps the row when the backend rejects the change', async () => {
       const component = await loaded(['q1']);
-      serviceMock.updateQuestionStatus.mockRejectedValue(new Error('No tenés permisos'));
+      serviceMock.updateQuestionStatus.mockRejectedValue(new Error('No tienes permisos'));
       serviceMock.getAllQuestions.mockClear();
 
       await component.disableQuestion('q1');
 
-      expect(toastMock.error).toHaveBeenCalledWith('No se pudo desactivar la pregunta', 'No tenés permisos');
+      expect(toastMock.error).toHaveBeenCalledWith('No se pudo desactivar la pregunta', 'No tienes permisos');
       expect(serviceMock.getAllQuestions).not.toHaveBeenCalled();
       expect(component.disablingId()).toBeNull();
     });

@@ -192,7 +192,7 @@ export class AdminUsersComponent {
     }
     const e = control.errors;
     if (e['required']) return 'Requerido';
-    if (e['email']) return 'Email inválido';
+    if (e['email']) return 'Correo electrónico inválido';
     if (e['minlength']) return `Mínimo ${e['minlength'].requiredLength} caracteres`;
     if (e['maxlength']) return `Máximo ${e['maxlength'].requiredLength} caracteres`;
     if (e['username']) return 'Solo letras, números y guion bajo';
@@ -215,7 +215,7 @@ export class AdminUsersComponent {
         this.toast.success('Usuario creado', 'El usuario se registró correctamente.');
         this.resetForm();
       } else {
-        this.toast.error('No se pudo crear', response.message || 'Intentá nuevamente.');
+        this.toast.error('No se pudo crear', response.message || 'Intenta nuevamente.');
       }
     } catch (error) {
       this.toast.error('Error al crear usuario', error instanceof Error ? error.message : 'Error inesperado');

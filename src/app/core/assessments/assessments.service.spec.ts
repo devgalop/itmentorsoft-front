@@ -55,7 +55,7 @@ describe('AssessmentsService', () => {
       const promise = service.getQuestionsByLevel('intermedio');
       const req = httpMock.expectOne(`${base}/level/intermedio`);
       req.flush({ detail: 'Not enough permissions' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+      await expect(promise).rejects.toThrow('No tienes permisos para ver este contenido');
     });
   });
 
@@ -289,7 +289,7 @@ describe('AssessmentsService', () => {
       httpMock
         .expectOne('/assessments/models')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+      await expect(promise).rejects.toThrow('No tienes permisos para ver este contenido');
     });
   });
 
@@ -330,7 +330,7 @@ describe('AssessmentsService', () => {
       httpMock
         .expectOne('/assessments/question/update/status')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+      await expect(promise).rejects.toThrow('No tienes permisos para ver este contenido');
     });
   });
 
@@ -353,10 +353,10 @@ describe('AssessmentsService', () => {
   describe('error mapping', () => {
     it.each([
       [0, 'Sin conexión al servidor'],
-      [401, 'Sesión expirada, iniciá sesión de nuevo'],
-      [403, 'No tenés permisos para ver este contenido'],
+      [401, 'Sesión expirada, inicia sesión de nuevo'],
+      [403, 'No tienes permisos para ver este contenido'],
       [404, 'No se encontraron resultados'],
-      [500, 'Error en el servidor, intentá más tarde'],
+      [500, 'Error en el servidor, intenta más tarde'],
     ])('maps HTTP %i to "%s"', async (status, message) => {
       const promise = service.getTopics();
       httpMock
@@ -399,7 +399,7 @@ describe('AssessmentsService', () => {
       httpMock
         .expectOne((r) => r.url === url)
         .flush({ detail: 'x' }, { status: 500, statusText: 'error' });
-      await expect(promise).rejects.toThrow('Error en el servidor, intentá más tarde');
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
     });
 
     it('keeps an Error that did not come from HTTP and names unknown failures', () => {

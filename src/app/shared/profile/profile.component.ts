@@ -46,7 +46,7 @@ export class ProfileComponent {
       void this.load(id);
     } else {
       this.isLoading.set(false);
-      this.loadError.set('No se pudo identificar tu usuario. Iniciá sesión de nuevo.');
+      this.loadError.set('No se pudo identificar tu usuario. Inicia sesión de nuevo.');
     }
   }
 

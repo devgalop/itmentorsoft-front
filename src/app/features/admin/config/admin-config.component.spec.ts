@@ -102,7 +102,7 @@ describe('AdminConfigComponent', () => {
   it('reverts the optimistic update and shows an error toast when the save fails', async () => {
     setup({
       selected: [{ process: 'qualifier', model_id: 'model_1' }],
-      updateReject: new Error('No tenés permisos para esta acción'),
+      updateReject: new Error('No tienes permisos para esta acción'),
     });
     await flush();
 

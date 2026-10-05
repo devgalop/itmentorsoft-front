@@ -223,13 +223,13 @@ export class AssessmentsService {
         case 0:
           return new Error('Sin conexión al servidor');
         case 401:
-          return new Error('Sesión expirada, iniciá sesión de nuevo');
+          return new Error('Sesión expirada, inicia sesión de nuevo');
         case 403:
-          return new Error('No tenés permisos para ver este contenido');
+          return new Error('No tienes permisos para ver este contenido');
         case 404:
           return new Error('No se encontraron resultados');
         default:
-          return new Error('Error en el servidor, intentá más tarde');
+          return new Error('Error en el servidor, intenta más tarde');
       }
     }
     return error instanceof Error ? error : new Error('Error desconocido');

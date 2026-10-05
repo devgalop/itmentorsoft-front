@@ -316,7 +316,7 @@ export class AuthService {
         case 422:
           return new Error(this.extractValidationMessage(error) ?? 'Datos inválidos');
         default:
-          return new Error('Error en el servidor, intentá más tarde');
+          return new Error('Error en el servidor, intenta más tarde');
       }
     }
     return error instanceof Error ? error : new Error('Error desconocido');

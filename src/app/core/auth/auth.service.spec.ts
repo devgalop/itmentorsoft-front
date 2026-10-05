@@ -673,7 +673,7 @@ describe('AuthService', () => {
 
     it('maps other server errors to a generic message', async () => {
       expect((await failLogin(500, { detail: 'x' })).message).toBe(
-        'Error en el servidor, intentá más tarde',
+        'Error en el servidor, intenta más tarde',
       );
     });
 

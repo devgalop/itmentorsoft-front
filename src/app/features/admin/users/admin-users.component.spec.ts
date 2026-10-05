@@ -144,7 +144,7 @@ describe('AdminUsersComponent', () => {
 
     await component.submit();
 
-    expect(toastMock.error).toHaveBeenCalledWith('No se pudo crear', 'Intentá nuevamente.');
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo crear', 'Intenta nuevamente.');
   });
 
   it('uses a generic message when the service throws something that is not an Error', async () => {
@@ -228,7 +228,7 @@ describe('AdminUsersComponent', () => {
 
     it.each([
       ['email', '', 'Requerido'],
-      ['email', 'no-es-email', 'Email inválido'],
+      ['email', 'no-es-email', 'Correo electrónico inválido'],
       ['email', 'a@b', 'Mínimo 5 caracteres'],
       ['username', 'ab', 'Mínimo 3 caracteres'],
       ['username', 'a'.repeat(21), 'Máximo 20 caracteres'],
@@ -343,7 +343,7 @@ describe('AdminUsersComponent', () => {
     });
 
     it('shows an error and keeps the user when the backend rejects the change', async () => {
-      serviceMock.updateUserStatus.mockRejectedValue(new Error('No tenés permisos para esta acción'));
+      serviceMock.updateUserStatus.mockRejectedValue(new Error('No tienes permisos para esta acción'));
       const component = await ready();
       component.askStatusChange(component.managedUsers()[0]!, 'inactive');
 
@@ -351,7 +351,7 @@ describe('AdminUsersComponent', () => {
 
       expect(toastMock.error).toHaveBeenCalledWith(
         'No se pudo cambiar el estado',
-        'No tenés permisos para esta acción',
+        'No tienes permisos para esta acción',
       );
       expect(component.managedUsers()).toHaveLength(2);
       expect(component.isChangingStatus()).toBe(false);

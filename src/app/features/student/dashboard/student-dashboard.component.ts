@@ -50,14 +50,14 @@ export class StudentDashboardComponent {
     {
       value: this.classification() ?? '—',
       label: 'Categoría asignada',
-      hint: this.classification() ? 'Según tu evaluación inicial' : 'Pendiente evaluación',
+      hint: this.classification() ? 'Según tu evaluación inicial' : 'Evaluación pendiente',
       route: '/student/progress',
     },
     { value: '0%', label: 'Progreso en ruta', hint: 'Sin ruta asignada', route: '/student/route' },
     {
       value: String(this.assessmentsCount() ?? 0),
       label: 'Evaluaciones realizadas',
-      hint: 'Completá la inicial',
+      hint: 'Completa la inicial',
       route: '/student/assessments',
     },
   ]);
@@ -65,7 +65,7 @@ export class StudentDashboardComponent {
   // Contenido estático (informativo), tal cual el mockup.
   readonly steps: HowToStep[] = [
     {
-      title: 'Realizá la evaluación diagnóstica',
+      title: 'Realiza la evaluación diagnóstica',
       description: 'Preguntas de Diseño SW y Pensamiento Computacional.',
     },
     {
@@ -73,7 +73,7 @@ export class StudentDashboardComponent {
       description: 'Asigna tu nivel: Principiante, Básico, Intermedio o Avanzado.',
     },
     {
-      title: 'Recibí tu ruta personalizada',
+      title: 'Recibe tu ruta personalizada',
       description: 'Evaluaciones adaptadas a tus debilidades.',
     },
   ];

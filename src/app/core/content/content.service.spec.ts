@@ -84,7 +84,7 @@ describe('ContentService', () => {
       httpMock
         .expectOne((r) => r.url === '/content/' && r.params.has('page'))
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -265,7 +265,7 @@ describe('ContentService', () => {
       httpMock
         .expectOne('/content/rate')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -293,7 +293,7 @@ describe('ContentService', () => {
       httpMock
         .expectOne((r) => r.url === '/content/ratings/all')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -314,7 +314,7 @@ describe('ContentService', () => {
       httpMock
         .expectOne('/content/update/status')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -359,7 +359,7 @@ describe('ContentService', () => {
       httpMock
         .expectOne((r) => r.url === '/content/top-content/best/5')
         .flush({}, { status: 401, statusText: 'Unauthorized' });
-      await expect(promise).rejects.toThrow('Sesión expirada, iniciá sesión de nuevo');
+      await expect(promise).rejects.toThrow('Sesión expirada, inicia sesión de nuevo');
     });
   });
 
@@ -408,10 +408,10 @@ describe('ContentService', () => {
   describe('error mapping', () => {
     it.each([
       [0, 'Sin conexión al servidor'],
-      [401, 'Sesión expirada, iniciá sesión de nuevo'],
-      [403, 'No tenés permisos para esta acción'],
+      [401, 'Sesión expirada, inicia sesión de nuevo'],
+      [403, 'No tienes permisos para esta acción'],
       [422, 'Datos inválidos'],
-      [500, 'Error en el servidor, intentá más tarde'],
+      [500, 'Error en el servidor, intenta más tarde'],
     ])('maps HTTP %i to "%s"', async (status, message) => {
       const promise = service.getRecommendedLearningPaths('u1');
       httpMock
@@ -423,7 +423,7 @@ describe('ContentService', () => {
     it('getContentById still throws on errors other than 404', async () => {
       const promise = service.getContentById('c-1');
       httpMock.expectOne('/content/c-1').flush({ detail: 'x' }, { status: 500, statusText: 'error' });
-      await expect(promise).rejects.toThrow('Error en el servidor, intentá más tarde');
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
     });
 
     it.each([
@@ -440,7 +440,7 @@ describe('ContentService', () => {
       async (_name, url, call) => {
         const promise = call();
         httpMock.expectOne((r) => r.url === url).flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-        await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+        await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
       },
     );
 
@@ -449,7 +449,7 @@ describe('ContentService', () => {
       httpMock
         .expectOne((r) => r.url === '/content/')
         .flush({ detail: 'x' }, { status: 401, statusText: 'Unauthorized' });
-      await expect(promise).rejects.toThrow('Sesión expirada, iniciá sesión de nuevo');
+      await expect(promise).rejects.toThrow('Sesión expirada, inicia sesión de nuevo');
     });
 
     it('updateContent rejects with the mapped error', async () => {

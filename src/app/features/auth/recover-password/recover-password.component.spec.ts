@@ -48,13 +48,13 @@ describe('RecoverPasswordComponent', () => {
   it('getEmailError returns required message when empty and touched', () => {
     component.emailControl.markAsTouched();
     component.emailControl.setValue('');
-    expect(component.getEmailError()).toBe('El email es requerido');
+    expect(component.getEmailError()).toBe('El correo electrónico es requerido');
   });
 
   it('getEmailError returns format message when invalid and touched', () => {
     component.emailControl.markAsTouched();
     component.emailControl.setValue('not-an-email');
-    expect(component.getEmailError()).toBe('Ingresá un email válido');
+    expect(component.getEmailError()).toBe('Ingresa un correo electrónico válido');
   });
 
   it('getEmailError returns null when untouched', () => {

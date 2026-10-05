@@ -2,7 +2,7 @@
   <header class="route__header">
     <h1 class="route__title">Mi ruta de aprendizaje</h1>
     <p class="route__subtitle">
-      Contenidos recomendados para vos según tu evaluación diagnóstica.
+      Contenidos recomendados para ti según tu evaluación diagnóstica.
     </p>
   </header>
 
@@ -12,7 +12,7 @@
     <div class="route__state route__state--error">{{ loadError() }}</div>
   } @else if (topics().length === 0) {
     <div class="route__state">
-      Todavía no tenés contenidos recomendados. Completá una evaluación para armar tu ruta.
+      Todavía no tienes contenidos recomendados. Completa una evaluación para armar tu ruta.
     </div>
   } @else {
     <p class="route__summary">

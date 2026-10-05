@@ -131,7 +131,7 @@ describe('AdminResourcesComponent', () => {
   });
 
   it('shows an error toast and keeps the modal data when the backend rejects the change', async () => {
-    contentMock.updateResourceStatus.mockRejectedValue(new Error('No tenés permisos para esta acción'));
+    contentMock.updateResourceStatus.mockRejectedValue(new Error('No tienes permisos para esta acción'));
     const c = await createComponent();
     contentMock.getAllContentsPaged.mockClear();
 
@@ -139,7 +139,7 @@ describe('AdminResourcesComponent', () => {
 
     expect(toastMock.error).toHaveBeenCalledWith(
       'No se pudo desactivar el recurso',
-      'No tenés permisos para esta acción',
+      'No tienes permisos para esta acción',
     );
     expect(contentMock.getAllContentsPaged).not.toHaveBeenCalled();
     expect(c.disablingId()).toBeNull();

@@ -30,7 +30,7 @@ export class LoginComponent {
     if (this.route.snapshot.queryParamMap.get('expired') === '1') {
       this.toast.info(
         'Sesión expirada',
-        'Tu sesión expiró por inactividad. Iniciá sesión de nuevo para continuar.',
+        'Tu sesión expiró por inactividad. Inicia sesión de nuevo para continuar.',
       );
     }
   }
@@ -46,10 +46,10 @@ export class LoginComponent {
   getEmailError(): string | null {
     const ctrl = this.emailControl;
     if (ctrl.hasError('required') && ctrl.touched) {
-      return 'El email es requerido';
+      return 'El correo electrónico es requerido';
     }
     if (ctrl.hasError('email') && ctrl.touched) {
-      return 'Ingresá un email válido';
+      return 'Ingresa un correo electrónico válido';
     }
     return null;
   }
@@ -70,9 +70,9 @@ export class LoginComponent {
     const until = new Date(blockedUntil * 1000);
     if (blockedUntil > 0 && until.getTime() > Date.now()) {
       const hour = until.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-      return `Demasiados intentos. Podés intentar de nuevo a las ${hour}.`;
+      return `Demasiados intentos. Puedes intentar de nuevo a las ${hour}.`;
     }
-    return 'Demasiados intentos. Esperá unos minutos e intentá de nuevo.';
+    return 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
   }
 
   async onSubmit(): Promise<void> {
@@ -93,7 +93,7 @@ export class LoginComponent {
       if (response.is_definitively_blocked) {
         this.toast.error(
           'Cuenta bloqueada',
-          'Tu cuenta fue bloqueada por seguridad. Contactá al administrador.',
+          'Tu cuenta fue bloqueada por seguridad. Contacta al administrador.',
         );
         return;
       }
@@ -105,12 +105,12 @@ export class LoginComponent {
         return;
       }
       if (response.is_successful && response.user_id) {
-        this.toast.info('Verificá tu correo', 'Te enviamos un código para completar el ingreso.');
+        this.toast.info('Verifica tu correo', 'Te enviamos un código para completar el ingreso.');
         await this.router.navigate(['/otp']);
         return;
       }
 
-      this.toast.error('No se pudo iniciar sesión', 'Revisá tus credenciales e intentá de nuevo.');
+      this.toast.error('No se pudo iniciar sesión', 'Revisa tus credenciales e intenta de nuevo.');
     } catch (error) {
       this.toast.error(
         'No se pudo iniciar sesión',
