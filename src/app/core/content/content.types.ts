@@ -97,3 +97,86 @@ export interface RateContentResponse {
   is_success: boolean;
   message?: string | null;
 }
+
+/** Calificación de un recurso hecha por el estudiante. */
+export interface ContentRating {
+  content_id: string;
+  title: string;
+  summary: string;
+  rating: number;
+  student_id: string;
+}
+
+/** GET /content/ratings/content (rating_detail es null si aún no calificó). */
+export interface GetContentRatingByUserResponse {
+  is_success: boolean;
+  message: string;
+  rating_detail: ContentRating | null;
+}
+
+/** GET /content/ratings/all. */
+export interface GetRatingsByUserResponse {
+  is_success: boolean;
+  message: string;
+  rating_details: ContentRating[];
+}
+
+/** Payload de PUT /content/modify/rating (solo student). rating entre 0 y 5. */
+export interface UpdateRatingPayload {
+  content_id: string;
+  user_id: string;
+  rating: number;
+  comment?: string | null;
+}
+
+export interface UpdateRatingResponse {
+  is_success: boolean;
+  message: string;
+}
+
+/** Item de GET /content/top-content/best|worse/{limit}. */
+export interface TopContentItem {
+  content_id: string;
+  title: string;
+  summary: string;
+  rating: number;
+}
+
+export interface GetTopContentResponse {
+  is_success: boolean;
+  message: string;
+  items: TopContentItem[];
+}
+
+/** Payload de PUT /content/update/status (solo admin). */
+export interface UpdateResourceStatusPayload {
+  content_id: string;
+  status: boolean;
+}
+
+export interface UpdateResourceStatusResponse {
+  is_success: boolean;
+  message: string;
+  content_id: string;
+  new_status: boolean;
+}
+
+/** GET /content/learning-path/progress. */
+export interface GetLearningPathProgressResponse {
+  is_success: boolean;
+  message: string;
+  path_progress: number;
+}
+
+/** Payload de PUT /content/learning-path/update/status (solo student). */
+export interface UpdateContentPathStatusPayload {
+  path_id: string;
+  content_id: string;
+  status: boolean;
+}
+
+export interface UpdateContentPathStatusResponse {
+  is_success: boolean;
+  message: string;
+  path_progress: number;
+}
