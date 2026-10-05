@@ -1,5 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  HostListener,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import { AssessmentsService } from '@core/assessments/assessments.service';
 import {
   QUESTION_CATEGORIES,
@@ -30,6 +38,7 @@ const PAGE_SIZE = 10;
 })
 export class QuestionBankComponent {
   private readonly assessments = inject(AssessmentsService);
+  private readonly toast = inject(ToastService);
 
   /** Etiqueta legible de dificultad (por si el backend manda en inglés). */
   difficultyLabel(value: string | null): string {
@@ -80,6 +89,14 @@ export class QuestionBankComponent {
   readonly isLoadingDetail = signal(false);
   readonly detailError = signal<string | null>(null);
   readonly isDetailOpen = signal(false);
+
+  /** Pregunta a la que se le pidió confirmar la desactivación (abre el modal de confirmación). */
+  readonly confirmingId = signal<string | null>(null);
+  readonly confirmingQuestion = computed(
+    () => this.rows().find((r) => r.question_id === this.confirmingId()) ?? null,
+  );
+  /** Pregunta que se está desactivando (bloquea los botones de esa fila). */
+  readonly disablingId = signal<string | null>(null);
 
   readonly totalPages = computed(() =>
     this.total() > 0 ? Math.ceil(this.total() / this.pageSize) : 0,
@@ -220,5 +237,60 @@ export class QuestionBankComponent {
 
   closeDetail(): void {
     this.isDetailOpen.set(false);
+  }
+
+  askDisable(id: string): void {
+    this.confirmingId.set(id);
+  }
+
+  cancelDisable(): void {
+    if (this.disablingId()) return;
+    this.confirmingId.set(null);
+  }
+
+  /** Escape cierra el modal de confirmación (no mientras se está desactivando). */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.confirmingId()) this.cancelDisable();
+  }
+
+  /**
+   * Desactiva la pregunta. El backend la oculta de los listados y de las evaluaciones, y esta
+   * pantalla no puede listar las desactivadas, así que se pide confirmación antes.
+   */
+  async disableQuestion(id: string): Promise<void> {
+    if (this.disablingId()) return;
+    this.disablingId.set(id);
+    try {
+      const response = await this.assessments.updateQuestionStatus(id, false);
+      if (!response.is_success) {
+        throw new Error(response.message || 'No se pudo desactivar la pregunta.');
+      }
+      this.toast.success('Pregunta desactivada', 'Ya no aparece en el banco de preguntas.');
+      this.confirmingId.set(null);
+      if (this.selectedId() === id) {
+        this.isDetailOpen.set(false);
+        this.selectedId.set(null);
+      }
+      await this.refreshAfterDisable(id);
+    } catch (error) {
+      this.toast.error(
+        'No se pudo desactivar la pregunta',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
+    } finally {
+      this.disablingId.set(null);
+    }
+  }
+
+  /** Recarga la página actual; si quedó vacía vuelve a la anterior. En los filtros solo quita la fila. */
+  private async refreshAfterDisable(id: string): Promise<void> {
+    if (this.mode() !== 'all') {
+      this.rows.update((rows) => rows.filter((r) => r.question_id !== id));
+      this.total.update((total) => Math.max(0, total - 1));
+      return;
+    }
+    const lastPageEmptied = this.rows().length === 1 && this.page() > 0;
+    await this.loadAll(lastPageEmptied ? this.page() - 1 : this.page());
   }
 }

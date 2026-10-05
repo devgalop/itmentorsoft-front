@@ -95,9 +95,18 @@
                 <span class="cuest__badge" [class.cuest__badge--muted]="!q.category">{{ categoryLabel(q.category) }}</span>
               </td>
               <td class="cuest__actions">
-                <button type="button" class="cuest__action" (click)="selectQuestion(q.question_id)">
-                  Ver
-                </button>
+                <div class="cuest__btns">
+                  <button type="button" class="cuest__action" (click)="selectQuestion(q.question_id)">
+                    Ver
+                  </button>
+                  <button
+                    type="button"
+                    class="cuest__action cuest__action--danger"
+                    (click)="askDisable(q.question_id)"
+                  >
+                    Desactivar
+                  </button>
+                </div>
               </td>
             </tr>
           }
@@ -185,6 +194,44 @@
           </div>
         </article>
       }
+    </div>
+  </div>
+}
+
+@if (confirmingQuestion(); as q) {
+  <div class="modal modal--center" (click)="cancelDisable()">
+    <div
+      class="modal__box modal__box--confirm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="disable-title"
+      aria-describedby="disable-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="disable-title" class="confirm__title">Desactivar pregunta</h2>
+      <p id="disable-desc" class="confirm__text">
+        La pregunta dejará de aparecer en el banco y en las evaluaciones. Desde esta pantalla no
+        podrás volver a activarla.
+      </p>
+      <blockquote class="confirm__question">{{ q.text }}</blockquote>
+      <div class="confirm__actions">
+        <button
+          type="button"
+          class="cuest__action"
+          (click)="cancelDisable()"
+          [disabled]="disablingId() === q.question_id"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cuest__action cuest__action--danger cuest__action--solid"
+          (click)="disableQuestion(q.question_id)"
+          [disabled]="disablingId() === q.question_id"
+        >
+          {{ disablingId() === q.question_id ? 'Desactivando…' : 'Desactivar' }}
+        </button>
+      </div>
     </div>
   </div>
 }

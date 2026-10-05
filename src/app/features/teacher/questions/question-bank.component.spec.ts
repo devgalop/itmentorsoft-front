@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { QuestionBankComponent } from './question-bank.component';
 import { AssessmentsService } from '../../../core/assessments/assessments.service';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('QuestionBankComponent', () => {
   let serviceMock: {
@@ -10,7 +11,9 @@ describe('QuestionBankComponent', () => {
     getQuestionsByCategory: ReturnType<typeof vi.fn>;
     getQuestionById: ReturnType<typeof vi.fn>;
     getCategories: ReturnType<typeof vi.fn>;
+    updateQuestionStatus: ReturnType<typeof vi.fn>;
   };
+  const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
 
   function listItem(id: string) {
     return {
@@ -25,7 +28,11 @@ describe('QuestionBankComponent', () => {
   function createComponent(): QuestionBankComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [QuestionBankComponent, { provide: AssessmentsService, useValue: serviceMock }],
+      providers: [
+        QuestionBankComponent,
+        { provide: AssessmentsService, useValue: serviceMock },
+        { provide: ToastService, useValue: toastMock },
+      ],
     });
     return TestBed.inject(QuestionBankComponent);
   }
@@ -37,7 +44,12 @@ describe('QuestionBankComponent', () => {
       getQuestionsByCategory: vi.fn(),
       getQuestionById: vi.fn(),
       getCategories: vi.fn().mockResolvedValue([]),
+      updateQuestionStatus: vi
+        .fn()
+        .mockResolvedValue({ is_success: true, message: 'ok', question_id: 'q1', new_status: false }),
     };
+    toastMock.success.mockClear();
+    toastMock.error.mockClear();
   });
 
   it('starts in "all" mode and loads the paginated list', async () => {
@@ -450,6 +462,153 @@ describe('QuestionBankComponent', () => {
       await c.selectQuestion('q1');
 
       expect(c.detailError()).toBe('Error inesperado');
+    });
+  });
+  describe('disable question', () => {
+    async function loaded(items: string[], total = items.length, page = 0) {
+      serviceMock.getAllQuestions.mockResolvedValue({ questions: items.map(listItem), total });
+      const component = createComponent();
+      await Promise.resolve();
+      await Promise.resolve();
+      if (page > 0) {
+        await component.nextPage();
+      }
+      return component;
+    }
+
+    it('asks for confirmation first and can cancel without calling the backend', async () => {
+      const component = await loaded(['q1', 'q2']);
+      component.askDisable('q1');
+      expect(component.confirmingId()).toBe('q1');
+      component.cancelDisable();
+      expect(component.confirmingId()).toBeNull();
+      expect(serviceMock.updateQuestionStatus).not.toHaveBeenCalled();
+    });
+
+    it('exposes the question being confirmed for the modal', async () => {
+      const component = await loaded(['q1', 'q2']);
+      expect(component.confirmingQuestion()).toBeNull();
+      component.askDisable('q2');
+      expect(component.confirmingQuestion()?.question_id).toBe('q2');
+      expect(component.confirmingQuestion()?.text).toBe('texto q2');
+    });
+
+    it('Escape closes the confirmation modal without disabling', async () => {
+      const component = await loaded(['q1']);
+      component.askDisable('q1');
+      component.onEscape();
+      expect(component.confirmingId()).toBeNull();
+      expect(serviceMock.updateQuestionStatus).not.toHaveBeenCalled();
+    });
+
+    it('cannot cancel the modal while the question is being disabled', async () => {
+      const component = await loaded(['q1']);
+      let release!: (v: unknown) => void;
+      serviceMock.updateQuestionStatus.mockReturnValue(new Promise((r) => (release = r)));
+      component.askDisable('q1');
+
+      const pending = component.disableQuestion('q1');
+      component.cancelDisable();
+      component.onEscape();
+      expect(component.confirmingId()).toBe('q1');
+
+      release({ is_success: true, message: 'ok', question_id: 'q1', new_status: false });
+      await pending;
+      expect(component.confirmingId()).toBeNull();
+    });
+
+    it('disables the question, notifies and reloads the current page', async () => {
+      const component = await loaded(['q1', 'q2'], 2);
+      serviceMock.getAllQuestions.mockClear();
+      component.askDisable('q1');
+
+      await component.disableQuestion('q1');
+
+      expect(serviceMock.updateQuestionStatus).toHaveBeenCalledWith('q1', false);
+      expect(toastMock.success).toHaveBeenCalled();
+      expect(serviceMock.getAllQuestions).toHaveBeenCalledWith(0, 10);
+      expect(component.confirmingId()).toBeNull();
+      expect(component.disablingId()).toBeNull();
+    });
+
+    it('goes back one page when the last row of a page is disabled', async () => {
+      const component = await loaded(['q1'], 11);
+      await component.nextPage();
+      expect(component.page()).toBe(1);
+      serviceMock.getAllQuestions.mockClear();
+
+      await component.disableQuestion('q1');
+
+      expect(serviceMock.getAllQuestions).toHaveBeenCalledWith(0, 10);
+    });
+
+    it('only removes the row locally when a filter is active', async () => {
+      const component = await loaded(['q1']);
+      serviceMock.getQuestionsByLevel.mockResolvedValue([
+        { question_id: 'q1', text_to_evaluate: 'a' },
+        { question_id: 'q2', text_to_evaluate: 'b' },
+      ]);
+      component.setMode('level');
+      await component.search();
+      serviceMock.getAllQuestions.mockClear();
+
+      await component.disableQuestion('q1');
+
+      expect(serviceMock.getAllQuestions).not.toHaveBeenCalled();
+      expect(component.rows().map((r) => r.question_id)).toEqual(['q2']);
+      expect(component.total()).toBe(1);
+    });
+
+    it('closes the detail when the open question is disabled', async () => {
+      const component = await loaded(['q1']);
+      serviceMock.getQuestionById.mockResolvedValue({ question_id: 'q1' });
+      await component.selectQuestion('q1');
+      expect(component.isDetailOpen()).toBe(true);
+
+      await component.disableQuestion('q1');
+
+      expect(component.isDetailOpen()).toBe(false);
+      expect(component.selectedId()).toBeNull();
+    });
+
+    it('shows an error toast and keeps the row when the backend rejects the change', async () => {
+      const component = await loaded(['q1']);
+      serviceMock.updateQuestionStatus.mockRejectedValue(new Error('No tenés permisos'));
+      serviceMock.getAllQuestions.mockClear();
+
+      await component.disableQuestion('q1');
+
+      expect(toastMock.error).toHaveBeenCalledWith('No se pudo desactivar la pregunta', 'No tenés permisos');
+      expect(serviceMock.getAllQuestions).not.toHaveBeenCalled();
+      expect(component.disablingId()).toBeNull();
+    });
+
+    it('treats is_success false as an error', async () => {
+      const component = await loaded(['q1']);
+      serviceMock.updateQuestionStatus.mockResolvedValue({
+        is_success: false,
+        message: 'Pregunta no encontrada',
+        question_id: '',
+        new_status: false,
+      });
+
+      await component.disableQuestion('q1');
+
+      expect(toastMock.error).toHaveBeenCalledWith('No se pudo desactivar la pregunta', 'Pregunta no encontrada');
+      expect(toastMock.success).not.toHaveBeenCalled();
+    });
+
+    it('ignores a second disable while one is in progress', async () => {
+      const component = await loaded(['q1', 'q2']);
+      let release!: (v: unknown) => void;
+      serviceMock.updateQuestionStatus.mockReturnValue(new Promise((r) => (release = r)));
+
+      const first = component.disableQuestion('q1');
+      await component.disableQuestion('q2');
+      expect(serviceMock.updateQuestionStatus).toHaveBeenCalledTimes(1);
+
+      release({ is_success: true, message: 'ok', question_id: 'q1', new_status: false });
+      await first;
     });
   });
 });

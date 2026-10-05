@@ -293,6 +293,27 @@ describe('AssessmentsService', () => {
     });
   });
 
+  describe('updateQuestionStatus', () => {
+    it('PUTs the question id and the new status to /assessments/question/update/status', async () => {
+      const promise = service.updateQuestionStatus('q-12345', false);
+      const req = httpMock.expectOne('/assessments/question/update/status');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ question_id: 'q-12345', status: false });
+      req.flush({ is_success: true, message: 'ok', question_id: 'q-12345', new_status: false });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+      expect(res.new_status).toBe(false);
+    });
+
+    it('maps a 403 into an error', async () => {
+      const promise = service.updateQuestionStatus('q-12345', false);
+      httpMock
+        .expectOne('/assessments/question/update/status')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+    });
+  });
+
   describe('getTopics', () => {
     it('GETs /assessments/topics and returns the list', async () => {
       const promise = service.getTopics();
@@ -349,6 +370,7 @@ describe('AssessmentsService', () => {
       ['getAvailableModels', '/assessments/available_models', () => service.getAvailableModels()],
       ['getModelSelected', '/assessments/model_selected', () => service.getModelSelected()],
       ['updateModel', '/assessments/models', () => service.updateModel('qualifier', 'model_2')],
+      ['updateQuestionStatus', '/assessments/question/update/status', () => service.updateQuestionStatus('q-12345', false)],
     ];
 
     it.each(calls)('%s rejects with the mapped error on a server failure', async (_name, url, call) => {

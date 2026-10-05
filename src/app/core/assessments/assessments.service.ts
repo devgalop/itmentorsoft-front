@@ -19,6 +19,8 @@ import {
   RegisterQuestionResponse,
   UpdateModelResponse,
   UpdateQuestionResponse,
+  UpdateQuestionStatusPayload,
+  UpdateQuestionStatusResponse,
 } from './assessments.types';
 
 @Injectable({ providedIn: 'root' })
@@ -124,6 +126,27 @@ export class AssessmentsService {
       return await firstValueFrom(
         this.http.put<UpdateQuestionResponse>(
           `${environment.apiUrl}${ENDPOINTS.assessments.questionById(questionId)}`,
+          payload,
+        ),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Activa o desactiva una pregunta (admin y docente). Una pregunta desactivada deja de
+   * aparecer en los listados y en las evaluaciones.
+   */
+  async updateQuestionStatus(
+    questionId: string,
+    status: boolean,
+  ): Promise<UpdateQuestionStatusResponse> {
+    try {
+      const payload: UpdateQuestionStatusPayload = { question_id: questionId, status };
+      return await firstValueFrom(
+        this.http.put<UpdateQuestionStatusResponse>(
+          `${environment.apiUrl}${ENDPOINTS.assessments.updateQuestionStatus}`,
           payload,
         ),
       );
