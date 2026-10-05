@@ -50,3 +50,17 @@ export interface CreateUserResponse {
   message: string;
   user_id?: string | null;
 }
+
+/** Payload de PUT /users/user-status (solo admin). */
+export interface UpdateUserStatusPayload {
+  user_id: string;
+  new_status: string;
+}
+
+export interface UpdateUserStatusResponse {
+  is_success: boolean;
+  message: string;
+}
+
+/** Estados válidos de un usuario en el backend (UserStatus). */
+export type UserStatus = 'active' | 'inactive' | 'suspended';

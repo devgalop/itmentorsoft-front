@@ -198,7 +198,7 @@ describe('ResetPasswordComponent', () => {
     it('shows an error toast with the backend message when is_success is false', async () => {
       authServiceMock.resetPassword.mockResolvedValue({
         is_success: false,
-        message: 'El enlace no es válido o expiró. Solicitá uno nuevo.',
+        message: 'El enlace no es válido o expiró. Solicita uno nuevo.',
       });
       const component = createComponent(validParams);
       fillValidForm(component);
@@ -208,7 +208,7 @@ describe('ResetPasswordComponent', () => {
       expect(component.success()).toBe(false);
       expect(toastMock.error).toHaveBeenCalledWith(
         'No se pudo cambiar la contraseña',
-        'El enlace no es válido o expiró. Solicitá uno nuevo.',
+        'El enlace no es válido o expiró. Solicita uno nuevo.',
       );
       expect(component.resetForm.enabled).toBe(true);
     });

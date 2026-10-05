@@ -56,7 +56,7 @@ describe('StudentProgressComponent', () => {
     const c = createComponent();
     await Promise.resolve();
     await Promise.resolve();
-    expect(c.loadError()).toContain('Completá una evaluación');
+    expect(c.loadError()).toContain('Completa una evaluación');
   });
 
   it('converts score to a clamped percentage', () => {

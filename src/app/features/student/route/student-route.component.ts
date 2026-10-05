@@ -25,7 +25,7 @@ export class StudentRouteComponent {
 
   /** content_id del recurso que se está calificando (deshabilita sus estrellas mientras tanto). */
   readonly ratingId = signal<string | null>(null);
-  /** Calificación que el estudiante ya envió en esta sesión, por content_id (no hay GET para traerla). */
+  /** Calificación del estudiante por content_id: las ya guardadas en el backend más las de esta sesión. */
   readonly myRatings = signal<Record<string, number>>({});
 
   /** Cantidad total de contenidos recomendados en toda la ruta. */
@@ -39,7 +39,7 @@ export class StudentRouteComponent {
       void this.load(id);
     } else {
       this.isLoading.set(false);
-      this.loadError.set('No se pudo identificar tu usuario. Iniciá sesión de nuevo.');
+      this.loadError.set('No se pudo identificar tu usuario. Inicia sesión de nuevo.');
     }
   }
 
@@ -49,6 +49,7 @@ export class StudentRouteComponent {
     try {
       const recommendation = await this.content.getRecommendedLearningPaths(id);
       this.topics.set(recommendation);
+      await this.loadMyRatings(id);
     } catch (error) {
       this.loadError.set(
         error instanceof Error ? error.message : 'No se pudo cargar tu ruta de aprendizaje.',
@@ -58,27 +59,45 @@ export class StudentRouteComponent {
     }
   }
 
+  /**
+   * Trae las calificaciones previas del estudiante para mostrarlas y poder editarlas.
+   * No es crítico: si falla (o no hay ninguna) la ruta se muestra igual, sin calificar.
+   */
+  private async loadMyRatings(id: string): Promise<void> {
+    try {
+      const ratings = await this.content.getRatingsByUser(id);
+      const saved = Object.fromEntries(ratings.map((r) => [r.content_id, r.rating]));
+      // Lo calificado en esta sesión tiene prioridad sobre lo que traiga el backend.
+      this.myRatings.update((current) => ({ ...saved, ...current }));
+    } catch {
+      // Sin calificaciones previas: se deja como está.
+    }
+  }
+
   /** Estrellas llenas (0–5) a partir del rating. */
   stars(rating: number): number {
     return Math.max(0, Math.min(5, Math.round(rating)));
   }
 
-  /** Envía la calificación del estudiante (1-5) para un recurso. */
+  /** Envía la calificación del estudiante (1-5); si ya había calificado el recurso, la modifica. */
   async rate(contentId: string, value: number): Promise<void> {
     const userId = this.auth.userId();
     if (!userId || this.ratingId()) return;
+    const isEdit = this.myRatings()[contentId] !== undefined;
     this.ratingId.set(contentId);
     try {
-      const response = await this.content.rateContent({
-        content_id: contentId,
-        user_id: userId,
-        rating: value,
-      });
+      const payload = { content_id: contentId, user_id: userId, rating: value };
+      const response = isEdit
+        ? await this.content.updateRating(payload)
+        : await this.content.rateContent(payload);
       if (!response.is_success) {
         throw new Error(response.message || 'No se pudo enviar tu calificación.');
       }
       this.myRatings.update((ratings) => ({ ...ratings, [contentId]: value }));
-      this.toast.success('¡Gracias por calificar!', 'Tu opinión ayuda a mejorar la ruta.');
+      this.toast.success(
+        isEdit ? 'Calificación actualizada' : '¡Gracias por calificar!',
+        'Tu opinión ayuda a mejorar la ruta.',
+      );
     } catch (error) {
       this.toast.error(
         'No se pudo enviar tu calificación',

@@ -103,9 +103,9 @@ describe('StudentDetailComponent', () => {
   });
 
   it('captures a thrown error', async () => {
-    const { component } = createComponent('s1', null, { reject: new Error('No tenés permisos') });
+    const { component } = createComponent('s1', null, { reject: new Error('No tienes permisos') });
     await flush();
-    expect(component.loadError()).toBe('No tenés permisos');
+    expect(component.loadError()).toBe('No tienes permisos');
   });
 
   it('loads the assessments count alongside the summary', async () => {

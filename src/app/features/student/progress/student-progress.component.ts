@@ -24,7 +24,7 @@ export class StudentProgressComponent {
       void this.load(id);
     } else {
       this.isLoading.set(false);
-      this.loadError.set('No se pudo identificar tu usuario. Iniciá sesión de nuevo.');
+      this.loadError.set('No se pudo identificar tu usuario. Inicia sesión de nuevo.');
     }
   }
 
@@ -35,7 +35,7 @@ export class StudentProgressComponent {
       const summary = await this.reports.getStudentSummary(id);
       this.summary.set(summary);
       if (!summary) {
-        this.loadError.set('Todavía no hay datos de tu progreso. Completá una evaluación para verlo.');
+        this.loadError.set('Todavía no hay datos de tu progreso. Completa una evaluación para verlo.');
       }
     } catch (error) {
       this.loadError.set(error instanceof Error ? error.message : 'Error al cargar tu progreso');

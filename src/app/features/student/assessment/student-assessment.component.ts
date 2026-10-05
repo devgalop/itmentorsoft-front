@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '@core/auth/auth.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
+import { environment } from '../../../../environments/environment';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import {
   AssessmentAnswerInput,
@@ -13,6 +14,8 @@ import {
 type Step = 'setup' | 'answering' | 'grading' | 'history' | 'result';
 
 const POLL_INTERVAL_MS = 3000;
+/** Límite del backend por respuesta (save_assessments_answers). */
+export const MAX_ANSWER_LENGTH = 600;
 const MAX_POLLS = 40; // ~2 min de espera máxima
 
 @Component({
@@ -27,6 +30,11 @@ export class StudentAssessmentComponent {
   private readonly auth = inject(AuthService);
   private readonly assessments = inject(StudentAssessmentService);
   private readonly toast = inject(ToastService);
+
+  /** Viene del ambiente: si es true se bloquea copiar/pegar en la respuesta. */
+  readonly clipboardBlocked = environment.blockClipboardInAnswers;
+
+  readonly maxAnswerLength = MAX_ANSWER_LENGTH;
 
   readonly step = signal<Step>('history');
   readonly error = signal<string | null>(null);
@@ -94,11 +102,11 @@ export class StudentAssessmentComponent {
   async startAssessment(): Promise<void> {
     const userId = this.userId;
     if (!userId) {
-      this.error.set('No se pudo identificar tu usuario. Iniciá sesión de nuevo.');
+      this.error.set('No se pudo identificar tu usuario. Inicia sesión de nuevo.');
       return;
     }
     if (!this.selectedTopic()) {
-      this.error.set('Elegí un tema para comenzar.');
+      this.error.set('Elige un tema para comenzar.');
       return;
     }
 
@@ -125,7 +133,8 @@ export class StudentAssessmentComponent {
     }
   }
 
-  onAnswerChange(value: string): void {
+  onAnswerChange(rawValue: string): void {
+    const value = rawValue.slice(0, MAX_ANSWER_LENGTH);
     const q = this.currentQuestion();
     if (q) {
       this.answers.set(q.question_id, value);
@@ -141,15 +150,17 @@ export class StudentAssessmentComponent {
 
   /** Bloquea copiar/pegar/cortar/arrastrar en el campo de respuesta y avisa. */
   blockClipboard(event: Event, action: string): void {
+    if (!this.clipboardBlocked) return;
     event.preventDefault();
     this.toast.warning(
       'Acción no permitida',
-      `No se puede ${action} en la evaluación. Escribí tu respuesta con tus palabras.`,
+      `No se puede ${action} en la evaluación. Escribe tu respuesta con tus palabras.`,
     );
   }
 
   /** Evita el menú contextual (que ofrece pegar) en el campo de respuesta. */
   blockContextMenu(event: Event): void {
+    if (!this.clipboardBlocked) return;
     event.preventDefault();
   }
 
@@ -188,7 +199,7 @@ export class StudentAssessmentComponent {
     this.recordTime();
     const userId = this.userId;
     if (!userId || !this.assessmentId) {
-      this.error.set('No se pudo enviar la evaluación. Iniciá sesión de nuevo.');
+      this.error.set('No se pudo enviar la evaluación. Inicia sesión de nuevo.');
       return;
     }
 
@@ -248,7 +259,7 @@ export class StudentAssessmentComponent {
       await this.delay(POLL_INTERVAL_MS);
     }
     this.gradingMessage.set(
-      'La calificación está tardando más de lo esperado. Podés revisar el resultado más tarde.',
+      'La calificación está tardando más de lo esperado. Puedes revisar el resultado más tarde.',
     );
   }
 

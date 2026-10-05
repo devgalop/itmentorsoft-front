@@ -84,7 +84,7 @@ describe('ContentService', () => {
       httpMock
         .expectOne((r) => r.url === '/content/' && r.params.has('page'))
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -265,7 +265,210 @@ describe('ContentService', () => {
       httpMock
         .expectOne('/content/rate')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
+    });
+  });
+
+  describe('getRatingsByUser', () => {
+    it('GETs /content/ratings/all with the user_id and returns the details', async () => {
+      const promise = service.getRatingsByUser('u-1');
+      const req = httpMock.expectOne((r) => r.url === '/content/ratings/all');
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('user_id')).toBe('u-1');
+      const detail = { content_id: 'c-1', title: 'T', summary: 'S', rating: 4, student_id: 'u-1' };
+      req.flush({ is_success: true, message: 'ok', rating_details: [detail] });
+      expect(await promise).toEqual([detail]);
+    });
+
+    it('returns an empty list on 404 (no ratings yet)', async () => {
+      const promise = service.getRatingsByUser('u-1');
+      httpMock
+        .expectOne((r) => r.url === '/content/ratings/all')
+        .flush({ detail: 'x' }, { status: 404, statusText: 'Not Found' });
+      expect(await promise).toEqual([]);
+    });
+
+    it('maps other errors', async () => {
+      const promise = service.getRatingsByUser('u-1');
+      httpMock
+        .expectOne((r) => r.url === '/content/ratings/all')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
+    });
+  });
+
+  describe('updateResourceStatus', () => {
+    it('PUTs the content id and the new status to /content/update/status', async () => {
+      const promise = service.updateResourceStatus('c-12345', false);
+      const req = httpMock.expectOne('/content/update/status');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ content_id: 'c-12345', status: false });
+      req.flush({ is_success: true, message: 'ok', content_id: 'c-12345', new_status: false });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+      expect(res.new_status).toBe(false);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.updateResourceStatus('c-12345', false);
+      httpMock
+        .expectOne('/content/update/status')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
+    });
+  });
+
+  describe('top content', () => {
+    const item = { content_id: 'c-1', title: 'T', summary: 'S', rating: 4.8 };
+
+    it('GETs the best content of a topic with the limit in the path', async () => {
+      const promise = service.getTopBestContent('APIs', 3);
+      const req = httpMock.expectOne((r) => r.url === '/content/top-content/best/3');
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('topic')).toBe('APIs');
+      req.flush({ is_success: true, message: 'ok', items: [item] });
+      expect(await promise).toEqual([item]);
+    });
+
+    it('GETs the worst content of a topic (limit defaults to 5)', async () => {
+      const promise = service.getTopWorseContent('APIs');
+      const req = httpMock.expectOne((r) => r.url === '/content/top-content/worse/5');
+      expect(req.request.params.get('topic')).toBe('APIs');
+      req.flush({ is_success: true, message: 'ok', items: [item] });
+      expect(await promise).toEqual([item]);
+    });
+
+    it('returns an empty list on 404 (no rated content for the topic)', async () => {
+      const promise = service.getTopBestContent('APIs');
+      httpMock
+        .expectOne((r) => r.url === '/content/top-content/best/5')
+        .flush({ detail: 'x' }, { status: 404, statusText: 'Not Found' });
+      expect(await promise).toEqual([]);
+    });
+
+    it('defaults to an empty list when items is missing', async () => {
+      const promise = service.getTopWorseContent('APIs');
+      httpMock
+        .expectOne((r) => r.url === '/content/top-content/worse/5')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+
+    it('maps other errors', async () => {
+      const promise = service.getTopBestContent('APIs');
+      httpMock
+        .expectOne((r) => r.url === '/content/top-content/best/5')
+        .flush({}, { status: 401, statusText: 'Unauthorized' });
+      await expect(promise).rejects.toThrow('Sesión expirada, inicia sesión de nuevo');
+    });
+  });
+
+  describe('updateRating', () => {
+    it('PUTs the payload to /content/modify/rating', async () => {
+      const payload = { content_id: 'c-1', user_id: 'u-1', rating: 5 };
+      const promise = service.updateRating(payload);
+      const req = httpMock.expectOne('/content/modify/rating');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'Rating updated successfully' });
+      expect((await promise).is_success).toBe(true);
+    });
+
+    it('maps a 422 into an invalid data error', async () => {
+      const promise = service.updateRating({ content_id: 'c-1', user_id: 'u-1', rating: 9 });
+      httpMock.expectOne('/content/modify/rating').flush({}, { status: 422, statusText: 'x' });
+      await expect(promise).rejects.toThrow('Datos inválidos');
+    });
+  });
+
+  describe('missing fields', () => {
+    it('getAllContentsPaged defaults to an empty page', async () => {
+      const promise = service.getAllContentsPaged();
+      httpMock
+        .expectOne((r) => r.url === '/content/')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual({ items: [], total: 0 });
+    });
+
+    it('a search defaults to an empty page when items and total are missing', async () => {
+      const promise = service.getContentsByTitle('Intro');
+      httpMock
+        .expectOne((r) => r.url === '/content/title/Intro')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual({ items: [], total: 0 });
+    });
+
+    it('getContentById returns null when the response has no content', async () => {
+      const promise = service.getContentById('c-1');
+      httpMock.expectOne('/content/c-1').flush({ is_success: true, message: 'ok', content: null });
+      expect(await promise).toBeNull();
+    });
+  });
+
+  describe('error mapping', () => {
+    it.each([
+      [0, 'Sin conexión al servidor'],
+      [401, 'Sesión expirada, inicia sesión de nuevo'],
+      [403, 'No tienes permisos para esta acción'],
+      [422, 'Datos inválidos'],
+      [500, 'Error en el servidor, intenta más tarde'],
+    ])('maps HTTP %i to "%s"', async (status, message) => {
+      const promise = service.getRecommendedLearningPaths('u1');
+      httpMock
+        .expectOne((r) => r.url === '/content/recommended/learning-paths')
+        .flush({ detail: 'x' }, { status, statusText: 'error' });
+      await expect(promise).rejects.toThrow(message);
+    });
+
+    it('getContentById still throws on errors other than 404', async () => {
+      const promise = service.getContentById('c-1');
+      httpMock.expectOne('/content/c-1').flush({ detail: 'x' }, { status: 500, statusText: 'error' });
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
+    });
+
+    it.each([
+      ['getContentsByTopic', '/content/topic/APIs', () => service.getContentsByTopic('APIs')],
+      ['getContentsByCategory', '/content/category/x', () => service.getContentsByCategory('x')],
+      ['getContentsByTitle', '/content/title/Intro', () => service.getContentsByTitle('Intro')],
+      [
+        'getContentsByCategoryTopic',
+        '/content/category-topic/x/APIs',
+        () => service.getContentsByCategoryTopic('x', 'APIs'),
+      ],
+    ] as [string, string, () => Promise<unknown>][])(
+      '%s still throws on errors other than 404',
+      async (_name, url, call) => {
+        const promise = call();
+        httpMock.expectOne((r) => r.url === url).flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+        await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
+      },
+    );
+
+    it('getAllContentsPaged rejects with the mapped error', async () => {
+      const promise = service.getAllContentsPaged();
+      httpMock
+        .expectOne((r) => r.url === '/content/')
+        .flush({ detail: 'x' }, { status: 401, statusText: 'Unauthorized' });
+      await expect(promise).rejects.toThrow('Sesión expirada, inicia sesión de nuevo');
+    });
+
+    it('updateContent rejects with the mapped error', async () => {
+      const promise = service.updateContent('c-1', {
+        title: 'Un recurso',
+        description: 'descripción válida',
+        url: 'https://ejemplo.com',
+        category: 'principiante',
+        related_topic: ['APIs'],
+      });
+      httpMock.expectOne('/content/c-1').flush({ detail: 'x' }, { status: 422, statusText: 'Unprocessable' });
+      await expect(promise).rejects.toThrow('Datos inválidos');
+    });
+
+    it('keeps an Error that did not come from HTTP and names unknown failures', () => {
+      const map = (service as unknown as { mapHttpError(e: unknown): Error }).mapHttpError.bind(service);
+      const original = new Error('propio');
+      expect(map(original)).toBe(original);
+      expect(map('boom').message).toBe('Error desconocido');
     });
   });
 });

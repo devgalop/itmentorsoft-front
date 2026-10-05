@@ -124,7 +124,7 @@ export class QuestionFormComponent {
     try {
       const question = await this.assessments.getQuestionById(id);
       if (!question) {
-        this.loadError.set('No se encontró la pregunta que querés editar.');
+        this.loadError.set('No se encontró la pregunta que quieres editar.');
         return;
       }
       this.patchForm(question);
@@ -243,7 +243,7 @@ export class QuestionFormComponent {
           this.resetForm();
         }
       } else {
-        this.toast.error('No se pudo guardar', response.message || 'Intentá nuevamente.');
+        this.toast.error('No se pudo guardar', response.message || 'Intenta nuevamente.');
       }
     } catch (error) {
       this.toast.error('Error al guardar', error instanceof Error ? error.message : 'Error inesperado');

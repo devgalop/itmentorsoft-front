@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
+import { UsersService } from '../../../core/users/users.service';
 import { StudentDashboardComponent } from './student-dashboard.component';
 import { AuthService } from '../../../core/auth/auth.service';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
@@ -18,6 +19,7 @@ describe('StudentDashboardComponent', () => {
   let authServiceMock: { user: ReturnType<typeof vi.fn>; userId: ReturnType<typeof vi.fn> };
   let studentAssessmentMock: { getQuantity: ReturnType<typeof vi.fn> };
   let reportsMock: { getStudentProgress: ReturnType<typeof vi.fn> };
+  let usersMock: { getUser: ReturnType<typeof vi.fn> };
 
   function setup(
     user: { userName: string; role: string } | null,
@@ -27,6 +29,8 @@ describe('StudentDashboardComponent', () => {
       reject?: Error;
       progress?: { classification: string } | null;
       progressReject?: Error;
+      name?: string | null;
+      nameReject?: Error;
     },
   ): void {
     const userId = opts && 'userId' in opts ? opts.userId : 's1';
@@ -45,6 +49,16 @@ describe('StudentDashboardComponent', () => {
         : vi.fn().mockResolvedValue(opts?.progress ?? null),
     };
 
+    usersMock = {
+      getUser: opts?.nameReject
+        ? vi.fn().mockRejectedValue(opts.nameReject)
+        : vi.fn().mockResolvedValue(
+            opts?.name === undefined || opts.name === null
+              ? null
+              : { user_id: 's1', username: 'eider_student', email: '', name: opts.name, role: 'student' },
+          ),
+    };
+
     TestBed.configureTestingModule({
       imports: [StudentDashboardComponent],
       providers: [
@@ -52,6 +66,7 @@ describe('StudentDashboardComponent', () => {
         { provide: AuthService, useValue: authServiceMock },
         { provide: StudentAssessmentService, useValue: studentAssessmentMock },
         { provide: ReportsService, useValue: reportsMock },
+        { provide: UsersService, useValue: usersMock },
       ],
     });
 
@@ -69,6 +84,24 @@ describe('StudentDashboardComponent', () => {
     setup({ userName: 'eider_student', role: 'student' });
     const greeting = fixture.nativeElement.querySelector('.dash__greeting');
     expect(greeting?.textContent?.trim()).toBe('¡Hola, eider_student!');
+  });
+
+  it('greets the student with their real name once it loads', async () => {
+    setup({ userName: 'eider_student', role: 'student' }, { name: 'Eider Pérez' });
+    await vi.waitFor(() => expect(component.userName()).toBe('Eider Pérez'));
+    expect(usersMock.getUser).toHaveBeenCalledWith('s1');
+  });
+
+  it('keeps the username when the name cannot be loaded', async () => {
+    setup({ userName: 'eider_student', role: 'student' }, { nameReject: new Error('x') });
+    await vi.waitFor(() => expect(usersMock.getUser).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(component.userName()).toBe('eider_student');
+  });
+
+  it('does not request the name when there is no user id', () => {
+    setup({ userName: 'eider_student', role: 'student' }, { userId: null });
+    expect(usersMock.getUser).not.toHaveBeenCalled();
   });
 
   it('falls back to "Estudiante" when there is no user', () => {
@@ -133,7 +166,7 @@ describe('StudentDashboardComponent', () => {
     await flush();
 
     expect(component.stats()[0].value).toBe('—');
-    expect(component.stats()[0].hint).toBe('Pendiente evaluación');
+    expect(component.stats()[0].hint).toBe('Evaluación pendiente');
   });
 
   it('keeps the classification at "—" when the request fails', async () => {

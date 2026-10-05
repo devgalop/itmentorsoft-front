@@ -58,8 +58,8 @@ export class OtpComponent {
   getOtpError(): string | null {
     const ctrl = this.otpControl;
     if (!ctrl.touched) return null;
-    if (ctrl.hasError('required')) return 'Ingresá el código';
-    if (ctrl.hasError('pattern')) return 'El código son 6 caracteres (0-9, A-F)';
+    if (ctrl.hasError('required')) return 'Ingresa el código';
+    if (ctrl.hasError('pattern')) return 'El código debe tener 6 caracteres (0-9, A-F)';
     return null;
   }
 
@@ -84,7 +84,7 @@ export class OtpComponent {
       if (response.is_successful && response.token) {
         await this.router.navigate([this.authService.homeRoute()]);
       } else {
-        this.toast.error('Código incorrecto', response.message || 'Revisá el código e intentá de nuevo.');
+        this.toast.error('Código incorrecto', response.message || 'Revisa el código e intenta de nuevo.');
       }
     } catch (error) {
       this.toast.error(

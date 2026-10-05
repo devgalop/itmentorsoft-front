@@ -183,7 +183,7 @@ describe('ResourcesComponent', () => {
 
   it('summarizes the selected topics for the trigger label', () => {
     const component = createComponent();
-    expect(component.topicsSummary()).toBe('Seleccioná uno o más temas');
+    expect(component.topicsSummary()).toBe('Selecciona uno o más temas');
     component.toggleTopic('APIs');
     expect(component.topicsSummary()).toBe('APIs');
     component.toggleTopic('SOLID');

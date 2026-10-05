@@ -131,4 +131,137 @@ describe('ProfileComponent', () => {
     expect(toastMock.error).toHaveBeenCalledWith('No se pudo actualizar', 'Sin conexión al servidor');
     expect(c.isEditing()).toBe(true);
   });
+
+  it('shows the backend message and stays in edit mode when the update is rejected', async () => {
+    usersMock.updateProfile.mockResolvedValue({ is_success: false, message: 'Usuario en uso' });
+    const c = createComponent();
+    await Promise.resolve();
+    c.startEdit();
+    c.editForm.setValue({ name: 'Nombre Nuevo', username: 'nuevo_user' });
+    await c.save();
+
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo actualizar', 'Usuario en uso');
+    expect(toastMock.success).not.toHaveBeenCalled();
+    expect(c.isEditing()).toBe(true);
+    expect(c.user()?.name).toBe('Estudiante Dos');
+  });
+
+  it('shows a generic message when saving throws something that is not an Error', async () => {
+    usersMock.updateProfile.mockRejectedValue('boom');
+    const c = createComponent();
+    await Promise.resolve();
+    c.startEdit();
+    c.editForm.setValue({ name: 'Nombre Nuevo', username: 'nuevo_user' });
+    await c.save();
+
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo actualizar', 'Error inesperado');
+  });
+
+  it('re-enables the form and clears the saving flag after saving', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    c.startEdit();
+    c.editForm.setValue({ name: 'Nombre Nuevo', username: 'nuevo_user' });
+    await c.save();
+
+    expect(c.isSaving()).toBe(false);
+    expect(c.editForm.enabled).toBe(true);
+  });
+
+  it('does not save when there is no loaded user', async () => {
+    usersMock.getUser.mockResolvedValue(null);
+    const c = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+    c.editForm.setValue({ name: 'Nombre Nuevo', username: 'nuevo_user' });
+    await c.save();
+
+    expect(usersMock.updateProfile).not.toHaveBeenCalled();
+  });
+
+  it('startEdit does nothing when there is no loaded user', async () => {
+    usersMock.getUser.mockResolvedValue(null);
+    const c = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+    c.startEdit();
+    expect(c.isEditing()).toBe(false);
+  });
+
+  it('cancelEdit leaves edit mode', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    c.startEdit();
+    c.cancelEdit();
+    expect(c.isEditing()).toBe(false);
+  });
+
+  it('uses a generic message when loading throws something that is not an Error', async () => {
+    usersMock.getUser.mockRejectedValue('boom');
+    const c = createComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(c.loadError()).toBe('Error al cargar tu perfil');
+  });
+
+  describe('error messages', () => {
+    it('return null until the field is touched', async () => {
+      const c = createComponent();
+      expect(c.getNameError()).toBeNull();
+      expect(c.getUsernameError()).toBeNull();
+    });
+
+    it.each([
+      ['', 'El nombre es requerido'],
+      ['ab', 'Mínimo 3 caracteres'],
+      ['a'.repeat(101), 'Máximo 100 caracteres'],
+    ])('getNameError for "%s"', (value, message) => {
+      const c = createComponent();
+      c.nameControl.setValue(value);
+      c.nameControl.markAsTouched();
+      expect(c.getNameError()).toBe(message);
+    });
+
+    it('getNameError returns null for a valid name', () => {
+      const c = createComponent();
+      c.nameControl.setValue('Nombre Válido');
+      c.nameControl.markAsTouched();
+      expect(c.getNameError()).toBeNull();
+    });
+
+    it.each([
+      ['', 'El nombre de usuario es requerido'],
+      ['ab', 'Mínimo 3 caracteres'],
+      ['a'.repeat(21), 'Máximo 20 caracteres'],
+      ['user-name!', 'Solo letras, números y guion bajo'],
+    ])('getUsernameError for "%s"', (value, message) => {
+      const c = createComponent();
+      c.usernameControl.setValue(value);
+      c.usernameControl.markAsTouched();
+      expect(c.getUsernameError()).toBe(message);
+    });
+
+    it('getUsernameError returns null for a valid username', () => {
+      const c = createComponent();
+      c.usernameControl.setValue('user_name');
+      c.usernameControl.markAsTouched();
+      expect(c.getUsernameError()).toBeNull();
+    });
+  });
+
+  describe('helpers', () => {
+    it('initials handles empty, single and multi-part names', () => {
+      const c = createComponent();
+      expect(c.initials('')).toBe('');
+      expect(c.initials('   ')).toBe('');
+      expect(c.initials('ana')).toBe('AN');
+      expect(c.initials('Ana María López')).toBe('AM');
+    });
+
+    it('roleLabel translates student and keeps unknown roles as they come', () => {
+      const c = createComponent();
+      expect(c.roleLabel('student')).toBe('Estudiante');
+      expect(c.roleLabel('auditor')).toBe('auditor');
+    });
+  });
 });

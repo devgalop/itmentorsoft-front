@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 import { ReportsService } from '@core/reports/reports.service';
+import { UsersService } from '@core/users/users.service';
 
 interface StatCard {
   value: string;
@@ -28,9 +29,15 @@ export class StudentDashboardComponent {
   private readonly authService = inject(AuthService);
   private readonly studentAssessment = inject(StudentAssessmentService);
   private readonly reports = inject(ReportsService);
+  private readonly usersService = inject(UsersService);
 
   /** Nombre del estudiante para el saludo (username del JWT). */
-  readonly userName = computed(() => this.authService.user()?.userName ?? 'Estudiante');
+  /** Nombre real del estudiante (se carga del backend). */
+  private readonly displayName = signal<string | null>(null);
+  /** Lo que se muestra en el saludo: el nombre, o el username si aún no llegó. */
+  readonly userName = computed(
+    () => this.displayName() ?? this.authService.user()?.userName ?? 'Estudiante',
+  );
 
   /** Cantidad de evaluaciones realizadas. null mientras carga o si falla (se muestra '0'). */
   private readonly assessmentsCount = signal<number | null>(null);
@@ -43,14 +50,14 @@ export class StudentDashboardComponent {
     {
       value: this.classification() ?? '—',
       label: 'Categoría asignada',
-      hint: this.classification() ? 'Según tu evaluación inicial' : 'Pendiente evaluación',
+      hint: this.classification() ? 'Según tu evaluación inicial' : 'Evaluación pendiente',
       route: '/student/progress',
     },
     { value: '0%', label: 'Progreso en ruta', hint: 'Sin ruta asignada', route: '/student/route' },
     {
       value: String(this.assessmentsCount() ?? 0),
       label: 'Evaluaciones realizadas',
-      hint: 'Completá la inicial',
+      hint: 'Completa la inicial',
       route: '/student/assessments',
     },
   ]);
@@ -58,7 +65,7 @@ export class StudentDashboardComponent {
   // Contenido estático (informativo), tal cual el mockup.
   readonly steps: HowToStep[] = [
     {
-      title: 'Realizá la evaluación diagnóstica',
+      title: 'Realiza la evaluación diagnóstica',
       description: 'Preguntas de Diseño SW y Pensamiento Computacional.',
     },
     {
@@ -66,7 +73,7 @@ export class StudentDashboardComponent {
       description: 'Asigna tu nivel: Principiante, Básico, Intermedio o Avanzado.',
     },
     {
-      title: 'Recibí tu ruta personalizada',
+      title: 'Recibe tu ruta personalizada',
       description: 'Evaluaciones adaptadas a tus debilidades.',
     },
   ];
@@ -74,8 +81,23 @@ export class StudentDashboardComponent {
   constructor() {
     const id = this.authService.userId();
     if (id) {
+      void this.loadDisplayName(id);
       void this.loadAssessmentsCount(id);
       void this.loadClassification(id);
+    }
+  }
+
+  /**
+   * El JWT solo trae el usuario (username); el nombre real se pide al backend. Mientras
+   * llega, o si falla, el saludo usa el username.
+   */
+  private async loadDisplayName(userId: string): Promise<void> {
+    try {
+      const user = await this.usersService.getUser(userId);
+      const name = user?.name?.trim();
+      if (name) this.displayName.set(name);
+    } catch {
+      // Sin nombre: se queda con el username.
     }
   }
 

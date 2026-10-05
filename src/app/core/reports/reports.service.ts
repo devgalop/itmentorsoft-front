@@ -10,6 +10,7 @@ import {
   GetStudentProgressResponse,
   GetStudentSummaryResponse,
   GetUsersByRoleResponse,
+  UserByRole,
   PagedStudents,
   StudentProgress,
   StudentSummary,
@@ -97,6 +98,25 @@ export class ReportsService {
     }
   }
 
+  /**
+   * Usuarios ACTIVOS con un rol dado (solo admin). Solo trae el id y el rol; el backend no
+   * devuelve usuarios inactivos ni suspendidos. Si el rol no tiene usuarios activos responde
+   * con error, así que el llamador no puede distinguir "vacío" de "falló".
+   */
+  async getUsersByRole(role: string): Promise<UserByRole[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetUsersByRoleResponse>(
+          `${environment.apiUrl}${ENDPOINTS.reports.usersByRole}`,
+          { params: { role } },
+        ),
+      );
+      return response.users ?? [];
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
   /** Cantidad de usuarios con un rol dado (solo admin). */
   async getUsersByRoleTotal(role: string): Promise<number> {
     try {
@@ -118,15 +138,15 @@ export class ReportsService {
         case 0:
           return new Error('Sin conexión al servidor');
         case 401:
-          return new Error('Sesión expirada, iniciá sesión de nuevo');
+          return new Error('Sesión expirada, inicia sesión de nuevo');
         case 403:
-          return new Error('No tenés permisos para esta acción');
+          return new Error('No tienes permisos para esta acción');
         case 404:
           return new Error('No se encontró el estudiante');
         case 422:
           return new Error('Parámetros inválidos');
         default:
-          return new Error('Error en el servidor, intentá más tarde');
+          return new Error('Error en el servidor, intenta más tarde');
       }
     }
     return error instanceof Error ? error : new Error('Error desconocido');

@@ -63,7 +63,7 @@ export class ResourcesComponent {
   /** Texto del botón del combobox según lo seleccionado. */
   topicsSummary(): string {
     const selected = this.selectedTopics();
-    if (selected.length === 0) return 'Seleccioná uno o más temas';
+    if (selected.length === 0) return 'Selecciona uno o más temas';
     if (selected.length === 1) return selected[0]!;
     return `${selected.length} temas seleccionados`;
   }
@@ -228,7 +228,7 @@ export class ResourcesComponent {
     if (e['minlength']) return `Mínimo ${e['minlength'].requiredLength} caracteres`;
     if (e['maxlength']) return `Máximo ${e['maxlength'].requiredLength} caracteres`;
     if (e['https']) return 'Debe empezar con https://';
-    if (e['minSelected']) return 'Seleccioná al menos un tema';
+    if (e['minSelected']) return 'Selecciona al menos un tema';
     return 'Inválido';
   }
 
@@ -257,7 +257,7 @@ export class ResourcesComponent {
         this.closeModal();
         await this.loadResources();
       } else {
-        this.toast.error('No se pudo guardar', response.message || 'Intentá nuevamente.');
+        this.toast.error('No se pudo guardar', response.message || 'Intenta nuevamente.');
       }
     } catch (error) {
       this.toast.error('Error al guardar', error instanceof Error ? error.message : 'Error inesperado');

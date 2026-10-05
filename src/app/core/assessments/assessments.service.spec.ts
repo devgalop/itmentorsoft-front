@@ -55,7 +55,7 @@ describe('AssessmentsService', () => {
       const promise = service.getQuestionsByLevel('intermedio');
       const req = httpMock.expectOne(`${base}/level/intermedio`);
       req.flush({ detail: 'Not enough permissions' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+      await expect(promise).rejects.toThrow('No tienes permisos para ver este contenido');
     });
   });
 
@@ -289,7 +289,124 @@ describe('AssessmentsService', () => {
       httpMock
         .expectOne('/assessments/models')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para ver este contenido');
+      await expect(promise).rejects.toThrow('No tienes permisos para ver este contenido');
+    });
+  });
+
+  describe('getQuestionVersions', () => {
+    it('GETs /assessments/question-versions with the question id and returns the versions', async () => {
+      const promise = service.getQuestionVersions('q-12345');
+      const req = httpMock.expectOne((r) => r.url === '/assessments/question-versions');
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('question_id')).toBe('q-12345');
+      const questions = [{ question_id: 'q-2', version: 2 }, { question_id: 'q-1', version: 1 }];
+      req.flush({ is_success: true, message: 'ok', questions, total: 2 });
+      expect(await promise).toEqual(questions);
+    });
+
+    it('returns an empty list when questions is missing', async () => {
+      const promise = service.getQuestionVersions('q-12345');
+      httpMock
+        .expectOne((r) => r.url === '/assessments/question-versions')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
+  describe('updateQuestionStatus', () => {
+    it('PUTs the question id and the new status to /assessments/question/update/status', async () => {
+      const promise = service.updateQuestionStatus('q-12345', false);
+      const req = httpMock.expectOne('/assessments/question/update/status');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ question_id: 'q-12345', status: false });
+      req.flush({ is_success: true, message: 'ok', question_id: 'q-12345', new_status: false });
+      const res = await promise;
+      expect(res.is_success).toBe(true);
+      expect(res.new_status).toBe(false);
+    });
+
+    it('maps a 403 into an error', async () => {
+      const promise = service.updateQuestionStatus('q-12345', false);
+      httpMock
+        .expectOne('/assessments/question/update/status')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tienes permisos para ver este contenido');
+    });
+  });
+
+  describe('getTopics', () => {
+    it('GETs /assessments/topics and returns the list', async () => {
+      const promise = service.getTopics();
+      const req = httpMock.expectOne('/assessments/topics');
+      expect(req.request.method).toBe('GET');
+      req.flush({ is_success: true, message: 'ok', topics: ['POO', 'SOLID'] });
+      expect(await promise).toEqual(['POO', 'SOLID']);
+    });
+
+    it('returns an empty list when topics is missing', async () => {
+      const promise = service.getTopics();
+      httpMock.expectOne('/assessments/topics').flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
+  describe('error mapping', () => {
+    it.each([
+      [0, 'Sin conexión al servidor'],
+      [401, 'Sesión expirada, inicia sesión de nuevo'],
+      [403, 'No tienes permisos para ver este contenido'],
+      [404, 'No se encontraron resultados'],
+      [500, 'Error en el servidor, intenta más tarde'],
+    ])('maps HTTP %i to "%s"', async (status, message) => {
+      const promise = service.getTopics();
+      httpMock
+        .expectOne('/assessments/topics')
+        .flush({ detail: 'x' }, { status, statusText: 'error' });
+      await expect(promise).rejects.toThrow(message);
+    });
+
+    const payload = {
+      text: 'x'.repeat(25),
+      concept: 'concepto ok',
+      definition: 'y'.repeat(25),
+      simple_explanation: 'z'.repeat(25),
+      correct_sample: 'a'.repeat(25),
+      wrong_sample: 'b'.repeat(25),
+      common_misconception: ['m'.repeat(25), 'n'.repeat(25)],
+      rubric: [{ score: 3, criteria: 'criterio valido' }],
+      semantic_keywords: ['kw'],
+      difficulty: 'básico',
+      topic: 'POO',
+    };
+
+    const calls: [string, string, () => Promise<unknown>][] = [
+      ['getQuestionsByLevel', '/assessments/questions/level/b%C3%A1sico', () => service.getQuestionsByLevel('básico')],
+      ['getQuestionsByCategory', '/assessments/questions/category/POO', () => service.getQuestionsByCategory('POO')],
+      ['getQuestionById', '/assessments/questions/q1', () => service.getQuestionById('q1')],
+      ['getAllQuestions', '/assessments/questions', () => service.getAllQuestions()],
+      ['getCategories', '/assessments/categories', () => service.getCategories()],
+      ['registerQuestion', '/assessments/questions/register', () => service.registerQuestion(payload)],
+      ['updateQuestion', '/assessments/questions/q1', () => service.updateQuestion('q1', payload)],
+      ['getAvailableModels', '/assessments/available_models', () => service.getAvailableModels()],
+      ['getModelSelected', '/assessments/model_selected', () => service.getModelSelected()],
+      ['updateModel', '/assessments/models', () => service.updateModel('qualifier', 'model_2')],
+      ['getQuestionVersions', '/assessments/question-versions', () => service.getQuestionVersions('q-12345')],
+      ['updateQuestionStatus', '/assessments/question/update/status', () => service.updateQuestionStatus('q-12345', false)],
+    ];
+
+    it.each(calls)('%s rejects with the mapped error on a server failure', async (_name, url, call) => {
+      const promise = call();
+      httpMock
+        .expectOne((r) => r.url === url)
+        .flush({ detail: 'x' }, { status: 500, statusText: 'error' });
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
+    });
+
+    it('keeps an Error that did not come from HTTP and names unknown failures', () => {
+      const map = (service as unknown as { mapHttpError(e: unknown): Error }).mapHttpError.bind(service);
+      const original = new Error('propio');
+      expect(map(original)).toBe(original);
+      expect(map('boom').message).toBe('Error desconocido');
     });
   });
 });

@@ -2,7 +2,7 @@
   <header class="qform__header">
     <div>
       <h1 class="qform__title">{{ isEditMode() ? 'Editar pregunta' : 'Nueva pregunta' }}</h1>
-      <p class="qform__subtitle">Completá todos los campos. Se validan igual que en el backend.</p>
+      <p class="qform__subtitle">Completa todos los campos obligatorios.</p>
     </div>
     <a routerLink="/teacher/questions" class="qform__back">← Volver a Preguntas</a>
   </header>
@@ -70,7 +70,7 @@
       <div class="qform__field">
         <label for="difficulty">Dificultad</label>
         <select id="difficulty" formControlName="difficulty">
-          <option value="" disabled>Seleccioná una dificultad</option>
+          <option value="" disabled>Selecciona una dificultad</option>
           @for (d of difficulties; track d) {
             <option [value]="d">{{ d }}</option>
           }
@@ -132,7 +132,7 @@
 
     <!-- Rúbrica (mín. 1) -->
     <fieldset class="qform__array" formArrayName="rubric">
-      <legend>Rúbrica <span class="qform__hint">(score 0–3 · criterio 10–300)</span></legend>
+      <legend>Rúbrica <span class="qform__hint">(puntaje 0–3 · criterio 10–300)</span></legend>
       @for (group of rubric.controls; track group) {
         <div class="qform__rubric-row" [formGroupName]="$index">
           <select formControlName="score" class="qform__score" aria-label="Puntaje">

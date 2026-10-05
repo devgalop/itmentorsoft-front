@@ -5,7 +5,7 @@
       @if (total() > 0) {
         {{ total() }} pregunta(s) pendiente(s) de revisión.
       } @else {
-        Revisá y aprobá o rechazá las preguntas propuestas.
+        Revisa y aprueba o rechaza las preguntas propuestas.
       }
     </p>
   </header>
@@ -58,7 +58,7 @@
                 rows="2"
                 [ngModel]="commentFor(q.question_id)"
                 (ngModelChange)="onCommentChange(q.question_id, $event)"
-                placeholder="Explicá brevemente tu decisión…"
+                placeholder="Explica brevemente tu decisión…"
               ></textarea>
               @if (errorFor(q.question_id); as err) {
                 <p class="ap__row-error">{{ err }}</p>
