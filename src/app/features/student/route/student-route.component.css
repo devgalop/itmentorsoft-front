@@ -188,9 +188,3 @@
 .route__item-myrating[disabled] .route__star-btn {
   cursor: wait;
 }
-
-.route__myrating-done {
-  margin-left: 0.3rem;
-  font-size: 0.7rem;
-  color: var(--color-success, var(--color-secondary));
-}
