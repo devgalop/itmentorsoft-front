@@ -74,8 +74,25 @@ export class AuthService {
       }
       return response;
     } catch (error) {
+      const blocked = this.extractBlockedLogin(error);
+      if (blocked) return blocked;
       throw this.mapHttpError(error);
     }
+  }
+
+  /**
+   * Cuando la cuenta está bloqueada el backend responde 401 con el estado de bloqueo
+   * en `detail`. Se devuelve como una respuesta normal para que el login muestre el
+   * aviso de bloqueo en vez de "Credenciales inválidas".
+   */
+  private extractBlockedLogin(error: unknown): LoginResponse | null {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 401) return null;
+    const detail = error.error?.detail;
+    if (!detail || typeof detail !== 'object') return null;
+    if (detail.is_temporarily_blocked === true || detail.is_definitively_blocked === true) {
+      return detail as LoginResponse;
+    }
+    return null;
   }
 
   /**

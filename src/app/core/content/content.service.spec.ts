@@ -297,6 +297,51 @@ describe('ContentService', () => {
     });
   });
 
+  describe('top content', () => {
+    const item = { content_id: 'c-1', title: 'T', summary: 'S', rating: 4.8 };
+
+    it('GETs the best content of a topic with the limit in the path', async () => {
+      const promise = service.getTopBestContent('APIs', 3);
+      const req = httpMock.expectOne((r) => r.url === '/content/top-content/best/3');
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('topic')).toBe('APIs');
+      req.flush({ is_success: true, message: 'ok', items: [item] });
+      expect(await promise).toEqual([item]);
+    });
+
+    it('GETs the worst content of a topic (limit defaults to 5)', async () => {
+      const promise = service.getTopWorseContent('APIs');
+      const req = httpMock.expectOne((r) => r.url === '/content/top-content/worse/5');
+      expect(req.request.params.get('topic')).toBe('APIs');
+      req.flush({ is_success: true, message: 'ok', items: [item] });
+      expect(await promise).toEqual([item]);
+    });
+
+    it('returns an empty list on 404 (no rated content for the topic)', async () => {
+      const promise = service.getTopBestContent('APIs');
+      httpMock
+        .expectOne((r) => r.url === '/content/top-content/best/5')
+        .flush({ detail: 'x' }, { status: 404, statusText: 'Not Found' });
+      expect(await promise).toEqual([]);
+    });
+
+    it('defaults to an empty list when items is missing', async () => {
+      const promise = service.getTopWorseContent('APIs');
+      httpMock
+        .expectOne((r) => r.url === '/content/top-content/worse/5')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+
+    it('maps other errors', async () => {
+      const promise = service.getTopBestContent('APIs');
+      httpMock
+        .expectOne((r) => r.url === '/content/top-content/best/5')
+        .flush({}, { status: 401, statusText: 'Unauthorized' });
+      await expect(promise).rejects.toThrow('Sesión expirada, iniciá sesión de nuevo');
+    });
+  });
+
   describe('updateRating', () => {
     it('PUTs the payload to /content/modify/rating', async () => {
       const payload = { content_id: 'c-1', user_id: 'u-1', rating: 5 };

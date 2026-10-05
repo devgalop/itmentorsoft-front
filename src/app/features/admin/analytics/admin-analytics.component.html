@@ -61,4 +61,70 @@
       }
     </div>
   </div>
+
+  <div class="an__top">
+    <div class="an__top-head">
+      <h2 class="an__dist-title">Contenidos mejor y peor valorados</h2>
+      @if (topics().length > 0) {
+        <label class="an__top-filter">
+          <span>Tema</span>
+          <select
+            [value]="selectedTopic()"
+            (change)="onTopicChange($any($event.target).value)"
+            [disabled]="isLoadingTop()"
+          >
+            @for (t of topics(); track t) {
+              <option [value]="t" [selected]="t === selectedTopic()">{{ t }}</option>
+            }
+          </select>
+        </label>
+      }
+    </div>
+
+    @if (topics().length === 0) {
+      <p class="an__dist-hint">No hay temas disponibles para consultar.</p>
+    } @else if (isLoadingTop()) {
+      <p class="an__dist-hint">Cargando contenidos…</p>
+    } @else {
+      @if (topUnavailable()) {
+        <p class="an__dist-hint">No se pudo cargar parte de la información de este tema.</p>
+      }
+      <div class="an__top-grid">
+        <div>
+          <h3 class="an__top-subtitle">Mejor valorados</h3>
+          @if (topBest().length === 0) {
+            <p class="an__dist-hint">Sin contenidos calificados en este tema.</p>
+          } @else {
+            <ol class="an__top-list">
+              @for (c of topBest(); track c.content_id) {
+                <li class="an__top-item">
+                  <span class="an__top-name">{{ c.title }}</span>
+                  <span class="an__top-rating" [attr.aria-label]="formatRating(c.rating) + ' de 5'">
+                    {{ '★'.repeat(stars(c.rating)) }} {{ formatRating(c.rating) }}
+                  </span>
+                </li>
+              }
+            </ol>
+          }
+        </div>
+        <div>
+          <h3 class="an__top-subtitle">Peor valorados</h3>
+          @if (topWorse().length === 0) {
+            <p class="an__dist-hint">Sin contenidos calificados en este tema.</p>
+          } @else {
+            <ol class="an__top-list">
+              @for (c of topWorse(); track c.content_id) {
+                <li class="an__top-item">
+                  <span class="an__top-name">{{ c.title }}</span>
+                  <span class="an__top-rating" [attr.aria-label]="formatRating(c.rating) + ' de 5'">
+                    {{ '★'.repeat(stars(c.rating)) }} {{ formatRating(c.rating) }}
+                  </span>
+                </li>
+              }
+            </ol>
+          }
+        </div>
+      </div>
+    }
+  </div>
 </section>

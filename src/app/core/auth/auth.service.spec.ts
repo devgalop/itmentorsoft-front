@@ -123,6 +123,53 @@ describe('AuthService', () => {
     await otpPromise;
   });
 
+  it('login() returns the block state when the 401 detail says the account is temporarily blocked', async () => {
+    const detail = {
+      is_successful: false,
+      user_id: null,
+      is_temporarily_blocked: true,
+      blocked_until: 1791174568,
+      is_definitively_blocked: false,
+    };
+    const loginPromise = service.login(validCredentials);
+    httpMock.expectOne(sessionUrl).flush({ detail }, { status: 401, statusText: 'Unauthorized' });
+
+    await expect(loginPromise).resolves.toEqual(detail);
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  it('login() returns the block state when the account is definitively blocked', async () => {
+    const detail = {
+      is_successful: false,
+      user_id: null,
+      is_temporarily_blocked: false,
+      blocked_until: 0,
+      is_definitively_blocked: true,
+    };
+    const loginPromise = service.login(validCredentials);
+    httpMock.expectOne(sessionUrl).flush({ detail }, { status: 401, statusText: 'Unauthorized' });
+
+    expect((await loginPromise).is_definitively_blocked).toBe(true);
+  });
+
+  it('login() still throws on a 401 whose detail has no block flags', async () => {
+    const loginPromise = service.login(validCredentials);
+    httpMock.expectOne(sessionUrl).flush(
+      {
+        detail: {
+          is_successful: false,
+          user_id: null,
+          is_temporarily_blocked: false,
+          blocked_until: 0,
+          is_definitively_blocked: false,
+        },
+      },
+      { status: 401, statusText: 'Unauthorized' },
+    );
+
+    await expect(loginPromise).rejects.toThrow('Credenciales inválidas');
+  });
+
   it('login() throws error with mapped message on 401', async () => {
     const loginPromise = service.login(validCredentials);
 

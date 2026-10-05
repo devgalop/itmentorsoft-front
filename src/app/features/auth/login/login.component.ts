@@ -65,6 +65,16 @@ export class LoginComponent {
     return null;
   }
 
+  /** Mensaje del bloqueo temporal; incluye la hora de desbloqueo si el backend la informa. */
+  private blockedMessage(blockedUntil: number): string {
+    const until = new Date(blockedUntil * 1000);
+    if (blockedUntil > 0 && until.getTime() > Date.now()) {
+      const hour = until.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+      return `Demasiados intentos. Podés intentar de nuevo a las ${hour}.`;
+    }
+    return 'Demasiados intentos. Esperá unos minutos e intentá de nuevo.';
+  }
+
   async onSubmit(): Promise<void> {
     this.loginForm.markAllAsTouched();
 
@@ -90,7 +100,7 @@ export class LoginComponent {
       if (response.is_temporarily_blocked) {
         this.toast.error(
           'Cuenta bloqueada temporalmente',
-          'Demasiados intentos. Esperá unos minutos e intentá de nuevo.',
+          this.blockedMessage(response.blocked_until),
         );
         return;
       }

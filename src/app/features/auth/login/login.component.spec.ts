@@ -126,6 +126,42 @@ describe('LoginComponent', () => {
     expect(toastMock.error).toHaveBeenCalled();
   });
 
+  it('tells the student when the temporary block ends', async () => {
+    authServiceMock.login.mockResolvedValue({
+      is_successful: false,
+      user_id: null,
+      is_temporarily_blocked: true,
+      blocked_until: Date.now() / 1000 + 600,
+      is_definitively_blocked: false,
+    });
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'Cuenta bloqueada temporalmente',
+      expect.stringContaining('Podés intentar de nuevo a las'),
+    );
+  });
+
+  it('uses a generic temporary-block message when blocked_until is already past', async () => {
+    authServiceMock.login.mockResolvedValue({
+      is_successful: false,
+      user_id: null,
+      is_temporarily_blocked: true,
+      blocked_until: 999,
+      is_definitively_blocked: false,
+    });
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'Cuenta bloqueada temporalmente',
+      'Demasiados intentos. Esperá unos minutos e intentá de nuevo.',
+    );
+  });
+
   it('does not navigate when the account is definitively blocked', async () => {
     authServiceMock.login.mockResolvedValue({
       is_successful: false,

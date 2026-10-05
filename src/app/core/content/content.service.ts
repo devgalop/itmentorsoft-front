@@ -9,6 +9,7 @@ import {
   GetAllContentsResponse,
   GetContentByIdResponse,
   GetRatingsByUserResponse,
+  GetTopContentResponse,
   GetRecommendedLearningPathsResponse,
   PagedContents,
   RateContentPayload,
@@ -16,6 +17,7 @@ import {
   RecommendedTopic,
   RegisterContentPayload,
   RegisterContentResponse,
+  TopContentItem,
   UpdateContentResponse,
   UpdateRatingPayload,
   UpdateRatingResponse,
@@ -175,6 +177,34 @@ export class ContentService {
         }),
       );
       return response.rating_details ?? [];
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) return [];
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Contenidos mejor calificados de un tema (admin, teacher y student). */
+  getTopBestContent(topic: string, limit = 5): Promise<TopContentItem[]> {
+    return this.getTopContent(ENDPOINTS.content.topBest(limit), topic);
+  }
+
+  /** Contenidos peor calificados de un tema (admin, teacher y student). */
+  getTopWorseContent(topic: string, limit = 5): Promise<TopContentItem[]> {
+    return this.getTopContent(ENDPOINTS.content.topWorse(limit), topic);
+  }
+
+  /**
+   * Si el tema no tiene contenidos calificados el backend responde con error (404, o 500
+   * por cómo lo envuelve), así que un 404 se interpreta como lista vacía.
+   */
+  private async getTopContent(path: string, topic: string): Promise<TopContentItem[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetTopContentResponse>(`${environment.apiUrl}${path}`, {
+          params: { topic },
+        }),
+      );
+      return response.items ?? [];
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) return [];
       throw this.mapHttpError(error);
