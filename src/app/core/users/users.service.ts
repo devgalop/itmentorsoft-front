@@ -12,7 +12,10 @@ import {
   GetUserResponse,
   UpdateProfilePayload,
   UpdateProfileResponse,
+  UpdateUserStatusPayload,
+  UpdateUserStatusResponse,
   UserInfo,
+  UserStatus,
 } from './users.types';
 
 @Injectable({ providedIn: 'root' })
@@ -42,6 +45,24 @@ export class UsersService {
         ),
       );
       return response.total_users ?? 0;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Cambia el estado de un usuario (solo admin). Valores válidos del backend: 'active',
+   * 'inactive' y 'suspended'.
+   */
+  async updateUserStatus(userId: string, newStatus: UserStatus): Promise<UpdateUserStatusResponse> {
+    try {
+      const payload: UpdateUserStatusPayload = { user_id: userId, new_status: newStatus };
+      return await firstValueFrom(
+        this.http.put<UpdateUserStatusResponse>(
+          `${environment.apiUrl}${ENDPOINTS.users.userStatus}`,
+          payload,
+        ),
+      );
     } catch (error) {
       throw this.mapHttpError(error);
     }

@@ -61,3 +61,6 @@ export interface UpdateUserStatusResponse {
   is_success: boolean;
   message: string;
 }
+
+/** Estados válidos de un usuario en el backend (UserStatus). */
+export type UserStatus = 'active' | 'inactive' | 'suspended';

@@ -1,7 +1,7 @@
 <section class="usr">
   <header class="usr__header">
     <h1 class="usr__title">Usuarios</h1>
-    <p class="usr__subtitle">Creá nuevos usuarios y asignales un rol.</p>
+    <p class="usr__subtitle">Creá nuevos usuarios, asignales un rol y gestioná su estado.</p>
   </header>
 
   <div class="usr__panel">
@@ -46,4 +46,90 @@
       </div>
     </form>
   </div>
+
+  <div class="usr__panel usr__panel--wide">
+    <div class="usr__manage-head">
+      <div>
+        <h2 class="usr__panel-title">Estado de usuarios</h2>
+        <p class="usr__manage-note">
+          Solo se listan usuarios activos. Un usuario inactivo o suspendido deja de aparecer aquí y
+          no se puede volver a activar desde esta pantalla.
+        </p>
+      </div>
+      <label class="usr__manage-filter">
+        <span>Rol</span>
+        <select
+          [value]="manageRole()"
+          (change)="onManageRoleChange($any($event.target).value)"
+          [disabled]="isLoadingManaged() || roles().length === 0"
+        >
+          @for (r of roles(); track r) {
+            <option [value]="r" [selected]="r === manageRole()">{{ r }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    @if (isLoadingManaged()) {
+      <p class="usr__manage-hint">Cargando usuarios…</p>
+    } @else if (manageError()) {
+      <p class="usr__manage-hint">{{ manageError() }}</p>
+    } @else if (managedUsers().length === 0) {
+      <p class="usr__manage-hint">No hay usuarios para mostrar.</p>
+    } @else {
+      <ul class="usr__list">
+        @for (u of managedUsers(); track u.user_id) {
+          <li class="usr__item">
+            <div class="usr__who">
+              <span class="usr__name">{{ u.name }}</span>
+              <span class="usr__meta">{{ u.username }}{{ u.email ? ' · ' + u.email : '' }}</span>
+            </div>
+            <div class="usr__btns">
+              @if (isSelf(u.user_id)) {
+                <span class="usr__self">Tu cuenta</span>
+              } @else {
+                @for (a of statusActions; track a.value) {
+                  <button type="button" class="usr__btn" (click)="askStatusChange(u, a.value)">
+                    {{ a.action }}
+                  </button>
+                }
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </div>
 </section>
+
+@if (pendingChange(); as p) {
+  <div class="usr__overlay" (click)="cancelStatusChange()">
+    <div
+      class="usr__modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="status-title"
+      aria-describedby="status-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="status-title" class="usr__modal-title">Cambiar estado del usuario</h2>
+      <p id="status-desc" class="usr__modal-text">
+        <strong>{{ p.user.name }}</strong> pasará a estar <strong>{{ pendingLabel() }}</strong> y
+        dejará de aparecer en esta lista. Desde esta pantalla no podrás volver a activarlo.
+      </p>
+      <div class="usr__modal-actions">
+        <button type="button" class="usr__btn usr__btn--lg" (click)="cancelStatusChange()" [disabled]="isChangingStatus()">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="usr__btn usr__btn--lg usr__btn--solid"
+          (click)="confirmStatusChange()"
+          [disabled]="isChangingStatus()"
+        >
+          {{ isChangingStatus() ? 'Aplicando…' : 'Confirmar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

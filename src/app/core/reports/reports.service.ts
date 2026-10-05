@@ -10,6 +10,7 @@ import {
   GetStudentProgressResponse,
   GetStudentSummaryResponse,
   GetUsersByRoleResponse,
+  UserByRole,
   PagedStudents,
   StudentProgress,
   StudentSummary,
@@ -92,6 +93,25 @@ export class ReportsService {
         }),
       );
       return response.summary ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Usuarios ACTIVOS con un rol dado (solo admin). Solo trae el id y el rol; el backend no
+   * devuelve usuarios inactivos ni suspendidos. Si el rol no tiene usuarios activos responde
+   * con error, así que el llamador no puede distinguir "vacío" de "falló".
+   */
+  async getUsersByRole(role: string): Promise<UserByRole[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetUsersByRoleResponse>(
+          `${environment.apiUrl}${ENDPOINTS.reports.usersByRole}`,
+          { params: { role } },
+        ),
+      );
+      return response.users ?? [];
     } catch (error) {
       throw this.mapHttpError(error);
     }

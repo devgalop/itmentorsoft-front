@@ -113,6 +113,25 @@ describe('UsersService', () => {
     });
   });
 
+  describe('updateUserStatus', () => {
+    it('PUTs user-status with user_id and new_status in the body', async () => {
+      const promise = service.updateUserStatus('abc-123', 'inactive');
+      const req = httpMock.expectOne('/users/user-status');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ user_id: 'abc-123', new_status: 'inactive' });
+      req.flush({ is_success: true, message: 'ok' });
+      expect((await promise).is_success).toBe(true);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.updateUserStatus('abc-123', 'suspended');
+      httpMock
+        .expectOne('/users/user-status')
+        .flush({ detail: 'forbidden' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+    });
+  });
+
   describe('createUser', () => {
     const payload = { email: 'nuevo@itm.co', username: 'nuevo_user', role: 'teacher' };
 
@@ -158,6 +177,7 @@ describe('UsersService', () => {
       ['getConnectedTotal', '/users/connected/total', () => service.getConnectedTotal()],
       ['getUser', '/users/u1', () => service.getUser('u1')],
       ['assignRole', '/users/assign-role', () => service.assignRole('u1', 'teacher')],
+      ['updateUserStatus', '/users/user-status', () => service.updateUserStatus('u1', 'inactive')],
       [
         'updateProfile',
         '/users/profile',
