@@ -132,8 +132,8 @@ export class RegisterComponent {
   getEmailError(): string | null {
     const ctrl = this.emailControl;
     if (!ctrl.touched) return null;
-    if (ctrl.hasError('required')) return 'El email es requerido';
-    if (ctrl.hasError('email')) return 'Ingresá un email válido';
+    if (ctrl.hasError('required')) return 'El correo electrónico es requerido';
+    if (ctrl.hasError('email')) return 'Ingresa un correo electrónico válido';
     return null;
   }
 
@@ -148,7 +148,7 @@ export class RegisterComponent {
   getConfirmPasswordError(): string | null {
     const ctrl = this.confirmPasswordControl;
     if (!ctrl.touched) return null;
-    if (ctrl.hasError('required')) return 'Confirmá tu contraseña';
+    if (ctrl.hasError('required')) return 'Confirma tu contraseña';
     if (this.passwordsDoNotMatch()) return 'Las contraseñas no coinciden';
     return null;
   }
@@ -180,7 +180,7 @@ export class RegisterComponent {
       });
 
       if (response.is_success) {
-        this.toast.success('Cuenta creada', 'Ya podés iniciar sesión.');
+        this.toast.success('Cuenta creada', 'Ya puedes iniciar sesión.');
         setTimeout(() => this.router.navigate(['/login']), 1500);
       } else {
         this.toast.error('No se pudo crear la cuenta', response.message);

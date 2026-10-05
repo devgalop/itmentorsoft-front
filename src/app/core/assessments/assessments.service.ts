@@ -11,14 +11,18 @@ import {
   GetModelSelectedResponse,
   GetTopicsResponse,
   GetQuestionByIdResponse,
+  GetQuestionVersionsResponse,
   GetQuestionsResponse,
   ModelByProcess,
   PagedQuestions,
+  QuestionListItem,
   QuestionDetail,
   RegisterQuestionPayload,
   RegisterQuestionResponse,
   UpdateModelResponse,
   UpdateQuestionResponse,
+  UpdateQuestionStatusPayload,
+  UpdateQuestionStatusResponse,
 } from './assessments.types';
 
 @Injectable({ providedIn: 'root' })
@@ -59,6 +63,24 @@ export class AssessmentsService {
         ),
       );
       return response.question ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Historial de versiones de una pregunta (admin y docente). Recibe el id de cualquier versión
+   * de la cadena y devuelve todas, de la más nueva a la más vieja (incluye las desactivadas).
+   */
+  async getQuestionVersions(questionId: string): Promise<QuestionListItem[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetQuestionVersionsResponse>(
+          `${environment.apiUrl}${ENDPOINTS.assessments.questionVersions}`,
+          { params: { question_id: questionId } },
+        ),
+      );
+      return response.questions ?? [];
     } catch (error) {
       throw this.mapHttpError(error);
     }
@@ -132,6 +154,27 @@ export class AssessmentsService {
     }
   }
 
+  /**
+   * Activa o desactiva una pregunta (admin y docente). Una pregunta desactivada deja de
+   * aparecer en los listados y en las evaluaciones.
+   */
+  async updateQuestionStatus(
+    questionId: string,
+    status: boolean,
+  ): Promise<UpdateQuestionStatusResponse> {
+    try {
+      const payload: UpdateQuestionStatusPayload = { question_id: questionId, status };
+      return await firstValueFrom(
+        this.http.put<UpdateQuestionStatusResponse>(
+          `${environment.apiUrl}${ENDPOINTS.assessments.updateQuestionStatus}`,
+          payload,
+        ),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
   /** Modelos de IA disponibles en el proveedor LLM (solo admin). */
   async getAvailableModels(): Promise<string[]> {
     try {
@@ -180,13 +223,13 @@ export class AssessmentsService {
         case 0:
           return new Error('Sin conexión al servidor');
         case 401:
-          return new Error('Sesión expirada, iniciá sesión de nuevo');
+          return new Error('Sesión expirada, inicia sesión de nuevo');
         case 403:
-          return new Error('No tenés permisos para ver este contenido');
+          return new Error('No tienes permisos para ver este contenido');
         case 404:
           return new Error('No se encontraron resultados');
         default:
-          return new Error('Error en el servidor, intentá más tarde');
+          return new Error('Error en el servidor, intenta más tarde');
       }
     }
     return error instanceof Error ? error : new Error('Error desconocido');

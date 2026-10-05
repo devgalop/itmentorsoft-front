@@ -12,7 +12,10 @@ import {
   GetUserResponse,
   UpdateProfilePayload,
   UpdateProfileResponse,
+  UpdateUserStatusPayload,
+  UpdateUserStatusResponse,
   UserInfo,
+  UserStatus,
 } from './users.types';
 
 @Injectable({ providedIn: 'root' })
@@ -42,6 +45,24 @@ export class UsersService {
         ),
       );
       return response.total_users ?? 0;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Cambia el estado de un usuario (solo admin). Valores válidos del backend: 'active',
+   * 'inactive' y 'suspended'.
+   */
+  async updateUserStatus(userId: string, newStatus: UserStatus): Promise<UpdateUserStatusResponse> {
+    try {
+      const payload: UpdateUserStatusPayload = { user_id: userId, new_status: newStatus };
+      return await firstValueFrom(
+        this.http.put<UpdateUserStatusResponse>(
+          `${environment.apiUrl}${ENDPOINTS.users.userStatus}`,
+          payload,
+        ),
+      );
     } catch (error) {
       throw this.mapHttpError(error);
     }
@@ -108,15 +129,15 @@ export class UsersService {
         case 400:
           return new Error('Datos inválidos');
         case 401:
-          return new Error('Sesión expirada, iniciá sesión de nuevo');
+          return new Error('Sesión expirada, inicia sesión de nuevo');
         case 403:
-          return new Error('No tenés permisos para esta acción');
+          return new Error('No tienes permisos para esta acción');
         case 404:
           return new Error('No se encontró el usuario');
         case 422:
           return new Error('Datos inválidos');
         default:
-          return new Error('Error en el servidor, intentá más tarde');
+          return new Error('Error en el servidor, intenta más tarde');
       }
     }
     return error instanceof Error ? error : new Error('Error desconocido');

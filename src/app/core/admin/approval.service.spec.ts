@@ -74,7 +74,7 @@ describe('ApprovalService', () => {
       httpMock
         .expectOne('/assessments/review')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -88,9 +88,9 @@ describe('ApprovalService', () => {
 
     it.each([
       [0, 'Sin conexión al servidor'],
-      [401, 'Sesión expirada, iniciá sesión de nuevo'],
-      [403, 'No tenés permisos para esta acción'],
-      [500, 'Error en el servidor, intentá más tarde'],
+      [401, 'Sesión expirada, inicia sesión de nuevo'],
+      [403, 'No tienes permisos para esta acción'],
+      [500, 'Error en el servidor, intenta más tarde'],
     ])('maps HTTP %i to "%s"', async (status, message) => {
       const promise = service.getPending();
       httpMock

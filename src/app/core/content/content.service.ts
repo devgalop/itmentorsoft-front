@@ -5,8 +5,11 @@ import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
 import {
   ContentItem,
+  ContentRating,
   GetAllContentsResponse,
   GetContentByIdResponse,
+  GetRatingsByUserResponse,
+  GetTopContentResponse,
   GetRecommendedLearningPathsResponse,
   PagedContents,
   RateContentPayload,
@@ -14,7 +17,12 @@ import {
   RecommendedTopic,
   RegisterContentPayload,
   RegisterContentResponse,
+  TopContentItem,
   UpdateContentResponse,
+  UpdateRatingPayload,
+  UpdateRatingResponse,
+  UpdateResourceStatusPayload,
+  UpdateResourceStatusResponse,
 } from './content.types';
 
 @Injectable({ providedIn: 'root' })
@@ -158,19 +166,98 @@ export class ContentService {
     }
   }
 
+  /**
+   * Calificaciones que el estudiante ya hizo. Solo rol student, sobre su propio user_id.
+   * Si no tiene ninguna el backend responde con error (404, o 500 por cómo lo envuelve),
+   * así que un 404 se interpreta como lista vacía.
+   */
+  async getRatingsByUser(userId: string): Promise<ContentRating[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetRatingsByUserResponse>(`${environment.apiUrl}${ENDPOINTS.content.ratingsAll}`, {
+          params: { user_id: userId },
+        }),
+      );
+      return response.rating_details ?? [];
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) return [];
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Contenidos mejor calificados de un tema (admin, teacher y student). */
+  getTopBestContent(topic: string, limit = 5): Promise<TopContentItem[]> {
+    return this.getTopContent(ENDPOINTS.content.topBest(limit), topic);
+  }
+
+  /** Contenidos peor calificados de un tema (admin, teacher y student). */
+  getTopWorseContent(topic: string, limit = 5): Promise<TopContentItem[]> {
+    return this.getTopContent(ENDPOINTS.content.topWorse(limit), topic);
+  }
+
+  /**
+   * Si el tema no tiene contenidos calificados el backend responde con error (404, o 500
+   * por cómo lo envuelve), así que un 404 se interpreta como lista vacía.
+   */
+  private async getTopContent(path: string, topic: string): Promise<TopContentItem[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetTopContentResponse>(`${environment.apiUrl}${path}`, {
+          params: { topic },
+        }),
+      );
+      return response.items ?? [];
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) return [];
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Activa o desactiva un recurso (solo admin). Un recurso desactivado deja de aparecer en
+   * todos los listados y búsquedas.
+   */
+  async updateResourceStatus(
+    contentId: string,
+    status: boolean,
+  ): Promise<UpdateResourceStatusResponse> {
+    try {
+      const payload: UpdateResourceStatusPayload = { content_id: contentId, status };
+      return await firstValueFrom(
+        this.http.put<UpdateResourceStatusResponse>(
+          `${environment.apiUrl}${ENDPOINTS.content.updateStatus}`,
+          payload,
+        ),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Modifica una calificación ya existente (0-5). Solo rol student. */
+  async updateRating(payload: UpdateRatingPayload): Promise<UpdateRatingResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.put<UpdateRatingResponse>(`${environment.apiUrl}${ENDPOINTS.content.modifyRating}`, payload),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
   private mapHttpError(error: unknown): Error {
     if (error instanceof HttpErrorResponse) {
       switch (error.status) {
         case 0:
           return new Error('Sin conexión al servidor');
         case 401:
-          return new Error('Sesión expirada, iniciá sesión de nuevo');
+          return new Error('Sesión expirada, inicia sesión de nuevo');
         case 403:
-          return new Error('No tenés permisos para esta acción');
+          return new Error('No tienes permisos para esta acción');
         case 422:
           return new Error('Datos inválidos');
         default:
-          return new Error('Error en el servidor, intentá más tarde');
+          return new Error('Error en el servidor, intenta más tarde');
       }
     }
     return error instanceof Error ? error : new Error('Error desconocido');

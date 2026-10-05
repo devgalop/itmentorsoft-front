@@ -3,11 +3,11 @@
     <div class="dash__banner-text">
       <h1 class="dash__greeting">¡Hola, {{ userName() }}!</h1>
       @if (classification(); as cat) {
-        <p class="dash__intro">Tu categoría actual es {{ cat }}. Seguí evaluándote para afinar tu ruta.</p>
+        <p class="dash__intro">Tu categoría actual es {{ cat }}. Sigue evaluándote para afinar tu ruta.</p>
         <span class="dash__badge">Categoría: {{ cat }}</span>
       } @else {
         <p class="dash__intro">
-          Completá tu evaluación inicial para recibir tu ruta personalizada.
+          Completa tu evaluación inicial para recibir tu ruta personalizada.
         </p>
         <span class="dash__badge">Sin categoría asignada aún</span>
       }
@@ -56,11 +56,11 @@
       <div class="dash__cta-circle"></div>
       @if (classification(); as cat) {
         <h2 class="dash__card-title">Tu categoría: {{ cat }}</h2>
-        <p class="dash__cta-text">Consultá el detalle de tu progreso por tema.</p>
+        <p class="dash__cta-text">Consulta el detalle de tu progreso por tema.</p>
         <a routerLink="/student/progress" class="dash__btn dash__btn--solid">Ver mi progreso</a>
       } @else {
         <h2 class="dash__card-title">Aún sin categoría</h2>
-        <p class="dash__cta-text">Completá la evaluación inicial para conocer tu nivel.</p>
+        <p class="dash__cta-text">Completa la evaluación inicial para conocer tu nivel.</p>
         <a routerLink="/student/assessments" class="dash__btn dash__btn--solid">Comenzar ahora</a>
       }
     </div>

@@ -109,7 +109,26 @@ describe('UsersService', () => {
       httpMock
         .expectOne('/users/assign-role')
         .flush({ detail: 'forbidden' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
+    });
+  });
+
+  describe('updateUserStatus', () => {
+    it('PUTs user-status with user_id and new_status in the body', async () => {
+      const promise = service.updateUserStatus('abc-123', 'inactive');
+      const req = httpMock.expectOne('/users/user-status');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ user_id: 'abc-123', new_status: 'inactive' });
+      req.flush({ is_success: true, message: 'ok' });
+      expect((await promise).is_success).toBe(true);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.updateUserStatus('abc-123', 'suspended');
+      httpMock
+        .expectOne('/users/user-status')
+        .flush({ detail: 'forbidden' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -140,11 +159,11 @@ describe('UsersService', () => {
     it.each([
       [0, 'Sin conexión al servidor'],
       [400, 'Datos inválidos'],
-      [401, 'Sesión expirada, iniciá sesión de nuevo'],
-      [403, 'No tenés permisos para esta acción'],
+      [401, 'Sesión expirada, inicia sesión de nuevo'],
+      [403, 'No tienes permisos para esta acción'],
       [404, 'No se encontró el usuario'],
       [422, 'Datos inválidos'],
-      [500, 'Error en el servidor, intentá más tarde'],
+      [500, 'Error en el servidor, intenta más tarde'],
     ])('maps HTTP %i to "%s"', async (status, message) => {
       const promise = service.getAvailableRoles();
       httpMock
@@ -158,6 +177,7 @@ describe('UsersService', () => {
       ['getConnectedTotal', '/users/connected/total', () => service.getConnectedTotal()],
       ['getUser', '/users/u1', () => service.getUser('u1')],
       ['assignRole', '/users/assign-role', () => service.assignRole('u1', 'teacher')],
+      ['updateUserStatus', '/users/user-status', () => service.updateUserStatus('u1', 'inactive')],
       [
         'updateProfile',
         '/users/profile',
@@ -173,7 +193,7 @@ describe('UsersService', () => {
     it.each(calls)('%s rejects with the mapped error on a server failure', async (_name, url, call) => {
       const promise = call();
       httpMock.expectOne(url).flush({ detail: 'x' }, { status: 500, statusText: 'error' });
-      await expect(promise).rejects.toThrow('Error en el servidor, intentá más tarde');
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
     });
 
     it('keeps an Error that did not come from HTTP and names unknown failures', () => {

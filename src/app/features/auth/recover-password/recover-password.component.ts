@@ -32,8 +32,8 @@ export class RecoverPasswordComponent {
   getEmailError(): string | null {
     const ctrl = this.emailControl;
     if (!ctrl.touched) return null;
-    if (ctrl.hasError('required')) return 'El email es requerido';
-    if (ctrl.hasError('email')) return 'Ingresá un email válido';
+    if (ctrl.hasError('required')) return 'El correo electrónico es requerido';
+    if (ctrl.hasError('email')) return 'Ingresa un correo electrónico válido';
     return null;
   }
 

@@ -126,6 +126,42 @@ describe('LoginComponent', () => {
     expect(toastMock.error).toHaveBeenCalled();
   });
 
+  it('tells the student when the temporary block ends', async () => {
+    authServiceMock.login.mockResolvedValue({
+      is_successful: false,
+      user_id: null,
+      is_temporarily_blocked: true,
+      blocked_until: Date.now() / 1000 + 600,
+      is_definitively_blocked: false,
+    });
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'Cuenta bloqueada temporalmente',
+      expect.stringContaining('Puedes intentar de nuevo a las'),
+    );
+  });
+
+  it('uses a generic temporary-block message when blocked_until is already past', async () => {
+    authServiceMock.login.mockResolvedValue({
+      is_successful: false,
+      user_id: null,
+      is_temporarily_blocked: true,
+      blocked_until: 999,
+      is_definitively_blocked: false,
+    });
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'Cuenta bloqueada temporalmente',
+      'Demasiados intentos. Espera unos minutos e intenta de nuevo.',
+    );
+  });
+
   it('does not navigate when the account is definitively blocked', async () => {
     authServiceMock.login.mockResolvedValue({
       is_successful: false,
@@ -192,13 +228,13 @@ describe('LoginComponent', () => {
   it('getEmailError returns required message when empty and touched', () => {
     component.emailControl.markAsTouched();
     component.emailControl.setValue('');
-    expect(component.getEmailError()).toBe('El email es requerido');
+    expect(component.getEmailError()).toBe('El correo electrónico es requerido');
   });
 
   it('getEmailError returns email format message when invalid and touched', () => {
     component.emailControl.markAsTouched();
     component.emailControl.setValue('not-an-email');
-    expect(component.getEmailError()).toBe('Ingresá un email válido');
+    expect(component.getEmailError()).toBe('Ingresa un correo electrónico válido');
   });
 
   it('getPasswordError returns required message when empty and touched', () => {

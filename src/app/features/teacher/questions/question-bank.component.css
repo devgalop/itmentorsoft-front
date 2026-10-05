@@ -154,7 +154,7 @@
 }
 
 .cuest__th--actions {
-  width: 90px;
+  width: 170px;
   text-align: right;
 }
 
@@ -195,6 +195,13 @@
   padding: 0.7rem 0.75rem;
 }
 
+.cuest__btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
 .cuest__action {
   border: 1px solid var(--color-secondary);
   background: var(--color-white);
@@ -208,6 +215,79 @@
 
 .cuest__action:hover {
   background: var(--color-accent-pale);
+}
+
+.cuest__action--danger {
+  border-color: color-mix(in srgb, var(--color-error) 45%, var(--color-white));
+  color: var(--color-error);
+}
+
+.cuest__action--danger:hover {
+  background: color-mix(in srgb, var(--color-error) 10%, var(--color-white));
+}
+
+.cuest__action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* Modal de confirmación */
+.modal--center {
+  align-items: center;
+}
+
+.modal__box--confirm {
+  max-width: 440px;
+  padding: 1.75rem;
+}
+
+.confirm__title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin: 0 0 0.5rem;
+}
+
+.confirm__text {
+  font-size: 0.9rem;
+  color: var(--color-mid-1);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.confirm__question {
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-light-3);
+  border-left: 3px solid var(--color-error);
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-dark);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.confirm__actions .cuest__action {
+  padding: 0.55rem 1.1rem;
+  font-size: 0.85rem;
+}
+
+.cuest__action--solid,
+.cuest__action--solid:hover:not(:disabled) {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-white);
 }
 
 /* Modal */

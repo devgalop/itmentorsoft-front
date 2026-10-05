@@ -4,6 +4,8 @@ import { vi } from 'vitest';
 import { AdminAnalyticsComponent } from './admin-analytics.component';
 import { ReportsService } from '../../../core/reports/reports.service';
 import { UsersService } from '../../../core/users/users.service';
+import { AssessmentsService } from '../../../core/assessments/assessments.service';
+import { ContentService } from '../../../core/content/content.service';
 
 async function flush(times = 5): Promise<void> {
   for (let i = 0; i < times; i++) {
@@ -18,6 +20,11 @@ describe('AdminAnalyticsComponent', () => {
     getCategorySummary: ReturnType<typeof vi.fn>;
   };
   let usersServiceMock: { getAvailableRoles: ReturnType<typeof vi.fn> };
+  let assessmentsMock: { getTopics: ReturnType<typeof vi.fn> };
+  let contentMock: {
+    getTopBestContent: ReturnType<typeof vi.fn>;
+    getTopWorseContent: ReturnType<typeof vi.fn>;
+  };
 
   function setup(opts?: {
     roles?: string[];
@@ -25,7 +32,18 @@ describe('AdminAnalyticsComponent', () => {
     byRole?: Record<string, number>;
     byRoleReject?: Error;
     byCategory?: Record<string, number>;
+    topics?: string[];
+    topBest?: unknown[];
+    topWorse?: unknown[];
+    topBestReject?: Error;
   }): void {
+    assessmentsMock = { getTopics: vi.fn().mockResolvedValue(opts?.topics ?? ['APIs', 'POO']) };
+    contentMock = {
+      getTopBestContent: opts?.topBestReject
+        ? vi.fn().mockRejectedValue(opts.topBestReject)
+        : vi.fn().mockResolvedValue(opts?.topBest ?? []),
+      getTopWorseContent: vi.fn().mockResolvedValue(opts?.topWorse ?? []),
+    };
     usersServiceMock = {
       getAvailableRoles: opts?.rolesReject
         ? vi.fn().mockRejectedValue(opts.rolesReject)
@@ -45,6 +63,8 @@ describe('AdminAnalyticsComponent', () => {
       providers: [
         { provide: ReportsService, useValue: reportsMock },
         { provide: UsersService, useValue: usersServiceMock },
+        { provide: AssessmentsService, useValue: assessmentsMock },
+        { provide: ContentService, useValue: contentMock },
       ],
     });
 
@@ -105,5 +125,63 @@ describe('AdminAnalyticsComponent', () => {
 
     const c = fixture.componentInstance;
     expect(c.usersByRole()).toEqual([{ value: 'admin', label: 'Administrador', count: 0 }]);
+  });
+  describe('top content', () => {
+    const best = [{ content_id: 'c1', title: 'Capas', summary: '', rating: 4.8 }];
+    const worse = [{ content_id: 'c2', title: 'Intro', summary: '', rating: 1.2 }];
+
+    it('loads the best and worst content of the first topic', async () => {
+      setup({ topBest: best, topWorse: worse });
+      await flush(10);
+      const c = fixture.componentInstance;
+      expect(contentMock.getTopBestContent).toHaveBeenCalledWith('APIs');
+      expect(contentMock.getTopWorseContent).toHaveBeenCalledWith('APIs');
+      expect(c.selectedTopic()).toBe('APIs');
+      expect(c.topBest()).toEqual(best);
+      expect(c.topWorse()).toEqual(worse);
+      expect(c.isLoadingTop()).toBe(false);
+      expect(c.topUnavailable()).toBe(false);
+    });
+
+    it('reloads when the topic changes', async () => {
+      setup({ topBest: best, topWorse: worse });
+      await flush(10);
+      fixture.componentInstance.onTopicChange('POO');
+      await flush(10);
+      expect(contentMock.getTopBestContent).toHaveBeenLastCalledWith('POO');
+      expect(fixture.componentInstance.selectedTopic()).toBe('POO');
+    });
+
+    it('keeps the other list and flags the failure when one request fails', async () => {
+      setup({ topBestReject: new Error('x'), topWorse: worse });
+      await flush(10);
+      const c = fixture.componentInstance;
+      expect(c.topBest()).toEqual([]);
+      expect(c.topWorse()).toEqual(worse);
+      expect(c.topUnavailable()).toBe(true);
+    });
+
+    it('does not query when there are no topics', async () => {
+      setup({ topics: [] });
+      await flush(10);
+      expect(contentMock.getTopBestContent).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.topics()).toEqual([]);
+    });
+
+    it('formatRating shows a single decimal', () => {
+      setup();
+      const c = fixture.componentInstance;
+      expect(c.formatRating(4.333333333333333)).toBe('4.3');
+      expect(c.formatRating(4)).toBe('4.0');
+      expect(c.formatRating(1)).toBe('1.0');
+    });
+
+    it('stars clamps the rating between 0 and 5', async () => {
+      setup();
+      const c = fixture.componentInstance;
+      expect(c.stars(4.5)).toBe(5);
+      expect(c.stars(-1)).toBe(0);
+      expect(c.stars(9)).toBe(5);
+    });
   });
 });

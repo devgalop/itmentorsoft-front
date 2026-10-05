@@ -56,7 +56,7 @@ describe('ReportsService', () => {
       httpMock
         .expectOne((r) => r.url === '/reports/students')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -82,6 +82,35 @@ describe('ReportsService', () => {
         .expectOne((r) => r.url === '/reports/category_summary')
         .flush({ is_success: true, message: 'ok', category_summary: null });
       expect(await promise).toBe(0);
+    });
+  });
+
+  describe('getUsersByRole', () => {
+    it('GETs /reports/users-by-role with the role and returns the users', async () => {
+      const promise = service.getUsersByRole('teacher');
+      const req = httpMock.expectOne(
+        (r) => r.url === '/reports/users-by-role' && r.params.get('role') === 'teacher',
+      );
+      expect(req.request.method).toBe('GET');
+      const users = [{ user_id: 'u1', role: 'teacher' }];
+      req.flush({ is_success: true, message: 'ok', total_users: 1, users });
+      expect(await promise).toEqual(users);
+    });
+
+    it('returns an empty list when users is missing', async () => {
+      const promise = service.getUsersByRole('admin');
+      httpMock
+        .expectOne((r) => r.url === '/reports/users-by-role')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+
+    it('maps a 403 into a permissions error', async () => {
+      const promise = service.getUsersByRole('student');
+      httpMock
+        .expectOne((r) => r.url === '/reports/users-by-role')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -114,7 +143,7 @@ describe('ReportsService', () => {
       httpMock
         .expectOne((r) => r.url === '/reports/users-by-role')
         .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
-      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+      await expect(promise).rejects.toThrow('No tienes permisos para esta acción');
     });
   });
 
@@ -218,11 +247,11 @@ describe('ReportsService', () => {
   describe('error mapping', () => {
     it.each([
       [0, 'Sin conexión al servidor'],
-      [401, 'Sesión expirada, iniciá sesión de nuevo'],
-      [403, 'No tenés permisos para esta acción'],
+      [401, 'Sesión expirada, inicia sesión de nuevo'],
+      [403, 'No tienes permisos para esta acción'],
       [404, 'No se encontró el estudiante'],
       [422, 'Parámetros inválidos'],
-      [500, 'Error en el servidor, intentá más tarde'],
+      [500, 'Error en el servidor, intenta más tarde'],
     ])('maps HTTP %i to "%s"', async (status, message) => {
       const promise = service.getStudents();
       httpMock
@@ -249,7 +278,7 @@ describe('ReportsService', () => {
       httpMock
         .expectOne((r) => r.url === url)
         .flush({ detail: 'x' }, { status: 500, statusText: 'error' });
-      await expect(promise).rejects.toThrow('Error en el servidor, intentá más tarde');
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
     });
 
     it('returns null when the summary is missing', async () => {

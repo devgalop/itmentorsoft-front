@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { AdminUsersComponent } from './admin-users.component';
 import { UsersService } from '../../../core/users/users.service';
+import { ReportsService } from '../../../core/reports/reports.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('AdminUsersComponent', () => {
@@ -10,12 +12,22 @@ describe('AdminUsersComponent', () => {
   let serviceMock: {
     getAvailableRoles: ReturnType<typeof vi.fn>;
     createUser: ReturnType<typeof vi.fn>;
+    getUser: ReturnType<typeof vi.fn>;
+    updateUserStatus: ReturnType<typeof vi.fn>;
   };
+  let reportsMock: { getUsersByRole: ReturnType<typeof vi.fn> };
+  let authMock: { userId: ReturnType<typeof vi.fn> };
 
   function createComponent(): AdminUsersComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [AdminUsersComponent, { provide: UsersService, useValue: serviceMock }, { provide: ToastService, useValue: toastMock }],
+      providers: [
+        AdminUsersComponent,
+        { provide: UsersService, useValue: serviceMock },
+        { provide: ReportsService, useValue: reportsMock },
+        { provide: AuthService, useValue: authMock },
+        { provide: ToastService, useValue: toastMock },
+      ],
     });
     return TestBed.inject(AdminUsersComponent);
   }
@@ -24,7 +36,22 @@ describe('AdminUsersComponent', () => {
     serviceMock = {
       getAvailableRoles: vi.fn().mockResolvedValue(['admin', 'teacher', 'student']),
       createUser: vi.fn(),
+      getUser: vi.fn().mockImplementation(async (id: string) => ({
+        user_id: id,
+        username: 'user_' + id,
+        email: id + '@itm.co',
+        name: 'Nombre ' + id,
+        role: 'admin',
+      })),
+      updateUserStatus: vi.fn().mockResolvedValue({ is_success: true, message: 'ok' }),
     };
+    reportsMock = {
+      getUsersByRole: vi.fn().mockResolvedValue([
+        { user_id: 'u1', role: 'admin' },
+        { user_id: 'u2', role: 'admin' },
+      ]),
+    };
+    authMock = { userId: vi.fn().mockReturnValue('me') };
   });
 
   function fillValid(component: AdminUsersComponent): void {
@@ -117,7 +144,7 @@ describe('AdminUsersComponent', () => {
 
     await component.submit();
 
-    expect(toastMock.error).toHaveBeenCalledWith('No se pudo crear', 'Intentá nuevamente.');
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo crear', 'Intenta nuevamente.');
   });
 
   it('uses a generic message when the service throws something that is not an Error', async () => {
@@ -201,7 +228,7 @@ describe('AdminUsersComponent', () => {
 
     it.each([
       ['email', '', 'Requerido'],
-      ['email', 'no-es-email', 'Email inválido'],
+      ['email', 'no-es-email', 'Correo electrónico inválido'],
       ['email', 'a@b', 'Mínimo 5 caracteres'],
       ['username', 'ab', 'Mínimo 3 caracteres'],
       ['username', 'a'.repeat(21), 'Máximo 20 caracteres'],
@@ -231,6 +258,129 @@ describe('AdminUsersComponent', () => {
       ctrl.setErrors({ custom: true });
       ctrl.markAsTouched();
       expect(component.fieldError(ctrl)).toBe('Inválido');
+    });
+  });
+  describe('user status management', () => {
+    async function ready(): Promise<AdminUsersComponent> {
+      const component = createComponent();
+      await vi.waitFor(() => {
+        expect(reportsMock.getUsersByRole).toHaveBeenCalled();
+        expect(component.isLoadingManaged()).toBe(false);
+      });
+      return component;
+    }
+
+    it('loads the active users of the first role with their details', async () => {
+      const component = await ready();
+      expect(reportsMock.getUsersByRole).toHaveBeenCalledWith('admin');
+      expect(component.manageRole()).toBe('admin');
+      expect(component.managedUsers()).toEqual([
+        { user_id: 'u1', name: 'Nombre u1', username: 'user_u1', email: 'u1@itm.co' },
+        { user_id: 'u2', name: 'Nombre u2', username: 'user_u2', email: 'u2@itm.co' },
+      ]);
+    });
+
+    it('keeps a user in the list when its detail cannot be loaded', async () => {
+      serviceMock.getUser.mockRejectedValueOnce(new Error('x'));
+      const component = await ready();
+      expect(component.managedUsers()).toHaveLength(2);
+      expect(component.managedUsers()[0]).toMatchObject({ user_id: 'u1', name: '(sin datos)' });
+    });
+
+    it('reloads when the role changes', async () => {
+      const component = await ready();
+      component.onManageRoleChange('teacher');
+      await vi.waitFor(() => expect(reportsMock.getUsersByRole).toHaveBeenLastCalledWith('teacher'));
+      expect(component.manageRole()).toBe('teacher');
+    });
+
+    it('shows a message when the role has no active users (backend error)', async () => {
+      reportsMock.getUsersByRole.mockRejectedValue(new Error('x'));
+      const component = await ready();
+      expect(component.managedUsers()).toEqual([]);
+      expect(component.manageError()).toContain('No hay usuarios activos');
+    });
+
+    it('does not let the admin change their own status', async () => {
+      authMock.userId.mockReturnValue('u1');
+      const component = await ready();
+      const me = component.managedUsers()[0]!;
+      expect(component.isSelf('u1')).toBe(true);
+      component.askStatusChange(me, 'inactive');
+      expect(component.pendingChange()).toBeNull();
+    });
+
+    it('asks for confirmation before calling the backend and can cancel', async () => {
+      const component = await ready();
+      const user = component.managedUsers()[0]!;
+      component.askStatusChange(user, 'suspended');
+      expect(component.pendingChange()).toEqual({ user, status: 'suspended' });
+      expect(component.pendingLabel()).toBe('suspendido');
+      component.cancelStatusChange();
+      expect(component.pendingChange()).toBeNull();
+      expect(serviceMock.updateUserStatus).not.toHaveBeenCalled();
+    });
+
+    it('Escape closes the modal', async () => {
+      const component = await ready();
+      component.askStatusChange(component.managedUsers()[0]!, 'inactive');
+      component.onEscape();
+      expect(component.pendingChange()).toBeNull();
+    });
+
+    it('applies the change, notifies and removes the user from the list', async () => {
+      const component = await ready();
+      const user = component.managedUsers()[0]!;
+      component.askStatusChange(user, 'inactive');
+
+      await component.confirmStatusChange();
+
+      expect(serviceMock.updateUserStatus).toHaveBeenCalledWith('u1', 'inactive');
+      expect(toastMock.success).toHaveBeenCalledWith('Estado actualizado', 'Nombre u1 ahora está inactivo.');
+      expect(component.pendingChange()).toBeNull();
+      expect(component.managedUsers().map((u) => u.user_id)).toEqual(['u2']);
+      expect(component.isChangingStatus()).toBe(false);
+    });
+
+    it('shows an error and keeps the user when the backend rejects the change', async () => {
+      serviceMock.updateUserStatus.mockRejectedValue(new Error('No tienes permisos para esta acción'));
+      const component = await ready();
+      component.askStatusChange(component.managedUsers()[0]!, 'inactive');
+
+      await component.confirmStatusChange();
+
+      expect(toastMock.error).toHaveBeenCalledWith(
+        'No se pudo cambiar el estado',
+        'No tienes permisos para esta acción',
+      );
+      expect(component.managedUsers()).toHaveLength(2);
+      expect(component.isChangingStatus()).toBe(false);
+    });
+
+    it('treats is_success false as an error', async () => {
+      serviceMock.updateUserStatus.mockResolvedValue({ is_success: false, message: 'Estado inválido' });
+      const component = await ready();
+      component.askStatusChange(component.managedUsers()[0]!, 'inactive');
+
+      await component.confirmStatusChange();
+
+      expect(toastMock.error).toHaveBeenCalledWith('No se pudo cambiar el estado', 'Estado inválido');
+      expect(toastMock.success).not.toHaveBeenCalled();
+    });
+
+    it('cannot cancel while the change is being applied', async () => {
+      const component = await ready();
+      let release!: (v: unknown) => void;
+      serviceMock.updateUserStatus.mockReturnValue(new Promise((r) => (release = r)));
+      component.askStatusChange(component.managedUsers()[0]!, 'inactive');
+
+      const pending = component.confirmStatusChange();
+      component.cancelStatusChange();
+      expect(component.pendingChange()).not.toBeNull();
+
+      release({ is_success: true, message: 'ok' });
+      await pending;
+      expect(component.pendingChange()).toBeNull();
     });
   });
 });

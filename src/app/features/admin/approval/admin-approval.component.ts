@@ -72,7 +72,7 @@ export class AdminApprovalComponent {
   async review(question: PendingQuestion, status: ReviewStatus): Promise<void> {
     const reviewerId = this.auth.userId();
     if (!reviewerId) {
-      this.setRowError(question.question_id, 'No se pudo identificar al revisor. Iniciá sesión de nuevo.');
+      this.setRowError(question.question_id, 'No se pudo identificar al revisor. Inicia sesión de nuevo.');
       return;
     }
 

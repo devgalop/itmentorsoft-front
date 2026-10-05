@@ -103,7 +103,7 @@ export class ResetPasswordComponent {
 
   getConfirmPasswordError(): string | null {
     const ctrl = this.confirmPasswordControl;
-    if (ctrl.hasError('required') && ctrl.touched) return 'Confirmá la contraseña';
+    if (ctrl.hasError('required') && ctrl.touched) return 'Confirma la contraseña';
     if (this.resetForm.hasError('passwordsMismatch') && ctrl.touched) {
       return 'Las contraseñas no coinciden';
     }

@@ -249,11 +249,11 @@ describe('StudentAssessmentService', () => {
   describe('error mapping', () => {
     const cases: [number, string][] = [
       [0, 'Sin conexión al servidor'],
-      [401, 'Sesión expirada, iniciá sesión de nuevo'],
-      [403, 'No tenés permisos para esta acción'],
+      [401, 'Sesión expirada, inicia sesión de nuevo'],
+      [403, 'No tienes permisos para esta acción'],
       [404, 'No se encontró la evaluación'],
       [422, 'Datos inválidos'],
-      [500, 'Error en el servidor, intentá más tarde'],
+      [500, 'Error en el servidor, intenta más tarde'],
     ];
 
     it.each(cases)('maps HTTP %i to "%s"', async (status, message) => {

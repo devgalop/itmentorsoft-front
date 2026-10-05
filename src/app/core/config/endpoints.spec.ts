@@ -24,6 +24,24 @@ describe('ENDPOINTS', () => {
     expect(ENDPOINTS.users.refreshSession).toBe('/users/sessions/refresh');
   });
 
+  it('exposes the new assessment, content and user paths', () => {
+    expect(ENDPOINTS.assessments.allQuestions).toBe('/assessments/all-questions');
+    expect(ENDPOINTS.assessments.questionVersions).toBe('/assessments/question-versions');
+    expect(ENDPOINTS.assessments.updateQuestionStatus).toBe('/assessments/question/update/status');
+    expect(ENDPOINTS.content.modifyRating).toBe('/content/modify/rating');
+    expect(ENDPOINTS.content.ratingsContent).toBe('/content/ratings/content');
+    expect(ENDPOINTS.content.ratingsAll).toBe('/content/ratings/all');
+    expect(ENDPOINTS.content.updateStatus).toBe('/content/update/status');
+    expect(ENDPOINTS.content.learningPathProgress).toBe('/content/learning-path/progress');
+    expect(ENDPOINTS.content.updateLearningPathStatus).toBe('/content/learning-path/update/status');
+    expect(ENDPOINTS.users.userStatus).toBe('/users/user-status');
+  });
+
+  it('builds the top content paths with the limit', () => {
+    expect(ENDPOINTS.content.topBest(5)).toBe('/content/top-content/best/5');
+    expect(ENDPOINTS.content.topWorse(10)).toBe('/content/top-content/worse/10');
+  });
+
   it('builds the content search paths with encoding', () => {
     expect(ENDPOINTS.content.byTopic('APIs')).toBe('/content/topic/APIs');
     expect(ENDPOINTS.content.byCategory('básico')).toBe('/content/category/b%C3%A1sico');

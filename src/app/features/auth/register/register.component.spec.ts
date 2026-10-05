@@ -197,8 +197,8 @@ describe('RegisterComponent', () => {
 
     describe('getEmailError', () => {
       it.each([
-        ['', 'El email es requerido'],
-        ['not-an-email', 'Ingresá un email válido'],
+        ['', 'El correo electrónico es requerido'],
+        ['not-an-email', 'Ingresa un correo electrónico válido'],
       ])('returns the message for "%s"', (value, message) => {
         component.emailControl.setValue(value);
         component.emailControl.markAsTouched();
@@ -229,7 +229,7 @@ describe('RegisterComponent', () => {
     it('getConfirmPasswordError asks to confirm when empty and touched', () => {
       component.confirmPasswordControl.setValue('');
       component.confirmPasswordControl.markAsTouched();
-      expect(component.getConfirmPasswordError()).toBe('Confirmá tu contraseña');
+      expect(component.getConfirmPasswordError()).toBe('Confirma tu contraseña');
     });
 
     it('getConfirmPasswordError returns null until touched', () => {
@@ -291,7 +291,7 @@ describe('RegisterComponent', () => {
 
       await component.onSubmit();
 
-      expect(toastMock.success).toHaveBeenCalledWith('Cuenta creada', 'Ya podés iniciar sesión.');
+      expect(toastMock.success).toHaveBeenCalledWith('Cuenta creada', 'Ya puedes iniciar sesión.');
       expect(routerMock.navigate).not.toHaveBeenCalled();
 
       vi.advanceTimersByTime(1500);

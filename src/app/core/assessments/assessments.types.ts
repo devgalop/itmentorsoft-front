@@ -151,3 +151,19 @@ export interface UpdateModelResponse {
   is_success: boolean;
   message: string;
 }
+
+/** Respuesta de GET /assessments/all-questions y /question-versions (mismo DTO que /questions). */
+export type GetQuestionVersionsResponse = GetAllQuestionsResponse;
+
+/** Payload de PUT /assessments/question/update/status (admin, teacher). */
+export interface UpdateQuestionStatusPayload {
+  question_id: string;
+  status: boolean;
+}
+
+export interface UpdateQuestionStatusResponse {
+  is_success: boolean;
+  message: string;
+  question_id: string;
+  new_status: boolean;
+}

@@ -10,6 +10,8 @@ describe('StudentRouteComponent', () => {
     getRecommendedLearningPaths: ReturnType<typeof vi.fn>;
     getContentById: ReturnType<typeof vi.fn>;
     rateContent: ReturnType<typeof vi.fn>;
+    getRatingsByUser: ReturnType<typeof vi.fn>;
+    updateRating: ReturnType<typeof vi.fn>;
   };
   let authMock: { userId: ReturnType<typeof vi.fn> };
   const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
@@ -39,6 +41,8 @@ describe('StudentRouteComponent', () => {
       getRecommendedLearningPaths: vi.fn().mockResolvedValue(recommendation),
       getContentById: vi.fn(),
       rateContent: vi.fn().mockResolvedValue({ is_success: true, message: 'Content rated successfully.' }),
+      getRatingsByUser: vi.fn().mockResolvedValue([]),
+      updateRating: vi.fn().mockResolvedValue({ is_success: true, message: 'Rating updated successfully' }),
     };
     authMock = { userId: vi.fn().mockReturnValue('s1') };
     toastMock.success.mockClear();
@@ -118,6 +122,7 @@ describe('StudentRouteComponent', () => {
 
   it('rates a resource and shows a success toast', async () => {
     const c = createComponent();
+    await vi.waitFor(() => expect(c.isLoading()).toBe(false));
 
     await c.rate('c1', 4);
 
@@ -125,6 +130,35 @@ describe('StudentRouteComponent', () => {
     expect(c.myRatings()['c1']).toBe(4);
     expect(toastMock.success).toHaveBeenCalled();
     expect(c.ratingId()).toBeNull();
+  });
+
+  it('loads the ratings the student already made', async () => {
+    contentMock.getRatingsByUser.mockResolvedValue([
+      { content_id: 'c1', title: 'Capas', summary: '', rating: 3, student_id: 's1' },
+    ]);
+    const c = createComponent();
+    await vi.waitFor(() => expect(c.myRatings()['c1']).toBe(3));
+    expect(contentMock.getRatingsByUser).toHaveBeenCalledWith('s1');
+  });
+
+  it('still shows the route when the ratings cannot be loaded', async () => {
+    contentMock.getRatingsByUser.mockRejectedValue(new Error('Error en el servidor, intenta más tarde'));
+    const c = createComponent();
+    await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+    expect(c.topics()).toEqual(recommendation);
+    expect(c.loadError()).toBeNull();
+    expect(c.myRatings()).toEqual({});
+  });
+
+  it('modifies the rating instead of creating a new one when the resource was already rated', async () => {
+    const c = createComponent();
+    await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+    c.myRatings.set({ c1: 2 });
+    await c.rate('c1', 5);
+    expect(contentMock.updateRating).toHaveBeenCalledWith({ content_id: 'c1', user_id: 's1', rating: 5 });
+    expect(contentMock.rateContent).not.toHaveBeenCalled();
+    expect(c.myRatings()['c1']).toBe(5);
+    expect(toastMock.success).toHaveBeenCalledWith('Calificación actualizada', expect.any(String));
   });
 
   it('does not rate when there is no logged-in user id', async () => {

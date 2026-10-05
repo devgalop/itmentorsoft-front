@@ -59,12 +59,12 @@ describe('TeacherStudentsComponent', () => {
   });
 
   it('captures the error and clears the list on failure', async () => {
-    serviceMock.getStudents.mockRejectedValue(new Error('No tenés permisos'));
+    serviceMock.getStudents.mockRejectedValue(new Error('No tienes permisos'));
     const component = createComponent();
     await Promise.resolve();
     await Promise.resolve();
     expect(component.students()).toEqual([]);
-    expect(component.loadError()).toBe('No tenés permisos');
+    expect(component.loadError()).toBe('No tienes permisos');
   });
 
   it('builds initials from the student name', () => {

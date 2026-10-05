@@ -32,7 +32,10 @@ describe('StudentAssessmentComponent', () => {
         { provide: ToastService, useValue: toastMock },
       ],
     });
-    return TestBed.inject(StudentAssessmentComponent);
+    const component = TestBed.inject(StudentAssessmentComponent);
+    // Independiente del valor del ambiente: por defecto el bloqueo está activo.
+    (component as { clipboardBlocked: boolean }).clipboardBlocked = true;
+    return component;
   }
 
   beforeEach(() => {
@@ -107,6 +110,14 @@ describe('StudentAssessmentComponent', () => {
     c.prev();
     expect(c.currentIndex()).toBe(0);
     expect(c.draft()).toBe('respuesta 1');
+  });
+
+  it('truncates answers to the backend limit of 600 characters', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    await c.startAssessment();
+    c.onAnswerChange('a'.repeat(700));
+    expect(c.draft().length).toBe(600);
   });
 
   it('does not submit if there are missing answers', async () => {
@@ -190,6 +201,19 @@ describe('StudentAssessmentComponent', () => {
     expect(toastMock.warning).toHaveBeenCalled();
   });
 
+  it('does not block clipboard actions when the environment flag is off', () => {
+    const c = createComponent();
+    (c as { clipboardBlocked: boolean }).clipboardBlocked = false;
+    const paste = { preventDefault: vi.fn() } as unknown as Event;
+    const menu = { preventDefault: vi.fn() } as unknown as Event;
+    toastMock.warning.mockClear();
+    c.blockClipboard(paste, 'pegar');
+    c.blockContextMenu(menu);
+    expect(paste.preventDefault).not.toHaveBeenCalled();
+    expect(menu.preventDefault).not.toHaveBeenCalled();
+    expect(toastMock.warning).not.toHaveBeenCalled();
+  });
+
   it('prevents the context menu', () => {
     const c = createComponent();
     const event = { preventDefault: vi.fn() } as unknown as Event;
@@ -244,7 +268,7 @@ describe('StudentAssessmentComponent', () => {
       const c = createComponent();
       await flush();
       await c.startAssessment();
-      expect(c.error()).toBe('Elegí un tema para comenzar.');
+      expect(c.error()).toBe('Elige un tema para comenzar.');
       expect(serviceMock.generateByTopic).not.toHaveBeenCalled();
     });
 
@@ -341,7 +365,7 @@ describe('StudentAssessmentComponent', () => {
       const c = await started();
       authMock.userId.mockReturnValue(null);
       await c.submit();
-      expect(c.error()).toBe('No se pudo enviar la evaluación. Iniciá sesión de nuevo.');
+      expect(c.error()).toBe('No se pudo enviar la evaluación. Inicia sesión de nuevo.');
       expect(serviceMock.saveAnswers).not.toHaveBeenCalled();
     });
 
@@ -349,7 +373,7 @@ describe('StudentAssessmentComponent', () => {
       const c = createComponent();
       await flush();
       await c.submit();
-      expect(c.error()).toBe('No se pudo enviar la evaluación. Iniciá sesión de nuevo.');
+      expect(c.error()).toBe('No se pudo enviar la evaluación. Inicia sesión de nuevo.');
     });
 
     it('counts the missing answers', async () => {
