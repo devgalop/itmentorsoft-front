@@ -269,6 +269,52 @@ describe('ContentService', () => {
     });
   });
 
+  describe('getRatingsByUser', () => {
+    it('GETs /content/ratings/all with the user_id and returns the details', async () => {
+      const promise = service.getRatingsByUser('u-1');
+      const req = httpMock.expectOne((r) => r.url === '/content/ratings/all');
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('user_id')).toBe('u-1');
+      const detail = { content_id: 'c-1', title: 'T', summary: 'S', rating: 4, student_id: 'u-1' };
+      req.flush({ is_success: true, message: 'ok', rating_details: [detail] });
+      expect(await promise).toEqual([detail]);
+    });
+
+    it('returns an empty list on 404 (no ratings yet)', async () => {
+      const promise = service.getRatingsByUser('u-1');
+      httpMock
+        .expectOne((r) => r.url === '/content/ratings/all')
+        .flush({ detail: 'x' }, { status: 404, statusText: 'Not Found' });
+      expect(await promise).toEqual([]);
+    });
+
+    it('maps other errors', async () => {
+      const promise = service.getRatingsByUser('u-1');
+      httpMock
+        .expectOne((r) => r.url === '/content/ratings/all')
+        .flush({ detail: 'x' }, { status: 403, statusText: 'Forbidden' });
+      await expect(promise).rejects.toThrow('No tenés permisos para esta acción');
+    });
+  });
+
+  describe('updateRating', () => {
+    it('PUTs the payload to /content/modify/rating', async () => {
+      const payload = { content_id: 'c-1', user_id: 'u-1', rating: 5 };
+      const promise = service.updateRating(payload);
+      const req = httpMock.expectOne('/content/modify/rating');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(payload);
+      req.flush({ is_success: true, message: 'Rating updated successfully' });
+      expect((await promise).is_success).toBe(true);
+    });
+
+    it('maps a 422 into an invalid data error', async () => {
+      const promise = service.updateRating({ content_id: 'c-1', user_id: 'u-1', rating: 9 });
+      httpMock.expectOne('/content/modify/rating').flush({}, { status: 422, statusText: 'x' });
+      await expect(promise).rejects.toThrow('Datos inválidos');
+    });
+  });
+
   describe('missing fields', () => {
     it('getAllContentsPaged defaults to an empty page', async () => {
       const promise = service.getAllContentsPaged();

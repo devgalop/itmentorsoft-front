@@ -5,8 +5,10 @@ import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
 import {
   ContentItem,
+  ContentRating,
   GetAllContentsResponse,
   GetContentByIdResponse,
+  GetRatingsByUserResponse,
   GetRecommendedLearningPathsResponse,
   PagedContents,
   RateContentPayload,
@@ -15,6 +17,8 @@ import {
   RegisterContentPayload,
   RegisterContentResponse,
   UpdateContentResponse,
+  UpdateRatingPayload,
+  UpdateRatingResponse,
 } from './content.types';
 
 @Injectable({ providedIn: 'root' })
@@ -152,6 +156,36 @@ export class ContentService {
     try {
       return await firstValueFrom(
         this.http.post<RateContentResponse>(`${environment.apiUrl}${ENDPOINTS.content.rate}`, payload),
+      );
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Calificaciones que el estudiante ya hizo. Solo rol student, sobre su propio user_id.
+   * Si no tiene ninguna el backend responde con error (404, o 500 por cómo lo envuelve),
+   * así que un 404 se interpreta como lista vacía.
+   */
+  async getRatingsByUser(userId: string): Promise<ContentRating[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetRatingsByUserResponse>(`${environment.apiUrl}${ENDPOINTS.content.ratingsAll}`, {
+          params: { user_id: userId },
+        }),
+      );
+      return response.rating_details ?? [];
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) return [];
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /** Modifica una calificación ya existente (0-5). Solo rol student. */
+  async updateRating(payload: UpdateRatingPayload): Promise<UpdateRatingResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.put<UpdateRatingResponse>(`${environment.apiUrl}${ENDPOINTS.content.modifyRating}`, payload),
       );
     } catch (error) {
       throw this.mapHttpError(error);
