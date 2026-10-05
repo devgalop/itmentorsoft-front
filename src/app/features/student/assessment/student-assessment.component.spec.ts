@@ -32,7 +32,10 @@ describe('StudentAssessmentComponent', () => {
         { provide: ToastService, useValue: toastMock },
       ],
     });
-    return TestBed.inject(StudentAssessmentComponent);
+    const component = TestBed.inject(StudentAssessmentComponent);
+    // Independiente del valor del ambiente: por defecto el bloqueo está activo.
+    (component as { clipboardBlocked: boolean }).clipboardBlocked = true;
+    return component;
   }
 
   beforeEach(() => {
@@ -107,6 +110,14 @@ describe('StudentAssessmentComponent', () => {
     c.prev();
     expect(c.currentIndex()).toBe(0);
     expect(c.draft()).toBe('respuesta 1');
+  });
+
+  it('truncates answers to the backend limit of 600 characters', async () => {
+    const c = createComponent();
+    await Promise.resolve();
+    await c.startAssessment();
+    c.onAnswerChange('a'.repeat(700));
+    expect(c.draft().length).toBe(600);
   });
 
   it('does not submit if there are missing answers', async () => {
@@ -188,6 +199,19 @@ describe('StudentAssessmentComponent', () => {
     c.blockClipboard(event, 'pegar');
     expect(event.preventDefault).toHaveBeenCalled();
     expect(toastMock.warning).toHaveBeenCalled();
+  });
+
+  it('does not block clipboard actions when the environment flag is off', () => {
+    const c = createComponent();
+    (c as { clipboardBlocked: boolean }).clipboardBlocked = false;
+    const paste = { preventDefault: vi.fn() } as unknown as Event;
+    const menu = { preventDefault: vi.fn() } as unknown as Event;
+    toastMock.warning.mockClear();
+    c.blockClipboard(paste, 'pegar');
+    c.blockContextMenu(menu);
+    expect(paste.preventDefault).not.toHaveBeenCalled();
+    expect(menu.preventDefault).not.toHaveBeenCalled();
+    expect(toastMock.warning).not.toHaveBeenCalled();
   });
 
   it('prevents the context menu', () => {

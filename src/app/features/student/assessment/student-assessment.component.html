@@ -56,6 +56,7 @@
           <textarea
             id="answer"
             rows="6"
+            [attr.maxlength]="maxAnswerLength"
             [value]="draft()"
             (input)="onAnswerChange($any($event.target).value)"
             (paste)="blockClipboard($event, 'pegar')"
@@ -65,7 +66,12 @@
             (drop)="blockClipboard($event, 'arrastrar')"
             placeholder="Escribí tu respuesta con tus palabras…"
           ></textarea>
-          <p class="ev__hint">Por integridad de la evaluación, no se permite copiar ni pegar.</p>
+          <p class="ev__counter" [class.ev__counter--limit]="draft().length >= maxAnswerLength">
+            {{ draft().length }} / {{ maxAnswerLength }} caracteres
+          </p>
+          @if (clipboardBlocked) {
+            <p class="ev__hint">Por integridad de la evaluación, no se permite copiar ni pegar.</p>
+          }
         </div>
 
         <div class="ev__nav">

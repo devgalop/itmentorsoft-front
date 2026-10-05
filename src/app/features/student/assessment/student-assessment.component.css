@@ -432,3 +432,15 @@
   color: var(--color-accent);
   font-size: 1rem;
 }
+
+.ev__counter {
+  font-size: 0.78rem;
+  color: var(--color-mid-2);
+  text-align: right;
+  margin-top: 0.4rem;
+}
+
+.ev__counter--limit {
+  color: var(--color-error);
+  font-weight: 600;
+}
