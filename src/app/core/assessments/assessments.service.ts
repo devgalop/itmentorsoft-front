@@ -11,9 +11,11 @@ import {
   GetModelSelectedResponse,
   GetTopicsResponse,
   GetQuestionByIdResponse,
+  GetQuestionVersionsResponse,
   GetQuestionsResponse,
   ModelByProcess,
   PagedQuestions,
+  QuestionListItem,
   QuestionDetail,
   RegisterQuestionPayload,
   RegisterQuestionResponse,
@@ -61,6 +63,24 @@ export class AssessmentsService {
         ),
       );
       return response.question ?? null;
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Historial de versiones de una pregunta (admin y docente). Recibe el id de cualquier versión
+   * de la cadena y devuelve todas, de la más nueva a la más vieja (incluye las desactivadas).
+   */
+  async getQuestionVersions(questionId: string): Promise<QuestionListItem[]> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetQuestionVersionsResponse>(
+          `${environment.apiUrl}${ENDPOINTS.assessments.questionVersions}`,
+          { params: { question_id: questionId } },
+        ),
+      );
+      return response.questions ?? [];
     } catch (error) {
       throw this.mapHttpError(error);
     }

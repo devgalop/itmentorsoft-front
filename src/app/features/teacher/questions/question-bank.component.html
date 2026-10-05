@@ -194,6 +194,10 @@
           </div>
         </article>
       }
+
+      @if (selectedId(); as id) {
+        <app-question-versions [questionId]="id" (select)="selectQuestion($event)" />
+      }
     </div>
   </div>
 }

@@ -1,0 +1,36 @@
+<section class="ver">
+  <button type="button" class="ver__toggle" (click)="toggle()" [attr.aria-expanded]="isOpen()">
+    {{ isOpen() ? 'Ocultar versiones' : 'Ver historial de versiones' }}
+  </button>
+
+  @if (isOpen()) {
+    @if (isLoading()) {
+      <p class="ver__hint">Cargando versiones…</p>
+    } @else if (error()) {
+      <p class="ver__hint ver__hint--error" role="alert">{{ error() }}</p>
+    } @else if (versions().length === 0) {
+      <p class="ver__hint">Esta pregunta no tiene versiones registradas.</p>
+    } @else {
+      <ol class="ver__list">
+        @for (v of versions(); track v.question_id) {
+          <li class="ver__item" [class.ver__item--current]="v.question_id === questionId()">
+            <div class="ver__head">
+              <span class="ver__tag">v{{ v.version }}</span>
+              <span class="ver__meta">
+                {{ statusLabel(v.status) }}{{ v.version === latest() ? ' · Última' : '' }}
+              </span>
+              @if (v.question_id === questionId()) {
+                <span class="ver__here">Estás viendo esta</span>
+              } @else {
+                <button type="button" class="ver__view" (click)="select.emit(v.question_id)">
+                  Ver
+                </button>
+              }
+            </div>
+            <p class="ver__text">{{ v.text_to_evaluate }}</p>
+          </li>
+        }
+      </ol>
+    }
+  }
+</section>

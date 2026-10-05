@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { QuestionVersionsComponent } from './question-versions.component';
 import { AssessmentsService } from '@core/assessments/assessments.service';
 import {
   QUESTION_CATEGORIES,
@@ -31,7 +32,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-question-bank',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, QuestionVersionsComponent],
   templateUrl: './question-bank.component.html',
   styleUrl: './question-bank.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

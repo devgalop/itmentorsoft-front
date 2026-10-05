@@ -293,6 +293,26 @@ describe('AssessmentsService', () => {
     });
   });
 
+  describe('getQuestionVersions', () => {
+    it('GETs /assessments/question-versions with the question id and returns the versions', async () => {
+      const promise = service.getQuestionVersions('q-12345');
+      const req = httpMock.expectOne((r) => r.url === '/assessments/question-versions');
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('question_id')).toBe('q-12345');
+      const questions = [{ question_id: 'q-2', version: 2 }, { question_id: 'q-1', version: 1 }];
+      req.flush({ is_success: true, message: 'ok', questions, total: 2 });
+      expect(await promise).toEqual(questions);
+    });
+
+    it('returns an empty list when questions is missing', async () => {
+      const promise = service.getQuestionVersions('q-12345');
+      httpMock
+        .expectOne((r) => r.url === '/assessments/question-versions')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual([]);
+    });
+  });
+
   describe('updateQuestionStatus', () => {
     it('PUTs the question id and the new status to /assessments/question/update/status', async () => {
       const promise = service.updateQuestionStatus('q-12345', false);
@@ -370,6 +390,7 @@ describe('AssessmentsService', () => {
       ['getAvailableModels', '/assessments/available_models', () => service.getAvailableModels()],
       ['getModelSelected', '/assessments/model_selected', () => service.getModelSelected()],
       ['updateModel', '/assessments/models', () => service.updateModel('qualifier', 'model_2')],
+      ['getQuestionVersions', '/assessments/question-versions', () => service.getQuestionVersions('q-12345')],
       ['updateQuestionStatus', '/assessments/question/update/status', () => service.updateQuestionStatus('q-12345', false)],
     ];
 
