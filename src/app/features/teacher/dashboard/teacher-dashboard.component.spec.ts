@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { TeacherDashboardComponent } from './teacher-dashboard.component';
+import { UsersService } from '../../../core/users/users.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ReportsService } from '../../../core/reports/reports.service';
 import { ContentService } from '../../../core/content/content.service';
@@ -10,7 +11,8 @@ import { AssessmentsService } from '../../../core/assessments/assessments.servic
 describe('TeacherDashboardComponent', () => {
   let fixture: ComponentFixture<TeacherDashboardComponent>;
   let component: TeacherDashboardComponent;
-  let authMock: { user: ReturnType<typeof vi.fn> };
+  let authMock: { user: ReturnType<typeof vi.fn>; userId: ReturnType<typeof vi.fn> };
+  let usersMock: { getUser: ReturnType<typeof vi.fn> };
   let reportsMock: { getStudents: ReturnType<typeof vi.fn> };
   let contentMock: { getAllContents: ReturnType<typeof vi.fn> };
   let assessmentsMock: { getCategories: ReturnType<typeof vi.fn> };
@@ -28,6 +30,7 @@ describe('TeacherDashboardComponent', () => {
         { provide: ReportsService, useValue: reportsMock },
         { provide: ContentService, useValue: contentMock },
         { provide: AssessmentsService, useValue: assessmentsMock },
+        { provide: UsersService, useValue: usersMock },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(TeacherDashboardComponent);
@@ -38,7 +41,19 @@ describe('TeacherDashboardComponent', () => {
   }
 
   beforeEach(() => {
-    authMock = { user: vi.fn(() => ({ userName: 'docente_test', role: 'teacher' })) };
+    authMock = {
+      user: vi.fn(() => ({ userName: 'docente_test', role: 'teacher' })),
+      userId: vi.fn(() => 't1'),
+    };
+    usersMock = {
+      getUser: vi.fn().mockResolvedValue({
+        user_id: 't1',
+        username: 'docente_test',
+        email: 'd@itm.co',
+        name: 'Ana Gómez',
+        role: 'teacher',
+      }),
+    };
     reportsMock = {
       getStudents: vi.fn().mockResolvedValue({
         students: [student('1', 'novice'), student('2', 'novice'), student('3', 'average')],
@@ -49,8 +64,28 @@ describe('TeacherDashboardComponent', () => {
     assessmentsMock = { getCategories: vi.fn().mockResolvedValue(['a', 'b', 'c', 'd']) };
   });
 
-  it('greets the user with their username', async () => {
+  it('greets the teacher with their real name', async () => {
     await setup();
+    expect(usersMock.getUser).toHaveBeenCalledWith('t1');
+    expect(component.userName()).toBe('Ana Gómez');
+  });
+
+  it('falls back to the username when the name cannot be loaded', async () => {
+    usersMock.getUser.mockRejectedValue(new Error('x'));
+    await setup();
+    expect(component.userName()).toBe('docente_test');
+  });
+
+  it('falls back to the username when the user has no name', async () => {
+    usersMock.getUser.mockResolvedValue({ user_id: 't1', username: 'docente_test', email: '', name: '  ', role: 'teacher' });
+    await setup();
+    expect(component.userName()).toBe('docente_test');
+  });
+
+  it('does not request the name when there is no user id', async () => {
+    authMock.userId.mockReturnValue(null);
+    await setup();
+    expect(usersMock.getUser).not.toHaveBeenCalled();
     expect(component.userName()).toBe('docente_test');
   });
 
