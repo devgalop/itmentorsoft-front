@@ -8,14 +8,14 @@
   font-weight: 800;
 }
 
-.an__subtitle {
-  color: var(--color-mid-2);
-  font-size: 0.9rem;
-  margin-top: 0.2rem;
+.an__section-title {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-primary);
 }
 
 .an__grid {
-  margin-top: 1.5rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.25rem;
@@ -40,6 +40,6 @@
   color: var(--color-mid-2);
 }
 
-.an__top {
-  margin-top: 1.5rem;
+.an__block {
+  margin-top: 2rem;
 }

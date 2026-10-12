@@ -1,11 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { ComponentFixture } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { AdminAnalyticsComponent } from './admin-analytics.component';
 import { ReportsService } from '../../../core/reports/reports.service';
 import { UsersService } from '../../../core/users/users.service';
 import { AssessmentsService } from '../../../core/assessments/assessments.service';
 import { ContentService } from '../../../core/content/content.service';
+import { ApprovalService } from '../../../core/admin/approval.service';
 
 async function flush(times = 5): Promise<void> {
   for (let i = 0; i < times; i++) {
@@ -47,9 +49,23 @@ describe('AdminAnalyticsComponent', () => {
       providers: [
         { provide: ReportsService, useValue: reportsMock },
         { provide: UsersService, useValue: usersServiceMock },
-        // El bloque de "mejor y peor valorados" es un componente aparte con sus propias pruebas.
-        { provide: AssessmentsService, useValue: { getTopics: vi.fn().mockResolvedValue([]) } },
-        { provide: ContentService, useValue: {} },
+        provideRouter([]),
+        // Los reportes de recursos, preguntas y valoraciones son componentes aparte con sus pruebas.
+        {
+          provide: AssessmentsService,
+          useValue: {
+            getTopics: vi.fn().mockResolvedValue([]),
+            getLatestQuestions: vi.fn().mockResolvedValue({ questions: [], total: 0 }),
+          },
+        },
+        {
+          provide: ContentService,
+          useValue: {
+            getContentsByCategory: vi.fn().mockResolvedValue({ items: [], total: 0 }),
+            getContentsByTopic: vi.fn().mockResolvedValue({ items: [], total: 0 }),
+          },
+        },
+        { provide: ApprovalService, useValue: { getPending: vi.fn().mockResolvedValue({ questions: [], total: 0 }) } },
       ],
     });
 
@@ -101,7 +117,9 @@ describe('AdminAnalyticsComponent', () => {
     fixture.detectChanges();
 
     const c = fixture.componentInstance;
-    expect(reportsMock.getCategorySummary).toHaveBeenCalledTimes(4);
+    for (const level of ['principiante', 'básico', 'intermedio', 'avanzado']) {
+      expect(reportsMock.getCategorySummary).toHaveBeenCalledWith(level);
+    }
     expect(c.studentsByCategory().length).toBe(4);
     expect(c.studentsByCategoryTotal()).toBe(10);
   });
@@ -119,10 +137,11 @@ describe('AdminAnalyticsComponent', () => {
     await flush();
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('app-stat-cards .sc__total-num')?.textContent).toBe('4');
-    expect(root.querySelector('app-column-chart .cc__total-num')?.textContent).toBe('2');
-    expect(root.querySelectorAll('app-stat-cards .sc__card')).toHaveLength(2);
-    expect(root.querySelectorAll('app-column-chart .cc__col')).toHaveLength(4);
+    const top = root.querySelector('.an__grid')!;
+    expect(top.querySelector('app-stat-cards .sc__total-num')?.textContent).toBe('4');
+    expect(top.querySelector('app-column-chart .cc__total-num')?.textContent).toBe('2');
+    expect(top.querySelectorAll('app-stat-cards .sc__card')).toHaveLength(2);
+    expect(top.querySelectorAll('app-column-chart .cc__col')).toHaveLength(4);
   });
 
   it('keeps the users-by-role distribution empty when roles fail to load', async () => {

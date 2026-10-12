@@ -95,4 +95,15 @@ describe('TopContentComponent', () => {
     expect(c.stars(-1)).toBe(0);
     expect(c.stars(9)).toBe(5);
   });
+
+  it('is titled "Recursos mejor y peor valorados" and shows a rank and stars per resource', async () => {
+    setup();
+    await flush();
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.tc__title')?.textContent).toBe('Recursos mejor y peor valorados');
+    expect(root.querySelector('.tc__col--best .tc__rank')?.textContent).toBe('1');
+    expect(root.querySelectorAll('.tc__col--best .tc__star--on')).toHaveLength(5);
+    expect(root.querySelectorAll('.tc__col--worse .tc__star--on')).toHaveLength(1);
+  });
 });

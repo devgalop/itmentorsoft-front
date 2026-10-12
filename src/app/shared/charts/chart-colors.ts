@@ -18,6 +18,12 @@ export const LEVEL_COLORS: Record<string, string> = {
   avanzado: '#0E7F78',
 };
 
+/**
+ * Paleta categórica de hasta 6 series (pasó la validación de daltonismo, banda de luminosidad
+ * y croma). Más de 6 categorías se agrupan en "Otros" en vez de inventar más colores.
+ */
+export const CATEGORY_PALETTE = ['#3B6FD4', '#1ABCB0', '#D97706', '#8B5CF6', '#D6409F', '#6E9B2F'];
+
 /** Para un valor desconocido: un gris neutro que no se confunde con ninguna categoría. */
 export const FALLBACK_COLOR = '#7C8AA5';
 

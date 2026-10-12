@@ -6,7 +6,8 @@ import { levelColor, roleColor } from '@shared/charts/chart-colors';
 import { ChartItem } from '@shared/charts/chart-item';
 import { ColumnChartComponent } from '@shared/charts/column-chart.component';
 import { StatCardsComponent } from '@shared/charts/stat-cards.component';
-import { TopContentComponent } from '@shared/charts/top-content.component';
+import { QuestionsReportComponent } from './questions-report.component';
+import { ResourcesReportComponent } from './resources-report.component';
 
 interface DistributionItem {
   value: string;
@@ -25,7 +26,12 @@ const CATEGORIES: { value: string; label: string }[] = [
 @Component({
   selector: 'app-admin-analytics',
   standalone: true,
-  imports: [StatCardsComponent, ColumnChartComponent, TopContentComponent],
+  imports: [
+    StatCardsComponent,
+    ColumnChartComponent,
+    ResourcesReportComponent,
+    QuestionsReportComponent,
+  ],
   templateUrl: './admin-analytics.component.html',
   styleUrl: './admin-analytics.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

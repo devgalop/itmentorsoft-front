@@ -1,0 +1,27 @@
+<section class="rr">
+  <h2 class="rr__title">Recursos</h2>
+
+  @if (isLoading()) {
+    <p class="rr__hint">Cargando recursos…</p>
+  } @else {
+    @for (g of gaps(); track g.label) {
+      <p class="rr__alert" role="status">
+        <span aria-hidden="true">⚠</span>
+        Hay {{ g.students }} estudiante(s) en el nivel {{ g.label }} y no hay recursos para ese nivel.
+      </p>
+    }
+
+    <div class="rr__grid">
+      <div class="rr__card">
+        <h3 class="rr__card-title">Recursos por nivel</h3>
+        <app-pie-chart [items]="levelItems()" caption="recursos activos" />
+      </div>
+      <div class="rr__card">
+        <h3 class="rr__card-title">Recursos por tema</h3>
+        <app-pie-chart [items]="topicItems()" caption="recursos en los temas" />
+      </div>
+    </div>
+
+    <app-top-content class="rr__top" />
+  }
+</section>
