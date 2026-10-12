@@ -17,10 +17,8 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () =>
           import('./users/admin-users.component').then((m) => m.AdminUsersComponent),
       },
-      {
-        path: 'roles',
-        loadComponent: () => import('./roles/roles.component').then((m) => m.RolesComponent),
-      },
+      // Roles se unió a Usuarios: se mantiene la ruta vieja para enlaces guardados.
+      { path: 'roles', redirectTo: 'users', pathMatch: 'full' },
       {
         path: 'content-approval',
         loadComponent: () =>
