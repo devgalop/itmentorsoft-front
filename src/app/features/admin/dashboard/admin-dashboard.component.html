@@ -91,8 +91,24 @@
       </div>
 
       <div class="dash__card">
-        <h2 class="dash__card-title">Estado del sistema</h2>
-        <div class="dash__empty"><p>Sin datos disponibles.</p></div>
+        <h2 class="dash__card-title">Modelos de IA actuales</h2>
+        @if (modelsInUse(); as models) {
+          <ul class="dash__models">
+            @for (m of models; track m.label) {
+              <li class="dash__model">
+                <span class="dash__model-label">{{ m.label }}</span>
+                @if (m.model) {
+                  <strong class="dash__model-name">{{ m.model }}</strong>
+                } @else {
+                  <span class="dash__model-none">Sin modelo asignado</span>
+                }
+              </li>
+            }
+          </ul>
+          <a routerLink="/admin/config" class="dash__see-all">Configurar →</a>
+        } @else {
+          <div class="dash__empty"><p>Sin datos disponibles.</p></div>
+        }
       </div>
     </div>
   </div>

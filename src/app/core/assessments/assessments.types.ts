@@ -125,6 +125,12 @@ export interface PagedQuestions {
 export const AI_PROCESSES = ['qualifier', 'classifier'] as const;
 export type AiProcess = (typeof AI_PROCESSES)[number];
 
+/** Nombre de cada proceso de IA tal como se muestra en la interfaz. */
+export const AI_PROCESS_LABELS: Record<AiProcess, string> = {
+  qualifier: 'Calificación de respuestas',
+  classifier: 'Clasificación de estudiantes',
+};
+
 export interface GetAvailableModelsResponse {
   is_success: boolean;
   message: string;

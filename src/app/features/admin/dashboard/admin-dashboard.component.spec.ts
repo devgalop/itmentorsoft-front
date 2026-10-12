@@ -6,6 +6,7 @@ import { ReportsService } from '../../../core/reports/reports.service';
 import { ContentService } from '../../../core/content/content.service';
 import { UsersService } from '../../../core/users/users.service';
 import { ApprovalService } from '../../../core/admin/approval.service';
+import { AssessmentsService } from '../../../core/assessments/assessments.service';
 
 describe('AdminDashboardComponent', () => {
   let fixture: ComponentFixture<AdminDashboardComponent>;
@@ -17,6 +18,7 @@ describe('AdminDashboardComponent', () => {
     getConnectedTotal: ReturnType<typeof vi.fn>;
   };
   let approvalMock: { getPending: ReturnType<typeof vi.fn> };
+  let assessmentsMock: { getModelSelected: ReturnType<typeof vi.fn> };
 
   function student(id: string) {
     return { student_id: id, student_name: 'Est ' + id, knowledge_classification: 'novice' };
@@ -31,6 +33,7 @@ describe('AdminDashboardComponent', () => {
         { provide: ContentService, useValue: contentMock },
         { provide: UsersService, useValue: usersMock },
         { provide: ApprovalService, useValue: approvalMock },
+        { provide: AssessmentsService, useValue: assessmentsMock },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(AdminDashboardComponent);
@@ -48,6 +51,12 @@ describe('AdminDashboardComponent', () => {
       }),
     };
     contentMock = { getAllContents: vi.fn().mockResolvedValue([{}, {}, {}]) };
+    assessmentsMock = {
+      getModelSelected: vi.fn().mockResolvedValue([
+        { process: 'qualifier', model_id: 'modelo_a' },
+        { process: 'classifier', model_id: 'modelo_b' },
+      ]),
+    };
     usersMock = {
       getAvailableRoles: vi.fn().mockResolvedValue(['admin', 'teacher', 'student']),
       getConnectedTotal: vi.fn().mockResolvedValue(7),
@@ -94,5 +103,26 @@ describe('AdminDashboardComponent', () => {
   it('builds initials from the student name', async () => {
     await setup();
     expect(component.initials('Ana Lopez')).toBe('AL');
+  });
+
+  it('shows the AI model in use for each process', async () => {
+    await setup();
+    expect(component.modelsInUse()).toEqual([
+      { label: 'Calificación de respuestas', model: 'modelo_a' },
+      { label: 'Clasificación de estudiantes', model: 'modelo_b' },
+    ]);
+  });
+
+  it('shows "no model" for a process without selection', async () => {
+    assessmentsMock.getModelSelected.mockResolvedValue([{ process: 'qualifier', model_id: 'modelo_a' }]);
+    await setup();
+    expect(component.modelsInUse()?.[1]).toEqual({ label: 'Clasificación de estudiantes', model: null });
+  });
+
+  it('keeps the card empty when the models cannot be loaded', async () => {
+    assessmentsMock.getModelSelected.mockRejectedValue(new Error('x'));
+    await setup();
+    expect(component.modelsInUse()).toBeNull();
+    expect(component.isLoading()).toBe(false);
   });
 });

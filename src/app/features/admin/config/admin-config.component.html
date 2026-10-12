@@ -14,19 +14,27 @@
         <div class="cfg__row">
           <div class="cfg__row-text">
             <span class="cfg__row-label">{{ p.label }}</span>
-            <span class="cfg__row-hint">Proceso: {{ p.process }}</span>
+            <span class="cfg__row-hint">
+              Modelo actual:
+              @if (p.currentModel) {
+                <strong class="cfg__model">{{ p.currentModel }}</strong>
+              } @else {
+                <em>sin modelo asignado</em>
+              }
+            </span>
           </div>
           <select
             class="cfg__select"
             [value]="p.currentModel ?? ''"
+            [attr.aria-label]="'Cambiar el modelo de ' + p.label"
             [disabled]="savingProcess() === p.process"
             (change)="onModelChange(p.process, $any($event.target).value)"
           >
             @if (!p.currentModel) {
-              <option value="" disabled selected>Sin modelo asignado</option>
+              <option value="" disabled selected>Elige un modelo</option>
             }
-            @for (m of availableModels(); track m) {
-              <option [value]="m">{{ m }}</option>
+            @for (m of modelOptions(p); track m) {
+              <option [value]="m" [selected]="m === p.currentModel">{{ m }}</option>
             }
           </select>
         </div>
