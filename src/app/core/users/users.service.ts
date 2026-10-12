@@ -22,12 +22,15 @@ import {
 export class UsersService {
   private readonly http = inject(HttpClient);
 
+  /** Nombres de los roles (`admin`, `teacher`, …), con el formato viejo o el nuevo del backend. */
   async getAvailableRoles(): Promise<string[]> {
     try {
       const response = await firstValueFrom(
         this.http.get<GetAvailableRolesResponse>(`${environment.apiUrl}${ENDPOINTS.users.availableRoles}`),
       );
-      return response.roles ?? [];
+      return (response.roles ?? [])
+        .map((role) => (typeof role === 'string' ? role : role?.name))
+        .filter((name): name is string => typeof name === 'string' && name.length > 0);
     } catch (error) {
       throw this.mapHttpError(error);
     }

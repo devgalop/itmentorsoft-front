@@ -100,6 +100,24 @@ export class AssessmentsService {
     }
   }
 
+  /**
+   * Última versión de cada pregunta activa (admin y docente), paginada (page arranca en 0,
+   * máximo 100 por página). A diferencia de `getAllQuestions` no incluye versiones viejas ni
+   * preguntas desactivadas.
+   */
+  async getLatestQuestions(page = 0, pageSize = 100): Promise<PagedQuestions> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<GetAllQuestionsResponse>(`${environment.apiUrl}${ENDPOINTS.assessments.allQuestions}`, {
+          params: { page, page_size: pageSize },
+        }),
+      );
+      return { questions: response.questions ?? [], total: response.total ?? 0 };
+    } catch (error) {
+      throw this.mapHttpError(error);
+    }
+  }
+
   async getCategories(version = 1): Promise<string[]> {
     try {
       const response = await firstValueFrom(

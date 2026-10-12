@@ -28,6 +28,29 @@ describe('UsersService', () => {
       expect(await promise).toEqual(['admin', 'teacher', 'student']);
     });
 
+    it('returns the role names when the backend sends role objects (new format)', async () => {
+      const promise = service.getAvailableRoles();
+      httpMock.expectOne('/users/available-roles').flush({
+        is_success: true,
+        roles: [
+          { id: 'r1', name: 'admin', homologate_name: 'Administrador' },
+          { id: 'r2', name: 'teacher', homologate_name: 'Profesor' },
+          { id: 'r3', name: 'student', homologate_name: 'Estudiante' },
+          { id: 'r4', name: 'user', homologate_name: 'Invitado' },
+        ],
+      });
+      expect(await promise).toEqual(['admin', 'teacher', 'student', 'user']);
+    });
+
+    it('accepts a mix of formats and drops malformed entries', async () => {
+      const promise = service.getAvailableRoles();
+      httpMock.expectOne('/users/available-roles').flush({
+        is_success: true,
+        roles: ['admin', { id: 'r2', name: 'teacher', homologate_name: 'Profesor' }, null, {}, ''],
+      });
+      expect(await promise).toEqual(['admin', 'teacher']);
+    });
+
     it('returns an empty array when roles is missing', async () => {
       const promise = service.getAvailableRoles();
       httpMock.expectOne('/users/available-roles').flush({ is_success: true });

@@ -1,26 +1,50 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
+import { AssessmentSummary } from '@core/assessments/student-assessment.types';
 import { ReportsService } from '@core/reports/reports.service';
+import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
 import { UsersService } from '@core/users/users.service';
+import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
+import { buildSparkline } from '@shared/charts/sparkline';
+import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
+import { LevelMedal, levelMedal } from '@shared/charts/level-medal';
+import { LevelMedalComponent } from '@shared/charts/level-medal.component';
 
-interface StatCard {
-  value: string;
-  label: string;
-  hint: string;
-  route?: string;
+/** Resumen de la evaluación más reciente. */
+interface LastEvaluation {
+  id: string;
+  /** Puntaje 0–100. */
+  score: number;
+  date: string;
+  classification: string | null;
+  /** Diferencia en puntos frente a la evaluación anterior (null si es la primera). */
+  delta: number | null;
+  /** Puntos de la mini gráfica (las últimas evaluaciones, de la más antigua a la más reciente). */
+  spark: string | null;
+  lastDot: { x: number; y: number } | null;
 }
 
-interface HowToStep {
-  title: string;
-  description: string;
+/** Cuántas evaluaciones recientes dibuja la mini gráfica. */
+const SPARK_POINTS = 6;
+const SPARK_W = 120;
+const SPARK_H = 36;
+
+/** El backend devuelve un texto en inglés de relleno cuando todavía no hay feedback. */
+function realFeedback(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const v = value.toLowerCase();
+  const placeholder =
+    v.includes('will be determined') || v.includes('will be generated') || v.includes('based on the student');
+  return placeholder ? null : value;
 }
 
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ScoreBarsComponent, LevelMedalComponent],
   templateUrl: './student-dashboard.component.html',
   styleUrl: './student-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,8 +54,8 @@ export class StudentDashboardComponent {
   private readonly studentAssessment = inject(StudentAssessmentService);
   private readonly reports = inject(ReportsService);
   private readonly usersService = inject(UsersService);
+  private readonly grading = inject(GradingWatcherService);
 
-  /** Nombre del estudiante para el saludo (username del JWT). */
   /** Nombre real del estudiante (se carga del backend). */
   private readonly displayName = signal<string | null>(null);
   /** Lo que se muestra en el saludo: el nombre, o el username si aún no llegó. */
@@ -41,50 +65,126 @@ export class StudentDashboardComponent {
 
   /** Cantidad de evaluaciones realizadas. null mientras carga o si falla (se muestra '0'). */
   private readonly assessmentsCount = signal<number | null>(null);
+  readonly evaluationsTotal = computed(() => this.assessmentsCount() ?? 0);
 
   /** Categoría (clasificación) asignada por el modelo ML. null si no hay evaluación aún o falla la carga. */
   readonly classification = signal<string | null>(null);
 
-  // Progreso en ruta sigue sin backend expuesto al front (falta path_id) → "sin datos".
-  readonly stats = computed<StatCard[]>(() => [
-    {
-      value: this.classification() ?? '—',
-      label: 'Categoría asignada',
-      hint: this.classification() ? 'Según tu evaluación inicial' : 'Evaluación pendiente',
-      route: '/student/progress',
-    },
-    { value: '0%', label: 'Progreso en ruta', hint: 'Sin ruta asignada', route: '/student/route' },
-    {
-      value: String(this.assessmentsCount() ?? 0),
-      label: 'Evaluaciones realizadas',
-      hint: 'Completa la inicial',
-      route: '/student/assessments',
-    },
-  ]);
+  private readonly progress = signal<StudentProgress | null>(null);
+  private readonly summary = signal<StudentSummary | null>(null);
+  private readonly history = signal<AssessmentSummary[]>([]);
 
-  // Contenido estático (informativo), tal cual el mockup.
-  readonly steps: HowToStep[] = [
-    {
-      title: 'Realiza la evaluación diagnóstica',
-      description: 'Preguntas de Diseño SW y Pensamiento Computacional.',
-    },
-    {
-      title: 'El modelo ML te categoriza',
-      description: 'Asigna tu nivel: Principiante, Básico, Intermedio o Avanzado.',
-    },
-    {
-      title: 'Recibe tu ruta personalizada',
-      description: 'Evaluaciones adaptadas a tus debilidades.',
-    },
-  ];
+  /** La medalla del nivel actual (null si todavía no tiene categoría). */
+  readonly medal = computed<LevelMedal | null>(() => levelMedal(this.classification()));
+
+  /** true cuando ya se sabe si el estudiante tiene al menos una evaluación. */
+  private readonly statusLoaded = signal(false);
+
+  /** ¿Hay una evaluación enviada que todavía se está calificando? */
+  readonly gradingPending = computed(() => this.grading.hasPending(this.authService.userId()));
+
+  /** El botón de iniciar evaluación solo aparece mientras no haya ninguna evaluación. */
+  readonly showStart = computed(
+    () =>
+      this.statusLoaded() &&
+      !this.gradingPending() &&
+      (this.assessmentsCount() ?? 0) === 0 &&
+      this.classification() === null,
+  );
+
+  /** Perfil de conocimiento actual, con el color de cada tema (el de su línea en Mi progreso). */
+  readonly profileItems = computed<ScoreItem[]>(() =>
+    buildProfileItems(
+      this.summary()?.profile ?? [],
+      buildTopicSeries(this.progress()?.knowledge_profile ?? []),
+    ),
+  );
+
+  /** Tema con el puntaje más bajo; solo se sugiere si hay varios temas con puntajes distintos. */
+  readonly weakest = computed<ScoreItem | null>(() => {
+    const items = this.profileItems();
+    if (items.length < 2) return null;
+    const sorted = [...items].sort((a, b) => a.value - b.value);
+    return sorted[0]!.value === sorted[sorted.length - 1]!.value ? null : sorted[0]!;
+  });
+
+  /** Tema con el puntaje más alto (misma regla que `weakest`). */
+  readonly strongest = computed<ScoreItem | null>(() => {
+    const items = this.profileItems();
+    if (items.length < 2) return null;
+    const sorted = [...items].sort((a, b) => b.value - a.value);
+    return sorted[0]!.value === sorted[sorted.length - 1]!.value ? null : sorted[0]!;
+  });
+
+  /** Feedback personalizado, sin el texto de relleno del backend. */
+  readonly feedback = computed(() => realFeedback(this.summary()?.feedback));
+
+  /** Evaluación más reciente, con su variación y una mini gráfica de las últimas. */
+  readonly last = computed<LastEvaluation | null>(() => {
+    const sorted = [...this.history()]
+      .filter((h) => !isNaN(new Date(h.date_taken).getTime()))
+      .sort((a, b) => new Date(a.date_taken).getTime() - new Date(b.date_taken).getTime());
+    if (sorted.length === 0) return null;
+    const scores = sorted.map((h) => scoreToPct(h.score));
+    const latest = sorted[sorted.length - 1]!;
+    const spark = buildSparkline(scores.slice(-SPARK_POINTS), SPARK_W, SPARK_H);
+    return {
+      id: latest.assessment_id,
+      score: scores[scores.length - 1]!,
+      date: latest.date_taken,
+      classification: latest.classification,
+      delta: scores.length > 1 ? scores[scores.length - 1]! - scores[scores.length - 2]! : null,
+      spark: spark?.points ?? null,
+      lastDot: spark?.last ?? null,
+    };
+  });
+
+  /** Enlace de la tarjeta "Última evaluación": directo a su resultado (o al historial si no hay). */
+  readonly lastParams = computed(() => {
+    const l = this.last();
+    return l ? { result: l.id } : {};
+  });
+
+  /** Enlaces para empezar una evaluación: abren directo la elección del tema. */
+  readonly newParams = { new: 1 };
+
+  readonly sparkSize = { w: SPARK_W, h: SPARK_H };
+
+  /** Calificaciones terminadas que esta pantalla ya conoce (para refrescar solo cuando llega una nueva). */
+  private seenCompleted = this.grading.completedCount();
 
   constructor() {
     const id = this.authService.userId();
     if (id) {
       void this.loadDisplayName(id);
-      void this.loadAssessmentsCount(id);
-      void this.loadClassification(id);
+      this.loadData(id);
+    } else {
+      this.statusLoaded.set(true);
     }
+
+    // Cuando termina una calificación, se recargan los datos: aparece el nivel, la medalla y el perfil.
+    effect(() => {
+      const completed = this.grading.completedCount();
+      untracked(() => {
+        const userId = this.authService.userId();
+        if (completed === this.seenCompleted || !userId) return;
+        this.seenCompleted = completed;
+        this.loadData(userId);
+      });
+    });
+  }
+
+  private loadData(id: string): void {
+    void this.loadSummary(id);
+    void this.loadHistory(id);
+    void Promise.all([this.loadAssessmentsCount(id), this.loadProgress(id)]).then(() =>
+      this.statusLoaded.set(true),
+    );
+  }
+
+  formatDate(value: string): string {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? value : d.toLocaleDateString();
   }
 
   /**
@@ -103,20 +203,36 @@ export class StudentDashboardComponent {
 
   private async loadAssessmentsCount(userId: string): Promise<void> {
     try {
-      const total = await this.studentAssessment.getQuantity(userId);
-      this.assessmentsCount.set(total);
+      this.assessmentsCount.set(await this.studentAssessment.getQuantity(userId));
     } catch {
-      // Silencioso: la card se queda en 0, igual que antes de conectar el backend.
+      // Silencioso: se queda en 0.
     }
   }
 
-  private async loadClassification(userId: string): Promise<void> {
+  /** Categoría y evolución por tema (un estudiante sin evaluación inicial aún no tiene). */
+  private async loadProgress(userId: string): Promise<void> {
     try {
       const progress = await this.reports.getStudentProgress(userId);
+      this.progress.set(progress);
       this.classification.set(progress?.classification ?? null);
     } catch {
-      // Silencioso: la card se queda en '—', igual que antes de conectar el backend
-      // (por ejemplo, un estudiante que todavía no tiene evaluación inicial).
+      // Silencioso: sin categoría ni evolución.
+    }
+  }
+
+  private async loadSummary(userId: string): Promise<void> {
+    try {
+      this.summary.set(await this.reports.getStudentSummary(userId));
+    } catch {
+      // Silencioso: sin perfil ni feedback.
+    }
+  }
+
+  private async loadHistory(userId: string): Promise<void> {
+    try {
+      this.history.set(await this.studentAssessment.getAssessmentsSummary(userId));
+    } catch {
+      // Silencioso: sin última evaluación.
     }
   }
 }

@@ -12,9 +12,15 @@ export interface GetUserResponse {
   user: UserInfo | null;
 }
 
+export interface RoleDetail {
+  id: string;
+  name: string;
+  homologate_name: string;
+}
+
 export interface GetAvailableRolesResponse {
   is_success: boolean;
-  roles: string[];
+  roles: (string | RoleDetail)[];
 }
 
 export interface AssignRoleResponse {
@@ -40,6 +46,8 @@ export interface GetConnectedUsersResponse {
 }
 
 export interface CreateUserPayload {
+  /** Obligatorio en el backend (3 a 100 caracteres). */
+  name: string;
   email: string;
   username: string;
   role: string;

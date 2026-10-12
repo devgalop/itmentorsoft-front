@@ -188,3 +188,54 @@
 .route__item-myrating[disabled] .route__star-btn {
   cursor: wait;
 }
+
+.route__state--warn {
+  text-align: left;
+  border-color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 8%, var(--color-white));
+  color: var(--color-dark);
+}
+
+.route__state-title {
+  font-weight: 800;
+  margin-bottom: 0.3rem;
+}
+
+.route__retry {
+  margin-top: 0.8rem;
+  background: var(--color-accent);
+  color: var(--color-white);
+  border: none;
+  font-weight: 700;
+  padding: 0.55rem 1.2rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.route__topic-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.route__progress-text {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.route__progress {
+  height: 6px;
+  margin: 0.4rem 0 0.8rem;
+  border-radius: 999px;
+  background: var(--color-light-2);
+  overflow: hidden;
+}
+
+.route__progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-accent);
+}

@@ -1,0 +1,105 @@
+<header class="aq__top">
+  <span class="aq__topic">{{ question().topic }}</span>
+  <span class="aq__count">Pregunta {{ index() + 1 }} de {{ total() }}</span>
+</header>
+<div
+  class="aq__progress"
+  role="progressbar"
+  aria-label="Preguntas respondidas"
+  aria-valuemin="0"
+  [attr.aria-valuemax]="total()"
+  [attr.aria-valuenow]="answeredCount()"
+>
+  <span class="aq__progress-fill" [style.width.%]="progressPct()"></span>
+</div>
+
+<div class="aq__grid">
+  <div class="aq__main">
+    <div class="aq__question">
+      <span class="aq__qnum" aria-hidden="true">{{ index() + 1 }}</span>
+      <p class="aq__qtext">{{ question().text_to_evaluate }}</p>
+    </div>
+
+    <label class="aq__label" for="answer">Tu respuesta</label>
+    <textarea
+      id="answer"
+      class="aq__textarea"
+      rows="9"
+      [attr.maxlength]="maxLength()"
+      [value]="draft()"
+      (input)="answerChange.emit($any($event.target).value)"
+      (keydown)="onKeydown($event)"
+      (paste)="clipboard.emit({ event: $event, action: 'pegar' })"
+      (copy)="clipboard.emit({ event: $event, action: 'copiar' })"
+      (cut)="clipboard.emit({ event: $event, action: 'cortar' })"
+      (drop)="clipboard.emit({ event: $event, action: 'arrastrar' })"
+      (contextmenu)="menu.emit($event)"
+      placeholder="Escribe tu respuesta con tus palabras…"
+    ></textarea>
+    <div class="aq__meter">
+      <span class="aq__meter-bar" aria-hidden="true">
+        <span [class.aq__meter-fill--limit]="atLimit()" class="aq__meter-fill" [style.width.%]="usedPct()"></span>
+      </span>
+      <span class="aq__meter-text" [class.aq__meter-text--limit]="atLimit()">
+        {{ draft().length }} / {{ maxLength() }} caracteres
+      </span>
+    </div>
+    @if (clipboardBlocked()) {
+      <p class="aq__note">Por integridad de la evaluación, no se permite copiar ni pegar.</p>
+    }
+
+    <div class="aq__nav">
+      <button type="button" class="aq__btn aq__btn--ghost" (click)="prev.emit()" [disabled]="index() === 0">
+        ← Anterior
+      </button>
+      <span class="aq__status" aria-live="polite">
+        @if (unanswered() === 0) {
+          Todas respondidas
+        } @else {
+          Faltan {{ unanswered() }} por responder
+        }
+      </span>
+      @if (isLast()) {
+        <button type="button" class="aq__btn aq__btn--solid" (click)="submitted.emit()" [disabled]="busy()">
+          {{ busy() ? 'Enviando…' : 'Enviar evaluación' }}
+        </button>
+      } @else {
+        <button type="button" class="aq__btn aq__btn--solid" (click)="next.emit()">Siguiente →</button>
+      }
+    </div>
+    <p class="aq__shortcut">Atajo: Ctrl + Enter {{ isLast() ? 'para enviar' : 'para pasar a la siguiente' }}</p>
+  </div>
+
+  <aside class="aq__aside">
+    <section class="aq__card">
+      <h3 class="aq__card-title">Tus preguntas</h3>
+      <ol class="aq__list">
+        @for (i of items(); track i.number) {
+          <li>
+            <button
+              type="button"
+              class="aq__item"
+              [class.aq__item--current]="i.current"
+              [attr.aria-current]="i.current ? 'step' : null"
+              (click)="jump.emit(i.number - 1)"
+            >
+              <span class="aq__item-num" [class.aq__item-num--done]="i.answered">
+                {{ i.answered ? '✓' : i.number }}
+              </span>
+              <span class="aq__item-text">{{ i.text }}</span>
+            </button>
+          </li>
+        }
+      </ol>
+    </section>
+
+    <section class="aq__card aq__tips">
+      <h3 class="aq__card-title">Para responder mejor</h3>
+      <ul>
+        <li>Explica con tus palabras, sin copiar definiciones.</li>
+        <li>Agrega un ejemplo concreto.</li>
+        <li>Puedes volver a una pregunta anterior cuando quieras.</li>
+      </ul>
+    </section>
+  </aside>
+</div>

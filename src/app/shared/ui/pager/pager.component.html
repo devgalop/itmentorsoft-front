@@ -1,0 +1,11 @@
+@if (totalPages() > 1) {
+  <nav class="pg" aria-label="Paginación">
+    <button type="button" class="pg__btn" (click)="prev.emit()" [disabled]="!canPrev()">
+      <span aria-hidden="true">‹</span> Anterior
+    </button>
+    <span class="pg__info">Página <strong>{{ page() + 1 }}</strong> de {{ totalPages() }}</span>
+    <button type="button" class="pg__btn" (click)="next.emit()" [disabled]="!canNext()">
+      Siguiente <span aria-hidden="true">›</span>
+    </button>
+  </nav>
+}

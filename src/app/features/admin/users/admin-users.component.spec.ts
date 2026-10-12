@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { vi } from 'vitest';
 import { AdminUsersComponent } from './admin-users.component';
 import { UsersService } from '../../../core/users/users.service';
@@ -17,12 +18,16 @@ describe('AdminUsersComponent', () => {
   };
   let reportsMock: { getUsersByRole: ReturnType<typeof vi.fn> };
   let authMock: { userId: ReturnType<typeof vi.fn> };
+  let routerMock: { navigate: ReturnType<typeof vi.fn> };
+  let queryParams: Record<string, string> = {};
 
   function createComponent(): AdminUsersComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         AdminUsersComponent,
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(queryParams) } } },
+        { provide: Router, useValue: routerMock },
         { provide: UsersService, useValue: serviceMock },
         { provide: ReportsService, useValue: reportsMock },
         { provide: AuthService, useValue: authMock },
@@ -52,10 +57,13 @@ describe('AdminUsersComponent', () => {
       ]),
     };
     authMock = { userId: vi.fn().mockReturnValue('me') };
+    routerMock = { navigate: vi.fn().mockResolvedValue(true) };
+    queryParams = {};
   });
 
   function fillValid(component: AdminUsersComponent): void {
     component.form.patchValue({
+      name: 'Docente Nuevo',
       email: 'nuevo@itm.co',
       username: 'nuevo_user',
       role: 'teacher',
@@ -106,6 +114,7 @@ describe('AdminUsersComponent', () => {
 
     expect(serviceMock.createUser).toHaveBeenCalledTimes(1);
     expect(serviceMock.createUser.mock.calls[0][0]).toEqual({
+      name: 'Docente Nuevo',
       email: 'nuevo@itm.co',
       username: 'nuevo_user',
       role: 'teacher',
@@ -200,7 +209,7 @@ describe('AdminUsersComponent', () => {
     const component = createComponent();
     await Promise.resolve();
     await Promise.resolve();
-    component.form.patchValue({ email: 'nuevo@itm.co', username: 'nuevo_user', role: 'teacher' });
+    component.form.patchValue({ name: 'Docente Nuevo', email: 'nuevo@itm.co', username: 'nuevo_user', role: 'teacher' });
 
     await component.submit();
 
@@ -227,6 +236,9 @@ describe('AdminUsersComponent', () => {
     });
 
     it.each([
+      ['name', '', 'Requerido'],
+      ['name', 'ab', 'Mínimo 3 caracteres'],
+      ['name', 'a'.repeat(101), 'Máximo 100 caracteres'],
       ['email', '', 'Requerido'],
       ['email', 'no-es-email', 'Correo electrónico inválido'],
       ['email', 'a@b', 'Mínimo 5 caracteres'],
@@ -260,6 +272,96 @@ describe('AdminUsersComponent', () => {
       expect(component.fieldError(ctrl)).toBe('Inválido');
     });
   });
+  describe('create user from the dashboard link', () => {
+    it('opens the modal and clears the parameter when the URL has ?crear=1', async () => {
+      queryParams = { crear: '1' };
+      const component = createComponent();
+      expect(component.isCreateOpen()).toBe(true);
+      expect(routerMock.navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({ queryParams: { crear: null }, replaceUrl: true }),
+      );
+      // el rol por defecto se completa cuando llegan los roles
+      await vi.waitFor(() => expect(component.form.get('role')?.value).toBe('admin'));
+    });
+
+    it('does not open the modal on a normal visit', () => {
+      const component = createComponent();
+      expect(component.isCreateOpen()).toBe(false);
+      expect(routerMock.navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('create user modal', () => {
+    it('is closed at the start and opens with the current role selected', async () => {
+      const component = createComponent();
+      await vi.waitFor(() => expect(component.manageRole()).toBe('admin'));
+      expect(component.isCreateOpen()).toBe(false);
+      component.onManageRoleChange('student');
+      await vi.waitFor(() => expect(component.manageRole()).toBe('student'));
+
+      component.openCreate();
+
+      expect(component.isCreateOpen()).toBe(true);
+      expect(component.form.get('role')?.value).toBe('student');
+      expect(component.form.get('email')?.value).toBe('');
+    });
+
+    it('closes with closeCreate and with Escape', async () => {
+      const component = createComponent();
+      component.openCreate();
+      component.closeCreate();
+      expect(component.isCreateOpen()).toBe(false);
+      component.openCreate();
+      component.onEscape();
+      expect(component.isCreateOpen()).toBe(false);
+    });
+
+    it('cannot be closed while the user is being created', async () => {
+      const component = createComponent();
+      await vi.waitFor(() => expect(component.roles()).toHaveLength(3));
+      let release!: (v: unknown) => void;
+      serviceMock.createUser.mockReturnValue(new Promise((r) => (release = r)));
+      component.openCreate();
+      fillValid(component);
+
+      const pending = component.submit();
+      component.closeCreate();
+      component.onEscape();
+      expect(component.isCreateOpen()).toBe(true);
+
+      release({ is_success: true, message: 'ok' });
+      await pending;
+      expect(component.isCreateOpen()).toBe(false);
+    });
+
+    it('closes the modal and shows the role of the new user after creating it', async () => {
+      serviceMock.createUser.mockResolvedValue({ is_success: true, message: 'ok', user_id: 'u9' });
+      const component = createComponent();
+      await vi.waitFor(() => expect(component.roles()).toHaveLength(3));
+      component.openCreate();
+      fillValid(component);
+
+      await component.submit();
+
+      expect(component.isCreateOpen()).toBe(false);
+      await vi.waitFor(() => expect(reportsMock.getUsersByRole).toHaveBeenLastCalledWith('teacher'));
+      expect(component.manageRole()).toBe('teacher');
+    });
+
+    it('keeps the modal open when the creation fails', async () => {
+      serviceMock.createUser.mockResolvedValue({ is_success: false, message: 'Correo ya existe' });
+      const component = createComponent();
+      await vi.waitFor(() => expect(component.roles()).toHaveLength(3));
+      component.openCreate();
+      fillValid(component);
+
+      await component.submit();
+
+      expect(component.isCreateOpen()).toBe(true);
+    });
+  });
+
   describe('user status management', () => {
     async function ready(): Promise<AdminUsersComponent> {
       const component = createComponent();
@@ -270,14 +372,48 @@ describe('AdminUsersComponent', () => {
       return component;
     }
 
-    it('loads the active users of the first role with their details', async () => {
+    it('loads the users of the first role with their details', async () => {
       const component = await ready();
       expect(reportsMock.getUsersByRole).toHaveBeenCalledWith('admin');
       expect(component.manageRole()).toBe('admin');
       expect(component.managedUsers()).toEqual([
-        { user_id: 'u1', name: 'Nombre u1', username: 'user_u1', email: 'u1@itm.co' },
-        { user_id: 'u2', name: 'Nombre u2', username: 'user_u2', email: 'u2@itm.co' },
+        { user_id: 'u1', name: 'Nombre u1', username: 'user_u1', email: 'u1@itm.co', role: 'admin', status: null },
+        { user_id: 'u2', name: 'Nombre u2', username: 'user_u2', email: 'u2@itm.co', role: 'admin', status: null },
       ]);
+    });
+
+    it('takes the status from the report when the backend sends it', async () => {
+      reportsMock.getUsersByRole.mockResolvedValue([
+        { user_id: 'u1', role: 'admin', status: 'inactive' },
+        { user_id: 'u2', role: 'admin', status: 'active' },
+        { user_id: 'u3', role: 'admin', status: 'raro' },
+      ]);
+      const component = await ready();
+      expect(component.managedUsers().map((u) => u.status)).toEqual(['inactive', 'active', null]);
+    });
+
+    it('offers Inactivar and Suspender when the status is active or unknown', async () => {
+      const component = await ready();
+      const unknown = { ...component.managedUsers()[0]!, status: null };
+      const active = { ...unknown, status: 'active' as const };
+      expect(component.actionsFor(unknown).map((a) => a.value)).toEqual(['inactive', 'suspended']);
+      expect(component.actionsFor(active).map((a) => a.value)).toEqual(['inactive', 'suspended']);
+    });
+
+    it('offers only Activar when the user is known to be inactive or suspended', async () => {
+      const component = await ready();
+      const base = component.managedUsers()[0]!;
+      expect(component.actionsFor({ ...base, status: 'inactive' }).map((a) => a.value)).toEqual(['active']);
+      expect(component.actionsFor({ ...base, status: 'suspended' }).map((a) => a.value)).toEqual(['active']);
+    });
+
+    it('labels statuses and roles in Spanish', async () => {
+      const component = await ready();
+      expect(component.statusLabel('active')).toBe('Activo');
+      expect(component.statusLabel('inactive')).toBe('Inactivo');
+      expect(component.statusLabel('suspended')).toBe('Suspendido');
+      expect(component.statusLabel(null)).toBe('—');
+      expect(component.roleLabel('teacher')).toBe('Docente');
     });
 
     it('keeps a user in the list when its detail cannot be loaded', async () => {
@@ -294,11 +430,11 @@ describe('AdminUsersComponent', () => {
       expect(component.manageRole()).toBe('teacher');
     });
 
-    it('shows a message when the role has no active users (backend error)', async () => {
+    it('shows a message when the role has no users (backend error)', async () => {
       reportsMock.getUsersByRole.mockRejectedValue(new Error('x'));
       const component = await ready();
       expect(component.managedUsers()).toEqual([]);
-      expect(component.manageError()).toContain('No hay usuarios activos');
+      expect(component.manageError()).toContain('No hay usuarios con este rol');
     });
 
     it('does not let the admin change their own status', async () => {
@@ -328,7 +464,7 @@ describe('AdminUsersComponent', () => {
       expect(component.pendingChange()).toBeNull();
     });
 
-    it('applies the change, notifies and removes the user from the list', async () => {
+    it('applies the change, notifies and keeps the user in the table with the new status', async () => {
       const component = await ready();
       const user = component.managedUsers()[0]!;
       component.askStatusChange(user, 'inactive');
@@ -338,8 +474,22 @@ describe('AdminUsersComponent', () => {
       expect(serviceMock.updateUserStatus).toHaveBeenCalledWith('u1', 'inactive');
       expect(toastMock.success).toHaveBeenCalledWith('Estado actualizado', 'Nombre u1 ahora está inactivo.');
       expect(component.pendingChange()).toBeNull();
-      expect(component.managedUsers().map((u) => u.user_id)).toEqual(['u2']);
+      expect(component.managedUsers().map((u) => u.user_id)).toEqual(['u1', 'u2']);
+      expect(component.managedUsers()[0]!.status).toBe('inactive');
+      expect(component.managedUsers()[1]!.status).toBeNull();
       expect(component.isChangingStatus()).toBe(false);
+    });
+
+    it('can activate a user that was inactive', async () => {
+      reportsMock.getUsersByRole.mockResolvedValue([{ user_id: 'u1', role: 'admin', status: 'inactive' }]);
+      const component = await ready();
+      component.askStatusChange(component.managedUsers()[0]!, 'active');
+
+      await component.confirmStatusChange();
+
+      expect(serviceMock.updateUserStatus).toHaveBeenCalledWith('u1', 'active');
+      expect(toastMock.success).toHaveBeenCalledWith('Estado actualizado', 'Nombre u1 ahora está activo.');
+      expect(component.managedUsers()[0]!.status).toBe('active');
     });
 
     it('shows an error and keeps the user when the backend rejects the change', async () => {

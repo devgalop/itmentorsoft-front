@@ -1,106 +1,149 @@
 <section class="usr">
   <header class="usr__header">
-    <h1 class="usr__title">Usuarios</h1>
-    <p class="usr__subtitle">Crea nuevos usuarios, asígnales un rol y gestiona su estado.</p>
+    <div>
+      <h1 class="usr__title">Usuarios</h1>
+      <p class="usr__subtitle">Gestiona los usuarios del sistema, sus roles y su estado.</p>
+    </div>
+    <button type="button" class="usr__new" (click)="openCreate()">+ Crear usuario</button>
   </header>
 
   <div class="usr__panel">
-    <h2 class="usr__panel-title">Crear usuario</h2>
-
-    <form [formGroup]="form" (ngSubmit)="submit()" class="usr__form">
-      <div class="usr__field">
-        <label for="email">Correo electrónico</label>
-        <input id="email" type="email" formControlName="email" placeholder="usuario@dominio.com" />
-        @if (fieldError(form.get('email')); as err) {
-          <p class="usr__error">{{ err }}</p>
-        }
-      </div>
-
-      <div class="usr__field">
-        <label for="username">Usuario <span class="usr__hint">(3–20, letras/números/_)</span></label>
-        <input id="username" type="text" formControlName="username" />
-        @if (fieldError(form.get('username')); as err) {
-          <p class="usr__error">{{ err }}</p>
-        }
-      </div>
-
-      <div class="usr__field">
-        <label for="role">Rol</label>
-        <select id="role" formControlName="role">
-          @if (roles().length === 0) {
-            <option value="" disabled>{{ isLoadingRoles() ? 'Cargando roles…' : 'Sin roles' }}</option>
-          }
-          @for (r of roles(); track r) {
-            <option [value]="r">{{ r }}</option>
-          }
-        </select>
-        @if (fieldError(form.get('role')); as err) {
-          <p class="usr__error">{{ err }}</p>
-        }
-      </div>
-
-      <div class="usr__actions">
-        <button type="submit" class="usr__submit" [disabled]="isSubmitting()">
-          {{ isSubmitting() ? 'Creando…' : 'Crear usuario' }}
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <div class="usr__panel usr__panel--wide">
-    <div class="usr__manage-head">
-      <div>
-        <h2 class="usr__panel-title">Estado de usuarios</h2>
-        <p class="usr__manage-note">
-          Solo se listan usuarios activos. Un usuario inactivo o suspendido deja de aparecer aquí y
-          no se puede volver a activar desde esta pantalla.
-        </p>
-      </div>
-      <label class="usr__manage-filter">
-        <span>Rol</span>
-        <select
-          [value]="manageRole()"
-          (change)="onManageRoleChange($any($event.target).value)"
-          [disabled]="isLoadingManaged() || roles().length === 0"
+    <div class="usr__tabs" role="tablist" aria-label="Roles">
+      @for (r of roles(); track r) {
+        <button
+          type="button"
+          role="tab"
+          class="usr__tab"
+          [class.usr__tab--on]="r === manageRole()"
+          [attr.aria-selected]="r === manageRole()"
+          [disabled]="isLoadingManaged()"
+          (click)="onManageRoleChange(r)"
         >
-          @for (r of roles(); track r) {
-            <option [value]="r" [selected]="r === manageRole()">{{ r }}</option>
-          }
-        </select>
-      </label>
+          {{ roleLabel(r) }}
+        </button>
+      } @empty {
+        <span class="usr__hint">{{ isLoadingRoles() ? 'Cargando roles…' : 'No hay roles configurados.' }}</span>
+      }
     </div>
 
     @if (isLoadingManaged()) {
-      <p class="usr__manage-hint">Cargando usuarios…</p>
+      <p class="usr__empty">Cargando usuarios…</p>
     } @else if (manageError()) {
-      <p class="usr__manage-hint">{{ manageError() }}</p>
+      <p class="usr__empty">{{ manageError() }}</p>
     } @else if (managedUsers().length === 0) {
-      <p class="usr__manage-hint">No hay usuarios para mostrar.</p>
+      <p class="usr__empty">No hay usuarios para mostrar.</p>
     } @else {
-      <ul class="usr__list">
-        @for (u of managedUsers(); track u.user_id) {
-          <li class="usr__item">
-            <div class="usr__who">
-              <span class="usr__name">{{ u.name }}</span>
-              <span class="usr__meta">{{ u.username }}{{ u.email ? ' · ' + u.email : '' }}</span>
-            </div>
-            <div class="usr__btns">
-              @if (isSelf(u.user_id)) {
-                <span class="usr__self">Tu cuenta</span>
-              } @else {
-                @for (a of statusActions; track a.value) {
-                  <button type="button" class="usr__btn" (click)="askStatusChange(u, a.value)">
-                    {{ a.action }}
-                  </button>
-                }
-              }
-            </div>
-          </li>
-        }
-      </ul>
+      <div class="usr__scroll">
+        <table class="usr__table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Correo electrónico</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th class="usr__th-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of managedUsers(); track u.user_id) {
+              <tr>
+                <td class="usr__name">{{ u.name }}</td>
+                <td>{{ u.username }}</td>
+                <td class="usr__email">{{ u.email || '—' }}</td>
+                <td>
+                  <span class="usr__badge usr__badge--role">{{ roleLabel(u.role) }}</span>
+                </td>
+                <td>
+                  @if (u.status) {
+                    <span class="usr__badge usr__badge--{{ u.status }}">{{ statusLabel(u.status) }}</span>
+                  } @else {
+                    <span class="usr__unknown" title="El servidor aún no informa el estado">—</span>
+                  }
+                </td>
+                <td class="usr__cell-actions">
+                  @if (isSelf(u.user_id)) {
+                    <span class="usr__self">Tu cuenta</span>
+                  } @else {
+                    @for (a of actionsFor(u); track a.value) {
+                      <button type="button" class="usr__btn" (click)="askStatusChange(u, a.value)">
+                        {{ a.action }}
+                      </button>
+                    }
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   </div>
 </section>
+
+@if (isCreateOpen()) {
+  <div class="usr__overlay" (click)="closeCreate()">
+    <div
+      class="usr__modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-title"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="create-title" class="usr__modal-title">Crear usuario</h2>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="usr__form">
+        <div class="usr__field">
+          <label for="name">Nombre <span class="usr__hint">(3–100 caracteres)</span></label>
+          <input id="name" type="text" formControlName="name" autocomplete="off" />
+          @if (fieldError(form.get('name')); as err) {
+            <p class="usr__error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="usr__field">
+          <label for="email">Correo electrónico</label>
+          <input id="email" type="email" formControlName="email" placeholder="usuario@dominio.com" />
+          @if (fieldError(form.get('email')); as err) {
+            <p class="usr__error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="usr__field">
+          <label for="username">Usuario <span class="usr__hint">(3–20, letras/números/_)</span></label>
+          <input id="username" type="text" formControlName="username" />
+          @if (fieldError(form.get('username')); as err) {
+            <p class="usr__error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="usr__field">
+          <label for="role">Rol</label>
+          <select id="role" formControlName="role">
+            @if (roles().length === 0) {
+              <option value="" disabled>{{ isLoadingRoles() ? 'Cargando roles…' : 'Sin roles' }}</option>
+            }
+            @for (r of roles(); track r) {
+              <option [value]="r">{{ roleLabel(r) }}</option>
+            }
+          </select>
+          @if (fieldError(form.get('role')); as err) {
+            <p class="usr__error">{{ err }}</p>
+          }
+        </div>
+
+        <div class="usr__modal-actions">
+          <button type="button" class="usr__btn usr__btn--lg" (click)="closeCreate()" [disabled]="isSubmitting()">
+            Cancelar
+          </button>
+          <button type="submit" class="usr__btn usr__btn--lg usr__btn--primary" [disabled]="isSubmitting()">
+            {{ isSubmitting() ? 'Creando…' : 'Crear usuario' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
 
 @if (pendingChange(); as p) {
   <div class="usr__overlay" (click)="cancelStatusChange()">
@@ -114,8 +157,7 @@
     >
       <h2 id="status-title" class="usr__modal-title">Cambiar estado del usuario</h2>
       <p id="status-desc" class="usr__modal-text">
-        <strong>{{ p.user.name }}</strong> pasará a estar <strong>{{ pendingLabel() }}</strong> y
-        dejará de aparecer en esta lista. Desde esta pantalla no podrás volver a activarlo.
+        <strong>{{ p.user.name }}</strong> pasará a estar <strong>{{ pendingLabel() }}</strong>.
       </p>
       <div class="usr__modal-actions">
         <button type="button" class="usr__btn usr__btn--lg" (click)="cancelStatusChange()" [disabled]="isChangingStatus()">
@@ -123,7 +165,7 @@
         </button>
         <button
           type="button"
-          class="usr__btn usr__btn--lg usr__btn--solid"
+          class="usr__btn usr__btn--lg usr__btn--primary"
           (click)="confirmStatusChange()"
           [disabled]="isChangingStatus()"
         >

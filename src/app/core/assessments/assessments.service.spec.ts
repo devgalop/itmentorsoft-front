@@ -293,6 +293,34 @@ describe('AssessmentsService', () => {
     });
   });
 
+  describe('getLatestQuestions', () => {
+    it('GETs /assessments/all-questions with the page and page size', async () => {
+      const promise = service.getLatestQuestions(2, 50);
+      const req = httpMock.expectOne((r) => r.url === '/assessments/all-questions');
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('page')).toBe('2');
+      expect(req.request.params.get('page_size')).toBe('50');
+      req.flush({ is_success: true, message: 'ok', questions: [{ question_id: 'q1' }], total: 9 });
+      expect(await promise).toEqual({ questions: [{ question_id: 'q1' }], total: 9 });
+    });
+
+    it('defaults to an empty page when the response has no questions', async () => {
+      const promise = service.getLatestQuestions();
+      httpMock
+        .expectOne((r) => r.url === '/assessments/all-questions')
+        .flush({ is_success: true, message: 'ok' });
+      expect(await promise).toEqual({ questions: [], total: 0 });
+    });
+
+    it('maps a server error', async () => {
+      const promise = service.getLatestQuestions();
+      httpMock
+        .expectOne((r) => r.url === '/assessments/all-questions')
+        .flush({ detail: 'x' }, { status: 500, statusText: 'error' });
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
+    });
+  });
+
   describe('getQuestionVersions', () => {
     it('GETs /assessments/question-versions with the question id and returns the versions', async () => {
       const promise = service.getQuestionVersions('q-12345');

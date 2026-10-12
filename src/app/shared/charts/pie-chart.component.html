@@ -1,0 +1,37 @@
+<p class="pc__total">
+  <strong class="pc__total-num">{{ total() }}</strong>
+  @if (caption()) {
+    <span class="pc__caption">{{ caption() }}</span>
+  }
+</p>
+
+<div class="pc__body">
+  @if (total() === 0) {
+    <p class="pc__empty">Sin datos todavía.</p>
+  } @else {
+    <svg class="pc__svg" viewBox="0 0 100 100" role="img" [attr.aria-label]="summary()">
+      @for (s of slices(); track s.key) {
+        @if (s.path) {
+          <path class="pc__slice" [attr.d]="s.path" [attr.fill]="s.color">
+            <title>{{ s.label }}: {{ s.count }} ({{ s.pct }}%)</title>
+          </path>
+        } @else {
+          <circle class="pc__slice" cx="50" cy="50" r="48" [attr.fill]="s.color">
+            <title>{{ s.label }}: {{ s.count }} ({{ s.pct }}%)</title>
+          </circle>
+        }
+      }
+    </svg>
+  }
+
+  <ul class="pc__legend">
+    @for (i of items(); track i.key) {
+      <li class="pc__row">
+        <span class="pc__dot" [style.background]="i.color" aria-hidden="true"></span>
+        <span class="pc__label">{{ i.label }}</span>
+        <span class="pc__count">{{ i.count }}</span>
+        <span class="pc__pct">{{ percent(i.count) }}%</span>
+      </li>
+    }
+  </ul>
+</div>

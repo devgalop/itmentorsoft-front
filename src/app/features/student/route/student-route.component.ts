@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AuthService } from '@core/auth/auth.service';
 import { ContentService } from '@core/content/content.service';
-import { RecommendedTopic } from '@core/content/content.types';
+import { LearningPathStore } from '@core/content/learning-path-store';
+import { RecommendedTopic, TopicPathRef } from '@core/content/content.types';
 import { ToastService } from '@shared/ui/toast/toast.service';
 
 @Component({
@@ -15,10 +16,16 @@ export class StudentRouteComponent {
   private readonly auth = inject(AuthService);
   private readonly content = inject(ContentService);
   private readonly toast = inject(ToastService);
+  private readonly store = inject(LearningPathStore);
 
   readonly topics = signal<RecommendedTopic[]>([]);
   readonly isLoading = signal(true);
   readonly loadError = signal<string | null>(null);
+  /**
+   * La ruta existe pero no se puede mostrar: el backend ya la había generado y no devuelve sus
+   * ids (solo los entrega al crearla), y en este navegador no se guardaron.
+   */
+  readonly unavailable = signal(false);
 
   /** content_id del recurso que se está abriendo (para mostrar el spinner en ese item). */
   readonly openingId = signal<string | null>(null);
@@ -46,9 +53,9 @@ export class StudentRouteComponent {
   async load(id: string): Promise<void> {
     this.isLoading.set(true);
     this.loadError.set(null);
+    this.unavailable.set(false);
     try {
-      const recommendation = await this.content.getRecommendedLearningPaths(id);
-      this.topics.set(recommendation);
+      await this.loadPath(id, true);
       await this.loadMyRatings(id);
     } catch (error) {
       this.loadError.set(
@@ -57,6 +64,50 @@ export class StudentRouteComponent {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  /** Vuelve a intentarlo (botón "Reintentar"). */
+  retry(): void {
+    const id = this.auth.userId();
+    if (id) void this.load(id);
+  }
+
+  /**
+   * Los ids de los temas se guardan al generar la ruta. Si no hay ninguno guardado se genera; si
+   * los guardados ya no sirven (la ruta cambió), se descartan y se genera una sola vez más.
+   */
+  private async loadPath(id: string, mayRegenerate: boolean): Promise<void> {
+    let refs = this.store.get(id);
+    if (refs.length === 0) {
+      const generated = await this.content.generateLearningPath(id);
+      if (!generated.created) {
+        this.topics.set([]);
+        if (generated.reason === 'exists') this.unavailable.set(true);
+        else if (generated.reason === 'failed') this.loadError.set('No se pudo generar tu ruta de aprendizaje.');
+        return;
+      }
+      refs = generated.paths;
+      this.store.set(id, refs);
+    }
+
+    const topics = await this.fetchTopics(refs);
+    if (topics.length === 0 && mayRegenerate) {
+      this.store.clear(id);
+      await this.loadPath(id, false);
+      return;
+    }
+    this.topics.set(topics);
+  }
+
+  /** Consulta cada tema por su id; los que fallan se omiten (si fallan todos, queda vacío). */
+  private async fetchTopics(refs: TopicPathRef[]): Promise<RecommendedTopic[]> {
+    const results = await Promise.allSettled(refs.map((r) => this.content.getLearningPathTopic(r.topic_path_id)));
+    return results.flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : []));
+  }
+
+  /** Avance de un tema redondeado a 0–100. */
+  progressPct(topic: RecommendedTopic): number {
+    return Math.max(0, Math.min(100, Math.round(topic.progress ?? 0)));
   }
 
   /**

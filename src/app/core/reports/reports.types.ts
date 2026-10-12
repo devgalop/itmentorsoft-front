@@ -79,6 +79,8 @@ export interface GetStudentSummaryResponse {
 export interface UserByRole {
   user_id: string;
   role: string;
+  /** Aún no lo envía el backend; la tabla de usuarios lo muestra cuando llegue. */
+  status?: string | null;
 }
 
 /** Respuesta de /reports/users-by-role (solo admin). */

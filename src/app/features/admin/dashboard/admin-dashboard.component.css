@@ -241,3 +241,37 @@
   box-shadow: 0 4px 14px color-mix(in srgb, var(--color-secondary) 18%, transparent);
 }
 
+
+.dash__models {
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dash__model {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.dash__model-label {
+  font-size: 0.78rem;
+  color: var(--color-mid-2);
+}
+
+.dash__model-name {
+  align-self: flex-start;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-accent-pale);
+  color: var(--color-accent);
+  font-size: 0.82rem;
+}
+
+.dash__model-none {
+  font-size: 0.85rem;
+  color: var(--color-mid-1);
+}

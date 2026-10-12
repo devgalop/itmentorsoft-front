@@ -10,11 +10,14 @@ import {
   GetContentByIdResponse,
   GetRatingsByUserResponse,
   GetTopContentResponse,
+  GenerateLearningPathResponse,
+  GenerateLearningPathResult,
   GetRecommendedLearningPathsResponse,
   PagedContents,
   RateContentPayload,
   RateContentResponse,
   RecommendedTopic,
+  TopicPathRef,
   RegisterContentPayload,
   RegisterContentResponse,
   TopContentItem,
@@ -31,19 +34,52 @@ export class ContentService {
 
   /** Listado paginado de recursos (page arranca en 0; el backend exige ambos params). */
   /**
-   * Ruta de aprendizaje recomendada para el estudiante: contenidos agrupados
-   * por tema. Solo accesible por rol student.
+   * Un tema de la ruta del estudiante con sus recursos recomendados y su avance. Devuelve null si
+   * el tema no existe (404). Solo accesible por rol student.
    */
-  async getRecommendedLearningPaths(userId: string): Promise<RecommendedTopic[]> {
+  async getLearningPathTopic(pathId: string): Promise<RecommendedTopic | null> {
     try {
       const response = await firstValueFrom(
         this.http.get<GetRecommendedLearningPathsResponse>(
           `${environment.apiUrl}${ENDPOINTS.content.recommendedLearningPaths}`,
-          { params: { user_id: userId } },
+          { params: { path_id: pathId } },
         ),
       );
-      return response.recommendation ?? [];
+      const topic = response.recommendation;
+      return topic ? { ...topic, topic_path_id: topic.topic_path_id ?? pathId } : null;
     } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) return null;
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Genera la ruta del estudiante a partir de su perfil. El backend devuelve los ids de los
+   * temas solo cuando la crea; si ya tenía una ruta sin completar responde un error sin ids.
+   */
+  async generateLearningPath(studentId: string): Promise<GenerateLearningPathResult> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<GenerateLearningPathResponse>(
+          `${environment.apiUrl}${ENDPOINTS.content.generateLearningPath}`,
+          null,
+          { params: { student_id: studentId } },
+        ),
+      );
+      const paths: TopicPathRef[] = response.learning_path ?? [];
+      return response.is_success && paths.length > 0
+        ? { created: true, paths }
+        : { created: false, reason: 'failed', message: response.message };
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status !== 0 && error.status !== 401 && error.status !== 403) {
+        // El backend envuelve el mensaje en el detalle ("400: La ruta … ya existe …").
+        const detail = String(error.error?.detail ?? '');
+        if (/ya existe|already exists/i.test(detail)) return { created: false, reason: 'exists', message: detail };
+        if (/no se encontraron resultados|no results/i.test(detail)) {
+          return { created: false, reason: 'no-evaluation', message: detail };
+        }
+        if (error.status !== 422) return { created: false, reason: 'failed', message: detail };
+      }
       throw this.mapHttpError(error);
     }
   }

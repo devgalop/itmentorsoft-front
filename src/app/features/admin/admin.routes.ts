@@ -17,10 +17,8 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () =>
           import('./users/admin-users.component').then((m) => m.AdminUsersComponent),
       },
-      {
-        path: 'roles',
-        loadComponent: () => import('./roles/roles.component').then((m) => m.RolesComponent),
-      },
+      // Roles se unió a Usuarios: se mantiene la ruta vieja para enlaces guardados.
+      { path: 'roles', redirectTo: 'users', pathMatch: 'full' },
       {
         path: 'content-approval',
         loadComponent: () =>
@@ -36,8 +34,10 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () =>
           import('./config/admin-config.component').then((m) => m.AdminConfigComponent),
       },
+      // Analíticas pasó a llamarse Reportes: se mantiene la ruta vieja para enlaces guardados.
+      { path: 'analytics', redirectTo: 'reports', pathMatch: 'full' },
       {
-        path: 'analytics',
+        path: 'reports',
         loadComponent: () =>
           import('./analytics/admin-analytics.component').then((m) => m.AdminAnalyticsComponent),
       },

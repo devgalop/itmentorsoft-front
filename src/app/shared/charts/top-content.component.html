@@ -1,0 +1,82 @@
+<section class="tc">
+  <div class="tc__head">
+    <h2 class="tc__title">Recursos mejor y peor valorados</h2>
+    @if (topics().length > 0) {
+      <label class="tc__filter">
+        <span>Tema</span>
+        <select
+          [value]="selectedTopic()"
+          (change)="onTopicChange($any($event.target).value)"
+          [disabled]="isLoadingTop()"
+        >
+          @for (t of topics(); track t) {
+            <option [value]="t" [selected]="t === selectedTopic()">{{ t }}</option>
+          }
+        </select>
+      </label>
+    }
+  </div>
+
+  @if (topics().length === 0) {
+    <p class="tc__hint">No hay temas disponibles para consultar.</p>
+  } @else if (isLoadingTop()) {
+    <p class="tc__hint">Cargando recursos…</p>
+  } @else {
+    @if (topUnavailable()) {
+      <p class="tc__hint">No se pudo cargar parte de la información de este tema.</p>
+    }
+    <div class="tc__grid">
+      <div class="tc__col tc__col--best">
+        <h3 class="tc__subtitle">
+          <span class="tc__icon" aria-hidden="true">▲</span> Mejor valorados
+        </h3>
+        @if (topBest().length === 0) {
+          <p class="tc__hint">Sin recursos calificados en este tema.</p>
+        } @else {
+          <ol class="tc__list">
+            @for (c of topBest(); track c.content_id; let i = $index) {
+              <li class="tc__item">
+                <span class="tc__rank" [class.tc__rank--first]="i === 0">{{ i + 1 }}</span>
+                <span class="tc__info">
+                  <span class="tc__name">{{ c.title }}</span>
+                  <span class="tc__stars" [attr.aria-label]="formatRating(c.rating) + ' de 5'">
+                    @for (s of [1, 2, 3, 4, 5]; track s) {
+                      <span [class.tc__star--on]="s <= stars(c.rating)">★</span>
+                    }
+                  </span>
+                </span>
+                <span class="tc__score">{{ formatRating(c.rating) }}</span>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+
+      <div class="tc__col tc__col--worse">
+        <h3 class="tc__subtitle">
+          <span class="tc__icon" aria-hidden="true">▼</span> Peor valorados
+        </h3>
+        @if (topWorse().length === 0) {
+          <p class="tc__hint">Sin recursos calificados en este tema.</p>
+        } @else {
+          <ol class="tc__list">
+            @for (c of topWorse(); track c.content_id; let i = $index) {
+              <li class="tc__item">
+                <span class="tc__rank">{{ i + 1 }}</span>
+                <span class="tc__info">
+                  <span class="tc__name">{{ c.title }}</span>
+                  <span class="tc__stars" [attr.aria-label]="formatRating(c.rating) + ' de 5'">
+                    @for (s of [1, 2, 3, 4, 5]; track s) {
+                      <span [class.tc__star--on]="s <= stars(c.rating)">★</span>
+                    }
+                  </span>
+                </span>
+                <span class="tc__score">{{ formatRating(c.rating) }}</span>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    </div>
+  }
+</section>
