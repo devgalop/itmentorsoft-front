@@ -64,4 +64,9 @@ describe('ToastService', () => {
     vi.advanceTimersByTime(1);
     expect(service.toasts()).toHaveLength(0);
   });
+
+  it('keeps the action link of a toast', () => {
+    service.show('success', 'Listo', 'ok', 0, { label: 'Ver', route: ['/a'], queryParams: { x: '1' } });
+    expect(service.toasts()[0]!.action).toEqual({ label: 'Ver', route: ['/a'], queryParams: { x: '1' } });
+  });
 });

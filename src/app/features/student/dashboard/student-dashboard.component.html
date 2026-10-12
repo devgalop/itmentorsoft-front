@@ -3,8 +3,13 @@
     <div class="dash__banner-text">
       <h1 class="dash__greeting">¡Hola, {{ userName() }}!</h1>
       @if (!classification()) {
-        <p class="dash__intro">Completa tu evaluación inicial para recibir tu ruta personalizada.</p>
-        <span class="dash__badge">Sin categoría asignada aún</span>
+        @if (gradingPending()) {
+          <p class="dash__intro">Estamos calificando tu evaluación. Te avisaremos cuando termine.</p>
+          <span class="dash__badge">Calificando…</span>
+        } @else {
+          <p class="dash__intro">Completa tu evaluación inicial para recibir tu ruta personalizada.</p>
+          <span class="dash__badge">Sin categoría asignada aún</span>
+        }
       }
     </div>
     @if (medal(); as m) {
@@ -34,9 +39,15 @@
               · = igual que la anterior
             }
           </span>
+        } @else if (gradingPending()) {
+          <span class="dash__stat-value dash__stat-value--text">Calificando…</span>
+          <span class="dash__stat-hint">Te avisaremos cuando termine</span>
         } @else {
           <span class="dash__stat-value">—</span>
           <span class="dash__stat-hint">Aún sin evaluaciones</span>
+        }
+        @if (last() && gradingPending()) {
+          <span class="dash__stat-hint dash__pending">Calificando una evaluación nueva…</span>
         }
       </div>
       @if (last(); as l) {
@@ -93,9 +104,15 @@
         <a routerLink="/student/progress" class="dash__link">Ver mi progreso →</a>
       </div>
       @if (profileItems().length === 0) {
-        <p class="dash__empty">Sin datos de perfil todavía. Completa una evaluación para verlo.</p>
+        <p class="dash__empty">
+          @if (gradingPending()) {
+            Estamos calificando tu evaluación: tu perfil aparecerá aquí cuando termine.
+          } @else {
+            Sin datos de perfil todavía. Completa una evaluación para verlo.
+          }
+        </p>
       } @else {
-        <app-score-bars [items]="profileItems()" />
+        <app-score-bars [items]="profileItems()" [dense]="true" />
       }
     </div>
 
@@ -104,6 +121,8 @@
       @if (showStart()) {
         <p class="dash__next-text">Haz tu evaluación inicial para conocer tu nivel y recibir tu ruta.</p>
         <a routerLink="/student/assessments" [queryParams]="newParams" class="dash__btn dash__btn--solid">Comenzar ahora</a>
+      } @else if (gradingPending() && !weakest()) {
+        <p class="dash__next-text">Cuando termine la calificación verás aquí tu siguiente paso.</p>
       } @else if (weakest(); as w) {
         <p class="dash__next-text">
           Refuerza <strong>{{ w.label }}</strong>: vas en {{ w.value }}%.

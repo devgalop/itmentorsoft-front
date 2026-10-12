@@ -11,6 +11,14 @@
   gap: 1rem;
 }
 
+.sbr--dense {
+  gap: 0.65rem;
+}
+
+.sbr--dense .sbr__head {
+  margin-bottom: 0.2rem;
+}
+
 .sbr__head {
   display: flex;
   align-items: center;

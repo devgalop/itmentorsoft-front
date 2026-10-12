@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 import { environment } from '../../../../environments/environment';
 import { PagerComponent } from '@shared/ui/pager/pager.component';
@@ -15,12 +16,15 @@ import {
 
 type Step = 'setup' | 'answering' | 'grading' | 'history' | 'result';
 
-const POLL_INTERVAL_MS = 3000;
+/** El spinner de "Calificando…" dura solo esto; después se avisa que se notificará. */
+export const GRADING_SPINNER_MS = 2000;
+/** Tiempo que se muestra el aviso antes de llevar al estudiante al principal. */
+export const REDIRECT_MS = 2500;
+
 /** Límite del backend por respuesta (save_assessments_answers). */
 export const MAX_ANSWER_LENGTH = 600;
 /** Evaluaciones por página en el historial. */
 export const HISTORY_PAGE_SIZE = 6;
-const MAX_POLLS = 40; // ~2 min de espera máxima
 
 @Component({
   selector: 'app-student-assessment',
@@ -35,6 +39,11 @@ export class StudentAssessmentComponent {
   private readonly assessments = inject(StudentAssessmentService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router);
+  private readonly grading = inject(GradingWatcherService);
+  private readonly timers = new Set<ReturnType<typeof setTimeout>>();
+
+  private readonly cleanup = inject(DestroyRef).onDestroy(() => this.clearTimers());
 
   /** Viene del ambiente: si es true se bloquea copiar/pegar en la respuesta. */
   readonly clipboardBlocked = environment.blockClipboardInAnswers;
@@ -44,6 +53,8 @@ export class StudentAssessmentComponent {
   readonly step = signal<Step>('history');
   readonly error = signal<string | null>(null);
   readonly isBusy = signal(false);
+  /** 'working': spinner de calificando; 'sent': aviso de que se notificará y se irá al principal. */
+  readonly gradingPhase = signal<'working' | 'sent'>('working');
 
   // Setup
   readonly topics = signal<string[]>([]);
@@ -71,7 +82,6 @@ export class StudentAssessmentComponent {
 
   // Result
   readonly result = signal<StudentAssessmentResult | null>(null);
-  readonly gradingMessage = signal('Estamos calificando tus respuestas…');
 
   readonly currentQuestion = computed<TopicQuestion | null>(
     () => this.questions()[this.currentIndex()] ?? null,
@@ -272,8 +282,15 @@ export class StudentAssessmentComponent {
         this.error.set(saved.message || 'No se pudieron guardar las respuestas');
         return;
       }
+      // La calificación es asíncrona: se espera en segundo plano. Un par de segundos de spinner,
+      // luego el aviso de que se notificará, y de ahí al principal.
+      this.grading.watch(userId, this.assessmentId);
+      this.gradingPhase.set('working');
       this.step.set('grading');
-      await this.waitForQualificationAndLoadResult(userId, this.assessmentId);
+      this.later(() => {
+        this.gradingPhase.set('sent');
+        this.later(() => void this.goToDashboard(), REDIRECT_MS);
+      }, GRADING_SPINNER_MS);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Error al enviar la evaluación');
       this.step.set('answering');
@@ -282,27 +299,29 @@ export class StudentAssessmentComponent {
     }
   }
 
-  /** Polling del estado de calificación; al terminar, muestra el historial. */
-  private async waitForQualificationAndLoadResult(
-    userId: string,
-    assessmentId: string,
-  ): Promise<void> {
-    for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
-      try {
-        const ready = await this.assessments.getQualificationStatus(userId, assessmentId);
-        if (ready) {
-          await this.loadHistory();
-          this.step.set('history');
-          return;
-        }
-      } catch {
-        // Reintenta silenciosamente durante el polling.
-      }
-      await this.delay(POLL_INTERVAL_MS);
-    }
-    this.gradingMessage.set(
-      'La calificación está tardando más de lo esperado. Puedes revisar el resultado más tarde.',
+  /** Lleva al estudiante al principal (sin esperar al temporizador si pulsó el botón). */
+  async goToDashboard(): Promise<void> {
+    this.clearTimers();
+    // El aviso flotante sigue visible ya sobre el principal.
+    this.toast.info(
+      'Evaluación enviada',
+      'Estamos calificando tus respuestas. Te avisaremos aquí y por correo cuando termine.',
+      8000,
     );
+    await this.router.navigate(['/student/dashboard']);
+  }
+
+  private later(fn: () => void, ms: number): void {
+    const id = setTimeout(() => {
+      this.timers.delete(id);
+      fn();
+    }, ms);
+    this.timers.add(id);
+  }
+
+  private clearTimers(): void {
+    this.timers.forEach((id) => clearTimeout(id));
+    this.timers.clear();
   }
 
   /** Carga una página del historial de evaluaciones del estudiante (punto 4). */
@@ -375,10 +394,6 @@ export class StudentAssessmentComponent {
     this.step.set('history');
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
   scorePct(score: number): number {
     const pct = Math.round(score * 100);
     return Math.max(0, Math.min(100, pct));
@@ -394,7 +409,6 @@ export class StudentAssessmentComponent {
     this.timePerQuestion.clear();
     this.currentIndex.set(0);
     this.draft.set('');
-    this.gradingMessage.set('Estamos calificando tus respuestas…');
   }
 
   /** Fecha legible para el historial. */

@@ -107,4 +107,20 @@ describe('ScoreBarsComponent', () => {
     setup(items);
     expect(el().querySelector('.sbr__track')?.getAttribute('aria-label')).toBe('Tema B: 85%');
   });
+
+  it('dense mode drops the note and marks the list as compact', () => {
+    const fixture = TestBed.createComponent(ScoreBarsComponent);
+    fixture.componentRef.setInput('items', [{ key: 'a', label: 'A', value: 60 }]);
+    fixture.componentRef.setInput('dense', true);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.sbr--dense')).not.toBeNull();
+    expect(root.querySelector('.sbr__note')).toBeNull();
+  });
+
+  it('shows the note by default', () => {
+    setup(items);
+    expect(el().querySelector('.sbr__note')).not.toBeNull();
+    expect(el().querySelector('.sbr--dense')).toBeNull();
+  });
 });

@@ -6,17 +6,24 @@ import { SidebarService } from '../../../shared/ui/sidebar/sidebar.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { STUDENT_NAV_ITEMS } from './student-nav-items';
 import { InitialAssessmentService } from '../../../core/student/initial-assessment.service';
+import { GradingWatcherService } from '../../../core/assessments/grading-watcher.service';
 
 describe('StudentLayoutComponent', () => {
   let component: StudentLayoutComponent;
   let fixture: ComponentFixture<StudentLayoutComponent>;
   let sidebarServiceMock: { isCollapsed: ReturnType<typeof vi.fn> };
-  let authServiceMock: { logout: ReturnType<typeof vi.fn>; user: ReturnType<typeof vi.fn> };
+  let authServiceMock: {
+    logout: ReturnType<typeof vi.fn>;
+    user: ReturnType<typeof vi.fn>;
+    userId: ReturnType<typeof vi.fn>;
+  };
+  let gradingMock: { resume: ReturnType<typeof vi.fn> };
   let initialAssessmentMock: { hasCompleted: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     sidebarServiceMock = { isCollapsed: vi.fn(() => false) };
-    authServiceMock = { logout: vi.fn(), user: vi.fn(() => null) };
+    authServiceMock = { logout: vi.fn(), user: vi.fn(() => null), userId: vi.fn(() => 'u1') };
+    gradingMock = { resume: vi.fn() };
     initialAssessmentMock = { hasCompleted: vi.fn().mockResolvedValue(true) };
 
     await TestBed.configureTestingModule({
@@ -26,6 +33,7 @@ describe('StudentLayoutComponent', () => {
         { provide: SidebarService, useValue: sidebarServiceMock },
         { provide: AuthService, useValue: authServiceMock },
         { provide: InitialAssessmentService, useValue: initialAssessmentMock },
+        { provide: GradingWatcherService, useValue: gradingMock },
       ],
     }).compileComponents();
 
@@ -80,5 +88,9 @@ describe('StudentLayoutComponent', () => {
 
     const content = fixture.nativeElement.querySelector('.student-layout__content');
     expect(content.classList.contains('student-layout__content--collapsed')).toBe(true);
+  });
+
+  it('resumes the pending gradings of the logged-in student', () => {
+    expect(gradingMock.resume).toHaveBeenCalledWith('u1');
   });
 });

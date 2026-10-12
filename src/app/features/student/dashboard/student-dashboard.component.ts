@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 import { AssessmentSummary } from '@core/assessments/student-assessment.types';
 import { ReportsService } from '@core/reports/reports.service';
@@ -52,6 +53,7 @@ export class StudentDashboardComponent {
   private readonly studentAssessment = inject(StudentAssessmentService);
   private readonly reports = inject(ReportsService);
   private readonly usersService = inject(UsersService);
+  private readonly grading = inject(GradingWatcherService);
 
   /** Nombre real del estudiante (se carga del backend). */
   private readonly displayName = signal<string | null>(null);
@@ -77,9 +79,16 @@ export class StudentDashboardComponent {
   /** true cuando ya se sabe si el estudiante tiene al menos una evaluación. */
   private readonly statusLoaded = signal(false);
 
+  /** ¿Hay una evaluación enviada que todavía se está calificando? */
+  readonly gradingPending = computed(() => this.grading.hasPending(this.authService.userId()));
+
   /** El botón de iniciar evaluación solo aparece mientras no haya ninguna evaluación. */
   readonly showStart = computed(
-    () => this.statusLoaded() && (this.assessmentsCount() ?? 0) === 0 && this.classification() === null,
+    () =>
+      this.statusLoaded() &&
+      !this.gradingPending() &&
+      (this.assessmentsCount() ?? 0) === 0 &&
+      this.classification() === null,
   );
 
   /** Perfil de conocimiento actual, con el color de cada tema (el de su línea en Mi progreso). */
@@ -144,18 +153,36 @@ export class StudentDashboardComponent {
 
   readonly sparkSize = { w: SPARK_W, h: SPARK_H };
 
+  /** Calificaciones terminadas que esta pantalla ya conoce (para refrescar solo cuando llega una nueva). */
+  private seenCompleted = this.grading.completedCount();
+
   constructor() {
     const id = this.authService.userId();
     if (id) {
       void this.loadDisplayName(id);
-      void this.loadSummary(id);
-      void this.loadHistory(id);
-      void Promise.all([this.loadAssessmentsCount(id), this.loadProgress(id)]).then(() =>
-        this.statusLoaded.set(true),
-      );
+      this.loadData(id);
     } else {
       this.statusLoaded.set(true);
     }
+
+    // Cuando termina una calificación, se recargan los datos: aparece el nivel, la medalla y el perfil.
+    effect(() => {
+      const completed = this.grading.completedCount();
+      untracked(() => {
+        const userId = this.authService.userId();
+        if (completed === this.seenCompleted || !userId) return;
+        this.seenCompleted = completed;
+        this.loadData(userId);
+      });
+    });
+  }
+
+  private loadData(id: string): void {
+    void this.loadSummary(id);
+    void this.loadHistory(id);
+    void Promise.all([this.loadAssessmentsCount(id), this.loadProgress(id)]).then(() =>
+      this.statusLoaded.set(true),
+    );
   }
 
   formatDate(value: string): string {

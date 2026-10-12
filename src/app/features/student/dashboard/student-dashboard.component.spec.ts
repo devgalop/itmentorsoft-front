@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
@@ -6,6 +7,7 @@ import { StudentDashboardComponent } from './student-dashboard.component';
 import { AuthService } from '../../../core/auth/auth.service';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
 import { ReportsService } from '../../../core/reports/reports.service';
+import { GradingWatcherService } from '../../../core/assessments/grading-watcher.service';
 
 async function flush(): Promise<void> {
   await new Promise((r) => setTimeout(r));
@@ -25,6 +27,7 @@ interface SetupOptions {
   historyReject?: Error;
   name?: string | null;
   nameReject?: Error;
+  pending?: boolean;
 }
 
 describe('StudentDashboardComponent', () => {
@@ -33,6 +36,7 @@ describe('StudentDashboardComponent', () => {
   let studentAssessmentMock: { getQuantity: ReturnType<typeof vi.fn>; getAssessmentsSummary: ReturnType<typeof vi.fn> };
   let reportsMock: { getStudentProgress: ReturnType<typeof vi.fn>; getStudentSummary: ReturnType<typeof vi.fn> };
   let usersMock: { getUser: ReturnType<typeof vi.fn> };
+  let completedCount: ReturnType<typeof signal<number>>;
 
   const el = () => fixture.nativeElement as HTMLElement;
   const text = () => el().textContent ?? '';
@@ -82,6 +86,7 @@ describe('StudentDashboardComponent', () => {
           ),
     };
 
+    completedCount = signal(0);
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [StudentDashboardComponent],
@@ -91,6 +96,10 @@ describe('StudentDashboardComponent', () => {
         { provide: StudentAssessmentService, useValue: studentAssessmentMock },
         { provide: ReportsService, useValue: reportsMock },
         { provide: UsersService, useValue: usersMock },
+        {
+          provide: GradingWatcherService,
+          useValue: { hasPending: () => !!opts.pending, completedCount },
+        },
       ],
     });
     fixture = TestBed.createComponent(StudentDashboardComponent);
@@ -328,6 +337,49 @@ describe('StudentDashboardComponent', () => {
       });
       expect(component.feedback()).toBeNull();
       expect(text()).not.toContain('Feedback para ti');
+    });
+  });
+
+  describe('calificación en curso', () => {
+    it('shows "Calificando…" in the banner and the last evaluation card, without the start button', async () => {
+      await setup(undefined, { quantity: 0, pending: true });
+      expect(el().querySelector('.dash__badge')?.textContent?.trim()).toBe('Calificando…');
+      expect(text()).toContain('Estamos calificando tu evaluación');
+      expect(text()).toContain('Te avisaremos cuando termine');
+      expect(startBtn()).toBeUndefined();
+      expect(text()).not.toContain('Completa tu evaluación inicial');
+    });
+
+    it('explains that the profile and the next step will appear when it finishes', async () => {
+      await setup(undefined, { quantity: 0, pending: true });
+      expect(text()).toContain('tu perfil aparecerá aquí');
+      expect(text()).toContain('Cuando termine la calificación verás aquí tu siguiente paso');
+    });
+
+    it('keeps the previous score and adds a note when a new evaluation is being graded', async () => {
+      await setup(undefined, {
+        quantity: 1,
+        classification: 'Básico',
+        pending: true,
+        history: [{ assessment_id: 'a1', score: 0.5, date_taken: '2026-10-01T10:00:00', classification: 'básico' }],
+      });
+      expect(text()).toContain('50%');
+      expect(text()).toContain('Calificando una evaluación nueva');
+    });
+
+    it('does not mention any grading when nothing is pending', async () => {
+      await setup(undefined, { quantity: 0 });
+      expect(text()).not.toContain('Calificando');
+    });
+
+    it('reloads the data when a grading finishes, but not on the first load', async () => {
+      await setup(undefined, { quantity: 1, classification: 'Básico' });
+      const calls = reportsMock.getStudentProgress.mock.calls.length;
+      completedCount.set(1);
+      fixture.detectChanges();
+      await flush();
+      expect(reportsMock.getStudentProgress.mock.calls.length).toBe(calls + 1);
+      expect(studentAssessmentMock.getAssessmentsSummary.mock.calls.length).toBeGreaterThan(1);
     });
   });
 });

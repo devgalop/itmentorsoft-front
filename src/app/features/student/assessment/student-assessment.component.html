@@ -117,13 +117,21 @@
     }
   }
 
-  <!-- PASO 3: calificando -->
+  <!-- PASO 3: enviada; se califica en segundo plano -->
   @if (step() === 'grading') {
-    <div class="ev__card ev__card--center">
-      <div class="ev__spinner" aria-hidden="true"></div>
-      <h2 class="ev__card-title">Calificando…</h2>
-      <p class="ev__hint">{{ gradingMessage() }}</p>
-      <p class="ev__note">Esto puede tardar unos segundos. No cierres la página.</p>
+    <div class="ev__card ev__card--center" aria-live="polite">
+      @if (gradingPhase() === 'working') {
+        <div class="ev__spinner" aria-hidden="true"></div>
+        <h2 class="ev__card-title">Calificando…</h2>
+        <p class="ev__hint">Estamos revisando tus respuestas.</p>
+      } @else {
+        <h2 class="ev__card-title">¡Evaluación enviada!</h2>
+        <p class="ev__hint">
+          La calificación puede tardar un poco. Te notificaremos aquí y por correo cuando termine.
+        </p>
+        <p class="ev__note">Te llevamos a la página principal…</p>
+        <button type="button" class="ev__primary" (click)="goToDashboard()">Ir al principal ahora</button>
+      }
     </div>
   }
 

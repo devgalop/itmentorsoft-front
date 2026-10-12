@@ -100,3 +100,16 @@
   color: var(--color-secondary);
   background: color-mix(in srgb, var(--color-secondary) 12%, var(--color-white));
 }
+
+.toast__action {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--color-secondary);
+  text-decoration: none;
+}
+
+.toast__action:hover {
+  text-decoration: underline;
+}

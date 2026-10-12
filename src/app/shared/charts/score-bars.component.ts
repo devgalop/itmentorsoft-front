@@ -30,6 +30,8 @@ const MIN_TINT = 22;
 })
 export class ScoreBarsComponent {
   readonly items = input.required<ScoreItem[]>();
+  /** Versión compacta (menos espacio entre filas y sin la nota), para tarjetas con poco alto. */
+  readonly dense = input(false);
 
   /** Del mayor al menor puntaje; a igual puntaje se conserva el orden recibido. */
   readonly sorted = computed(() => [...this.items()].sort((a, b) => b.value - a.value));
