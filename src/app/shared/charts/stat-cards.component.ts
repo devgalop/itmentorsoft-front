@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ChartItem } from './chart-item';
 
 /**
@@ -16,6 +16,11 @@ export class StatCardsComponent {
   readonly items = input.required<ChartItem[]>();
   /** Texto junto al total, por ejemplo "usuarios en total". */
   readonly caption = input('');
+
+  /** Si es true, cada tarjeta es un botón que emite su `key` (sirve para filtrar). */
+  readonly selectable = input(false);
+  readonly selectedKey = input<string | null>(null);
+  readonly select = output<string>();
 
   readonly total = computed(() => this.items().reduce((acc, i) => acc + i.count, 0));
 

@@ -51,4 +51,28 @@ describe('StatCardsComponent', () => {
     expect(c.total()).toBe(0);
     expect(c.percent(0)).toBe(0);
   });
+
+  describe('selectable cards', () => {
+    it('renders plain cards (not buttons) by default', () => {
+      setup(items);
+      expect(el().querySelectorAll('button.sc__card')).toHaveLength(0);
+    });
+
+    it('renders buttons that emit their key and mark the selected one', () => {
+      const c = setup(items);
+      fixture.componentRef.setInput('selectable', true);
+      fixture.componentRef.setInput('selectedKey', 'b');
+      fixture.detectChanges();
+      const emitted: string[] = [];
+      c.select.subscribe((k) => emitted.push(k));
+
+      const buttons = el().querySelectorAll<HTMLButtonElement>('button.sc__card');
+      expect(buttons).toHaveLength(3);
+      expect(buttons[1]!.getAttribute('aria-pressed')).toBe('true');
+      expect(buttons[0]!.getAttribute('aria-pressed')).toBe('false');
+      expect(buttons[1]!.classList.contains('sc__card--on')).toBe(true);
+      buttons[0]!.click();
+      expect(emitted).toEqual(['a']);
+    });
+  });
 });

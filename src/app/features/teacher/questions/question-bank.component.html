@@ -1,7 +1,7 @@
 <section class="cuest">
   <header class="cuest__header">
     <div>
-      <h1 class="cuest__title">Preguntas técnicas</h1>
+      <h1 class="cuest__title">Preguntas</h1>
       <p class="cuest__subtitle">
         @if (mode() === 'all') {
           {{ total() }} pregunta(s) registrada(s)
@@ -113,21 +113,8 @@
         </tbody>
       </table>
 
-      @if (mode() === 'all' && totalPages() > 1) {
-        <div class="cuest__pager">
-          <button type="button" class="cuest__page-btn" (click)="prevPage()" [disabled]="page() === 0">
-            ← Anterior
-          </button>
-          <span class="cuest__page-info">Página {{ page() + 1 }} de {{ totalPages() }}</span>
-          <button
-            type="button"
-            class="cuest__page-btn"
-            (click)="nextPage()"
-            [disabled]="page() + 1 >= totalPages()"
-          >
-            Siguiente →
-          </button>
-        </div>
+      @if (mode() === 'all') {
+        <app-pager [page]="page()" [totalPages]="totalPages()" (prev)="prevPage()" (next)="nextPage()" />
       }
     }
   </div>

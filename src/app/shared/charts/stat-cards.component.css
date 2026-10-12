@@ -32,6 +32,8 @@
 }
 
 .sc__card {
+  height: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
@@ -58,4 +60,22 @@
 .sc__pct {
   font-size: 0.78rem;
   color: var(--color-mid-2);
+}
+
+.sc__card--btn {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sc__card--btn:hover {
+  background: var(--color-white);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-dark) 12%, transparent);
+}
+
+.sc__card--on {
+  background: var(--color-white);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }

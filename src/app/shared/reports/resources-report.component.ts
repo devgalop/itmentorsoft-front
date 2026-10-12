@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { AssessmentsService } from '@core/assessments/assessments.service';
 import { ContentService } from '@core/content/content.service';
 import { ReportsService } from '@core/reports/reports.service';
@@ -32,6 +32,9 @@ export class ResourcesReportComponent {
   private readonly content = inject(ContentService);
   private readonly reports = inject(ReportsService);
   private readonly assessments = inject(AssessmentsService);
+
+  /** Si es false no se muestra el bloque de recursos mejor y peor valorados. */
+  readonly showTopContent = input(true);
 
   readonly isLoading = signal(true);
   readonly resourcesByLevel = signal<Record<string, number>>({});

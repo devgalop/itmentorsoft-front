@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { ResourcesReportComponent } from './resources-report.component';
-import { AssessmentsService } from '../../../core/assessments/assessments.service';
-import { ContentService } from '../../../core/content/content.service';
-import { ReportsService } from '../../../core/reports/reports.service';
+import { AssessmentsService } from '../../core/assessments/assessments.service';
+import { ContentService } from '../../core/content/content.service';
+import { ReportsService } from '../../core/reports/reports.service';
 
 async function flush(times = 15): Promise<void> {
   for (let i = 0; i < times; i++) {
@@ -29,6 +29,7 @@ describe('ResourcesReportComponent', () => {
     topics?: string[];
     topicsReject?: boolean;
     levelReject?: boolean;
+    showTopContent?: boolean;
   }): ResourcesReportComponent {
     contentMock = {
       getContentsByCategory: vi.fn().mockImplementation(async (level: string) => {
@@ -59,6 +60,7 @@ describe('ResourcesReportComponent', () => {
       ],
     });
     fixture = TestBed.createComponent(ResourcesReportComponent);
+    if (opts?.showTopContent === false) fixture.componentRef.setInput('showTopContent', false);
     fixture.detectChanges();
     return fixture.componentInstance;
   }
@@ -119,6 +121,13 @@ describe('ResourcesReportComponent', () => {
     await flush();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('app-top-content')).not.toBeNull();
+  });
+
+  it('hides the best and worst rated block when showTopContent is off', async () => {
+    setup({ showTopContent: false });
+    await flush();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-top-content')).toBeNull();
   });
 
   it('keeps the report usable when the topics cannot be loaded', async () => {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApprovalService } from '@core/admin/approval.service';
 import { AssessmentsService } from '@core/assessments/assessments.service';
@@ -37,9 +37,12 @@ function capitalize(text: string): string {
   styleUrl: './questions-report.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class QuestionsReportComponent {
+export class QuestionsReportComponent implements OnInit {
   private readonly assessments = inject(AssessmentsService);
   private readonly approval = inject(ApprovalService);
+
+  /** El aviso de preguntas pendientes de aprobación solo lo puede consultar el admin. */
+  readonly showPending = input(true);
 
   readonly isLoading = signal(true);
   readonly loadError = signal<string | null>(null);
@@ -87,14 +90,17 @@ export class QuestionsReportComponent {
     })),
   );
 
-  constructor() {
+  ngOnInit(): void {
     void this.load();
   }
 
   private async load(): Promise<void> {
     this.isLoading.set(true);
     this.loadError.set(null);
-    const [questions, pending] = await Promise.allSettled([this.fetchAll(), this.approval.getPending(0, 1)]);
+    const [questions, pending] = await Promise.allSettled([
+      this.fetchAll(),
+      this.showPending() ? this.approval.getPending(0, 1) : Promise.reject(new Error('sin permiso')),
+    ]);
     if (questions.status === 'fulfilled') {
       this.questions.set(questions.value);
     } else {

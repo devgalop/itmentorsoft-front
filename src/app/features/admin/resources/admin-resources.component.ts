@@ -9,6 +9,7 @@ import {
 import { ContentService } from '@core/content/content.service';
 import { contentCategoryLabel, ContentItem } from '@core/content/content.types';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { PagerComponent } from '@shared/ui/pager/pager.component';
 
 const PAGE_SIZE = 8;
 
@@ -20,6 +21,7 @@ const PAGE_SIZE = 8;
 @Component({
   selector: 'app-admin-resources',
   standalone: true,
+  imports: [PagerComponent],
   templateUrl: './admin-resources.component.html',
   styleUrl: './admin-resources.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -6,8 +6,8 @@ import { levelColor, roleColor } from '@shared/charts/chart-colors';
 import { ChartItem } from '@shared/charts/chart-item';
 import { ColumnChartComponent } from '@shared/charts/column-chart.component';
 import { StatCardsComponent } from '@shared/charts/stat-cards.component';
-import { QuestionsReportComponent } from './questions-report.component';
-import { ResourcesReportComponent } from './resources-report.component';
+import { QuestionsReportComponent } from '@shared/reports/questions-report.component';
+import { ResourcesReportComponent } from '@shared/reports/resources-report.component';
 
 interface DistributionItem {
   value: string;

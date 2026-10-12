@@ -22,6 +22,8 @@
       </div>
     </div>
 
-    <app-top-content class="rr__top" />
+    @if (showTopContent()) {
+      <app-top-content class="rr__top" />
+    }
   }
 </section>

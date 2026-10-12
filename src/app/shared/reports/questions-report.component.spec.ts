@@ -2,8 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { QuestionsReportComponent } from './questions-report.component';
-import { ApprovalService } from '../../../core/admin/approval.service';
-import { AssessmentsService } from '../../../core/assessments/assessments.service';
+import { ApprovalService } from '../../core/admin/approval.service';
+import { AssessmentsService } from '../../core/assessments/assessments.service';
 
 async function flush(times = 15): Promise<void> {
   for (let i = 0; i < times; i++) {
@@ -28,7 +28,13 @@ describe('QuestionsReportComponent', () => {
     q('5', 'avanzado', '', 'archived'),
   ];
 
-  function setup(opts?: { pages?: unknown[][]; total?: number; reject?: boolean; pending?: number | 'fail' }): QuestionsReportComponent {
+  function setup(opts?: {
+    pages?: unknown[][];
+    total?: number;
+    reject?: boolean;
+    pending?: number | 'fail';
+    showPending?: boolean;
+  }): QuestionsReportComponent {
     const pages = opts?.pages ?? [sample];
     assessmentsMock = {
       getLatestQuestions: opts?.reject
@@ -53,6 +59,7 @@ describe('QuestionsReportComponent', () => {
       ],
     });
     fixture = TestBed.createComponent(QuestionsReportComponent);
+    if (opts?.showPending === false) fixture.componentRef.setInput('showPending', false);
     fixture.detectChanges();
     return fixture.componentInstance;
   }
@@ -120,6 +127,16 @@ describe('QuestionsReportComponent', () => {
     const alert = el().querySelector('.qr__alert');
     expect(alert?.textContent).toContain('3 pregunta(s) esperan aprobación');
     expect(alert?.querySelector('a')?.getAttribute('href')).toBe('/admin/content-approval');
+  });
+
+  it('does not ask for the pending approvals when showPending is off (teacher)', async () => {
+    const c = setup({ pending: 3, showPending: false });
+    await flush();
+    fixture.detectChanges();
+    expect(approvalMock.getPending).not.toHaveBeenCalled();
+    expect(c.pendingTotal()).toBeNull();
+    expect(el().querySelector('.qr__alert')).toBeNull();
+    expect(c.total()).toBe(5);
   });
 
   it('does not show the warning when nothing is pending or the count is unavailable', async () => {
