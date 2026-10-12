@@ -10,6 +10,15 @@
     <div class="route__state">Cargando tu ruta…</div>
   } @else if (loadError()) {
     <div class="route__state route__state--error">{{ loadError() }}</div>
+  } @else if (unavailable()) {
+    <div class="route__state route__state--warn">
+      <p class="route__state-title">Todavía no podemos mostrar tu ruta</p>
+      <p>
+        Tu ruta ya fue generada, pero no se pudo recuperar desde este navegador. Estamos trabajando
+        para que puedas verla desde cualquier dispositivo.
+      </p>
+      <button type="button" class="route__retry" (click)="retry()">Reintentar</button>
+    </div>
   } @else if (topics().length === 0) {
     <div class="route__state">
       Todavía no tienes recursos recomendados. Completa una evaluación para armar tu ruta.
@@ -21,7 +30,17 @@
 
     @for (topic of topics(); track topic.topic) {
       <div class="route__topic">
-        <h2 class="route__topic-name">{{ topic.topic }}</h2>
+        <div class="route__topic-head">
+          <h2 class="route__topic-name">{{ topic.topic }}</h2>
+          @if (topic.progress !== undefined) {
+            <span class="route__progress-text">Avance {{ progressPct(topic) }}%</span>
+          }
+        </div>
+        @if (topic.progress !== undefined) {
+          <div class="route__progress" aria-hidden="true">
+            <span class="route__progress-fill" [style.width.%]="progressPct(topic)"></span>
+          </div>
+        }
 
         @if (topic.contents.length === 0) {
           <p class="route__topic-empty">Sin recursos para este tema todavía.</p>
