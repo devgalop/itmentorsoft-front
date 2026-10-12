@@ -34,3 +34,11 @@ export function roleColor(role: string): string {
 export function levelColor(level: string): string {
   return LEVEL_COLORS[level.toLowerCase()] ?? FALLBACK_COLOR;
 }
+
+/** Color de una barra de dominio (0–100 %): de claro a oscuro mientras más alto el puntaje. */
+export function scoreColor(value: number): string {
+  if (value < 25) return LEVEL_COLORS['principiante']!;
+  if (value < 50) return LEVEL_COLORS['básico']!;
+  if (value < 75) return LEVEL_COLORS['intermedio']!;
+  return LEVEL_COLORS['avanzado']!;
+}

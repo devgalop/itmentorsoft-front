@@ -1,4 +1,4 @@
-import { FALLBACK_COLOR, levelColor, roleColor } from './chart-colors';
+import { FALLBACK_COLOR, levelColor, roleColor, scoreColor } from './chart-colors';
 
 describe('chart colors', () => {
   it('gives each role its own color', () => {
@@ -20,5 +20,14 @@ describe('chart colors', () => {
     };
     const values = ramp.map(lightness);
     expect([...values].sort((a, b) => b - a)).toEqual(values);
+  });
+
+  it('gets darker as the score goes up and has four steps', () => {
+    expect(scoreColor(0)).toBe(levelColor('principiante'));
+    expect(scoreColor(24.9)).toBe(levelColor('principiante'));
+    expect(scoreColor(25)).toBe(levelColor('básico'));
+    expect(scoreColor(60)).toBe(levelColor('intermedio'));
+    expect(scoreColor(75)).toBe(levelColor('avanzado'));
+    expect(scoreColor(100)).toBe(levelColor('avanzado'));
   });
 });

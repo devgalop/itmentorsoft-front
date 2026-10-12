@@ -1,0 +1,85 @@
+<svg
+  class="ml__svg"
+  [attr.viewBox]="'0 0 ' + width + ' ' + height"
+  role="img"
+  [attr.aria-label]="summary()"
+>
+  @for (g of grid; track g.value) {
+    <line class="ml__grid" [attr.x1]="left" [attr.x2]="right" [attr.y1]="g.y" [attr.y2]="g.y" />
+    <text class="ml__ytext" [attr.x]="left - 6" [attr.y]="g.y + 3" text-anchor="end">{{ g.value }}%</text>
+  }
+
+  @for (t of ticks(); track t.x) {
+    <text class="ml__xtext" [attr.x]="t.px" [attr.y]="height - 22" text-anchor="middle">{{ t.label }}</text>
+  }
+  <text class="ml__xtitle" [attr.x]="(left + right) / 2" [attr.y]="height - 6" text-anchor="middle">
+    {{ xTitle() }}
+  </text>
+
+  @for (l of lines(); track l.key) {
+    @if (l.coords.length > 1) {
+      <polyline class="ml__line" [attr.points]="l.path" [attr.stroke]="l.color" />
+    }
+    @for (c of l.coords; track c.x) {
+      <circle class="ml__dot" [attr.cx]="c.px" [attr.cy]="c.py" r="4.5" [attr.fill]="l.color">
+        <title>{{ l.label }} · {{ xTitle() }} {{ c.x + 1 }}: {{ c.value }}%</title>
+      </circle>
+    }
+  }
+</svg>
+
+<ul class="ml__legend">
+  @for (l of lines(); track l.key) {
+    <li class="ml__item">
+      <span class="ml__swatch" [style.background]="l.color" aria-hidden="true"></span>
+      {{ l.label }}
+    </li>
+  }
+</ul>
+
+<section class="ml__table">
+  <h3 class="ml__table-title">Datos por evaluación</h3>
+  <div class="ml__scroll">
+    <table>
+      <thead>
+        <tr>
+          <th class="ml__th-topic">Tema</th>
+          @for (t of ticks(); track t.x) {
+            <th>{{ xTitle() }} {{ t.label }}</th>
+          }
+          <th>Cambio</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of rows(); track r.key) {
+          <tr>
+            <td class="ml__topic">
+              <span class="ml__swatch" [style.background]="r.color" aria-hidden="true"></span>
+              {{ r.label }}
+            </td>
+            @for (v of r.cells; track $index) {
+              <td>
+                @if (v === null) {
+                  <span class="ml__none">—</span>
+                } @else {
+                  <span class="ml__cell" [style.--v]="v">{{ v }}%</span>
+                }
+              </td>
+            }
+            <td>
+              @if (r.change === null) {
+                <span class="ml__none">—</span>
+              } @else if (r.change > 0) {
+                <span class="ml__chg ml__chg--up">▲ +{{ r.change }} pts</span>
+              } @else if (r.change < 0) {
+                <span class="ml__chg ml__chg--down">▼ {{ r.change }} pts</span>
+              } @else {
+                <span class="ml__chg">= sin cambio</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
