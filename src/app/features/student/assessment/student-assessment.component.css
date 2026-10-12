@@ -178,7 +178,47 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   margin-top: 1rem;
+}
+
+.ev__nav-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-mid-2);
+  text-align: center;
+}
+
+.ev__dots {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.ev__dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-light-1);
+  background: var(--color-white);
+  color: var(--color-mid-1);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ev__dot--done {
+  background: color-mix(in srgb, var(--color-secondary) 14%, var(--color-white));
+  border-color: var(--color-secondary);
+  color: var(--color-secondary);
+}
+
+.ev__dot--current {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: var(--color-white);
 }
 
 /* Spinner */

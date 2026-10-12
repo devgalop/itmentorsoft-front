@@ -6,17 +6,10 @@ import { AssessmentSummary } from '@core/assessments/student-assessment.types';
 import { ReportsService } from '@core/reports/reports.service';
 import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
 import { UsersService } from '@core/users/users.service';
-import { LEVEL_COLORS } from '@shared/charts/chart-colors';
 import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
 import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
-import { LevelMedalComponent } from './level-medal.component';
-
-interface LevelMedal {
-  name: string;
-  color: string;
-  /** 0 (principiante) a 3 (avanzado): cada nivel suma un detalle a la medalla del anterior. */
-  rank: number;
-}
+import { LevelMedal, levelMedal } from '@shared/charts/level-medal';
+import { LevelMedalComponent } from '@shared/charts/level-medal.component';
 
 /** Resumen de la evaluación más reciente. */
 interface LastEvaluation {
@@ -32,17 +25,10 @@ interface LastEvaluation {
   lastDot: { x: number; y: number } | null;
 }
 
-const LEVELS = ['principiante', 'básico', 'intermedio', 'avanzado'] as const;
-
 /** Cuántas evaluaciones recientes dibuja la mini gráfica. */
 const SPARK_POINTS = 6;
 const SPARK_W = 120;
 const SPARK_H = 36;
-
-/** Minúsculas y sin tildes, para comparar la categoría que manda el backend. */
-function normalizeLevel(value: string): string {
-  return value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-}
 
 /** El backend devuelve un texto en inglés de relleno cuando todavía no hay feedback. */
 function realFeedback(value: string | null | undefined): string | null {
@@ -86,17 +72,7 @@ export class StudentDashboardComponent {
   private readonly history = signal<AssessmentSummary[]>([]);
 
   /** La medalla del nivel actual (null si todavía no tiene categoría). */
-  readonly medal = computed<LevelMedal | null>(() => {
-    const current = normalizeLevel(this.classification() ?? '');
-    const index = LEVELS.findIndex((l) => normalizeLevel(l) === current);
-    if (index < 0) return null;
-    const level = LEVELS[index]!;
-    return {
-      name: level.charAt(0).toUpperCase() + level.slice(1),
-      color: LEVEL_COLORS[level]!,
-      rank: index,
-    };
-  });
+  readonly medal = computed<LevelMedal | null>(() => levelMedal(this.classification()));
 
   /** true cuando ya se sabe si el estudiante tiene al menos una evaluación. */
   private readonly statusLoaded = signal(false);

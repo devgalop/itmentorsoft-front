@@ -49,6 +49,24 @@
           <span class="ev__topic-badge">{{ q.topic }}</span>
         </div>
 
+        <ol class="ev__dots" aria-label="Preguntas de la evaluación">
+          @for (d of questionDots(); track d.number; let i = $index) {
+            <li>
+              <button
+                type="button"
+                class="ev__dot"
+                [class.ev__dot--current]="d.current"
+                [class.ev__dot--done]="d.answered"
+                [attr.aria-current]="d.current ? 'step' : null"
+                [attr.aria-label]="'Pregunta ' + d.number + (d.answered ? ', respondida' : ', sin responder')"
+                (click)="goTo(i)"
+              >
+                {{ d.number }}
+              </button>
+            </li>
+          }
+        </ol>
+
         <p class="ev__question">{{ q.text_to_evaluate }}</p>
 
         <div class="ev__field">
@@ -78,6 +96,14 @@
           <button type="button" class="ev__ghost" (click)="prev()" [disabled]="currentIndex() === 0">
             ← Anterior
           </button>
+
+          <span class="ev__nav-status" aria-live="polite">
+            @if (unansweredCount() === 0) {
+              Todas respondidas
+            } @else {
+              Faltan {{ unansweredCount() }} por responder
+            }
+          </span>
 
           @if (isLastQuestion()) {
             <button type="button" class="ev__primary" (click)="submit()" [disabled]="isBusy()">
@@ -127,6 +153,12 @@
             </li>
           }
         </ul>
+        <app-pager
+          [page]="historyPage()"
+          [totalPages]="historyTotalPages()"
+          (prev)="prevHistoryPage()"
+          (next)="nextHistoryPage()"
+        />
       }
     </div>
   }

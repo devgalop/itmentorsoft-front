@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Params } from '@angular/router';
 import { vi } from 'vitest';
-import { StudentAssessmentComponent } from './student-assessment.component';
+import { HISTORY_PAGE_SIZE, StudentAssessmentComponent } from './student-assessment.component';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -14,6 +14,7 @@ describe('StudentAssessmentComponent', () => {
     getQualificationStatus: ReturnType<typeof vi.fn>;
     getResult: ReturnType<typeof vi.fn>;
     getAssessmentsSummary: ReturnType<typeof vi.fn>;
+    getQuantity: ReturnType<typeof vi.fn>;
   };
   let authMock: { userId: ReturnType<typeof vi.fn> };
 
@@ -50,6 +51,7 @@ describe('StudentAssessmentComponent', () => {
       }),
       saveAnswers: vi.fn().mockResolvedValue({ is_success: true, message: 'ok' }),
       getQualificationStatus: vi.fn().mockResolvedValue(true),
+      getQuantity: vi.fn().mockResolvedValue(0),
       getResult: vi.fn().mockResolvedValue({
         assessment_id: 'assess-1',
         user_id: 'u1',
@@ -70,7 +72,7 @@ describe('StudentAssessmentComponent', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(c.step()).toBe('history');
-    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1');
+    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1', 0, HISTORY_PAGE_SIZE);
   });
 
   it('loads topics on creation and preselects the first', async () => {
@@ -150,7 +152,7 @@ describe('StudentAssessmentComponent', () => {
     expect(payload.answers).toHaveLength(2);
     expect(serviceMock.getQualificationStatus).toHaveBeenCalledWith('u1', 'assess-1');
     // Al terminar la calificación se muestra el historial (punto 8).
-    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1');
+    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1', 0, HISTORY_PAGE_SIZE);
     expect(c.step()).toBe('history');
     expect(c.history()).toHaveLength(1);
 
@@ -331,6 +333,45 @@ describe('StudentAssessmentComponent', () => {
       c.onAnswerChange('texto suelto');
       expect(c.draft()).toBe('texto suelto');
       expect(c.currentQuestion()).toBeNull();
+    });
+
+    it('marks which questions are answered and which one is current', async () => {
+      const c = await started();
+      expect(c.questionDots().map((d) => [d.current, d.answered])).toEqual([
+        [true, false],
+        [false, false],
+      ]);
+      expect(c.unansweredCount()).toBe(2);
+      c.onAnswerChange('mi respuesta');
+      c.next();
+      expect(c.questionDots().map((d) => [d.current, d.answered])).toEqual([
+        [false, true],
+        [true, false],
+      ]);
+      expect(c.unansweredCount()).toBe(1);
+    });
+
+    it('does not count a blank answer as answered', async () => {
+      const c = await started();
+      c.onAnswerChange('   ');
+      expect(c.unansweredCount()).toBe(2);
+    });
+
+    it('jumps straight to a question and keeps its saved answer', async () => {
+      const c = await started();
+      c.onAnswerChange('primera');
+      c.goTo(1);
+      expect(c.currentIndex()).toBe(1);
+      expect(c.draft()).toBe('');
+      c.goTo(0);
+      expect(c.draft()).toBe('primera');
+    });
+
+    it('ignores a jump to an invalid question', async () => {
+      const c = await started();
+      c.goTo(9);
+      c.goTo(-1);
+      expect(c.currentIndex()).toBe(0);
     });
 
     it('allAnswered is false until answers are given', async () => {
@@ -610,6 +651,58 @@ describe('StudentAssessmentComponent', () => {
       await new Promise((r) => setTimeout(r));
       expect(serviceMock.getResult).toHaveBeenCalledWith('u1', 'assess-9');
       expect(c.step()).toBe('result');
+    });
+  });
+
+  describe('historial paginado', () => {
+    const item = (n: number) => ({
+      assessment_id: 'a' + n,
+      score: 0.5,
+      date_taken: '2026-10-0' + n,
+      classification: 'básico',
+      feedback: null,
+    });
+
+    it('asks for the first page and computes the total pages from the quantity', async () => {
+      serviceMock.getAssessmentsSummary.mockResolvedValue([item(1), item(2)]);
+      serviceMock.getQuantity.mockResolvedValue(13);
+      const c = createComponent();
+      await new Promise((r) => setTimeout(r));
+      expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1', 0, HISTORY_PAGE_SIZE);
+      expect(c.historyTotalPages()).toBe(3);
+      expect(c.historyPage()).toBe(0);
+    });
+
+    it('goes to the next and previous page', async () => {
+      serviceMock.getAssessmentsSummary.mockResolvedValue([item(1)]);
+      serviceMock.getQuantity.mockResolvedValue(13);
+      const c = createComponent();
+      await new Promise((r) => setTimeout(r));
+      await c.nextHistoryPage();
+      expect(serviceMock.getAssessmentsSummary).toHaveBeenLastCalledWith('u1', 1, HISTORY_PAGE_SIZE);
+      expect(c.historyPage()).toBe(1);
+      await c.prevHistoryPage();
+      expect(c.historyPage()).toBe(0);
+    });
+
+    it('does not go before the first page or past the last one', async () => {
+      serviceMock.getAssessmentsSummary.mockResolvedValue([item(1)]);
+      serviceMock.getQuantity.mockResolvedValue(7);
+      const c = createComponent();
+      await new Promise((r) => setTimeout(r));
+      await c.prevHistoryPage();
+      expect(c.historyPage()).toBe(0);
+      await c.nextHistoryPage();
+      await c.nextHistoryPage();
+      expect(c.historyPage()).toBe(1);
+    });
+
+    it('still lets the student move forward when the total cannot be loaded and the page is full', async () => {
+      serviceMock.getAssessmentsSummary.mockResolvedValue(Array.from({ length: HISTORY_PAGE_SIZE }, (_, i) => item(i + 1)));
+      serviceMock.getQuantity.mockRejectedValue(new Error('x'));
+      const c = createComponent();
+      await new Promise((r) => setTimeout(r));
+      expect(c.historyTotalPages()).toBe(2);
     });
   });
 });

@@ -15,6 +15,9 @@
       @if (assessmentsCount() !== null) {
         <span class="det__assessments-count">{{ assessmentsCount() }} evaluación(es) realizada(s)</span>
       }
+      @if (medal(); as m) {
+        <app-level-medal [name]="m.name" [color]="m.color" [rank]="m.rank" />
+      }
     </header>
 
     <div class="det__grid">

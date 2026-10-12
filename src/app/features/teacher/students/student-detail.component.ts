@@ -3,6 +3,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ReportsService } from '@core/reports/reports.service';
 import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
+import { levelMedal } from '@shared/charts/level-medal';
+import { LevelMedalComponent } from '@shared/charts/level-medal.component';
 import { LineSeries, MultiLineChartComponent } from '@shared/charts/multi-line-chart.component';
 import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
 import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
@@ -10,7 +12,7 @@ import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/
 @Component({
   selector: 'app-student-detail',
   standalone: true,
-  imports: [RouterLink, MultiLineChartComponent, ScoreBarsComponent],
+  imports: [RouterLink, MultiLineChartComponent, ScoreBarsComponent, LevelMedalComponent],
   templateUrl: './student-detail.component.html',
   styleUrl: './student-detail.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +60,9 @@ export class StudentDetailComponent {
       this.isLoading.set(false);
     }
   }
+
+  /** Medalla del nivel del estudiante. */
+  readonly medal = computed(() => levelMedal(this.summary()?.knowledge_classification));
 
   /** Una serie por tema, una línea por evaluación (ver `buildTopicSeries`). */
   readonly progressSeries = computed<LineSeries[]>(() => buildTopicSeries(this.progress()?.knowledge_profile ?? []));

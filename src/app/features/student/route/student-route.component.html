@@ -2,7 +2,7 @@
   <header class="route__header">
     <h1 class="route__title">Mi ruta de aprendizaje</h1>
     <p class="route__subtitle">
-      Contenidos recomendados para ti según tu evaluación diagnóstica.
+      Recursos recomendados para ti según tu evaluación diagnóstica.
     </p>
   </header>
 
@@ -12,11 +12,11 @@
     <div class="route__state route__state--error">{{ loadError() }}</div>
   } @else if (topics().length === 0) {
     <div class="route__state">
-      Todavía no tienes contenidos recomendados. Completa una evaluación para armar tu ruta.
+      Todavía no tienes recursos recomendados. Completa una evaluación para armar tu ruta.
     </div>
   } @else {
     <p class="route__summary">
-      {{ topics().length }} tema(s) · {{ totalContents() }} contenido(s) recomendado(s)
+      {{ topics().length }} tema(s) · {{ totalContents() }} recurso(s) recomendado(s)
     </p>
 
     @for (topic of topics(); track topic.topic) {
@@ -24,7 +24,7 @@
         <h2 class="route__topic-name">{{ topic.topic }}</h2>
 
         @if (topic.contents.length === 0) {
-          <p class="route__topic-empty">Sin contenidos para este tema todavía.</p>
+          <p class="route__topic-empty">Sin recursos para este tema todavía.</p>
         } @else {
           <ul class="route__list">
             @for (item of topic.contents; track item.content_id) {

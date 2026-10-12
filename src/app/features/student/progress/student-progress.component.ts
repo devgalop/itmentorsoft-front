@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { AuthService } from '@core/auth/auth.service';
 import { ReportsService } from '@core/reports/reports.service';
 import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
+import { levelMedal } from '@shared/charts/level-medal';
+import { LevelMedalComponent } from '@shared/charts/level-medal.component';
 import { LineSeries, MultiLineChartComponent } from '@shared/charts/multi-line-chart.component';
 import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
 import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
@@ -9,7 +11,7 @@ import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/
 @Component({
   selector: 'app-student-progress',
   standalone: true,
-  imports: [MultiLineChartComponent, ScoreBarsComponent],
+  imports: [MultiLineChartComponent, ScoreBarsComponent, LevelMedalComponent],
   templateUrl: './student-progress.component.html',
   styleUrl: './student-progress.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,6 +22,9 @@ export class StudentProgressComponent {
 
   readonly summary = signal<StudentSummary | null>(null);
   private readonly progress = signal<StudentProgress | null>(null);
+
+  /** Medalla del nivel actual. */
+  readonly medal = computed(() => levelMedal(this.summary()?.knowledge_classification));
 
   /** Una línea por tema a lo largo de las evaluaciones (la misma gráfica del reporte del docente). */
   readonly progressSeries = computed<LineSeries[]>(() => buildTopicSeries(this.progress()?.knowledge_profile ?? []));

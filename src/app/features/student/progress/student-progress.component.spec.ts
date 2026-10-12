@@ -121,4 +121,17 @@ describe('StudentProgressComponent', () => {
     expect(c.loadError()).toBeNull();
     expect(c.progressSeries()).toEqual([]);
   });
+
+  it('derives the medal from the classification', async () => {
+    reportsMock.getStudentSummary.mockResolvedValue({ ...summary, knowledge_classification: 'Intermedio' });
+    const c = createComponent();
+    await new Promise((r) => setTimeout(r));
+    expect(c.medal()?.rank).toBe(2);
+  });
+
+  it('has no medal while the classification is only a placeholder', async () => {
+    const c = createComponent();
+    await new Promise((r) => setTimeout(r));
+    expect(c.medal()).toBeNull();
+  });
 });

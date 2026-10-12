@@ -186,4 +186,10 @@ describe('StudentDetailComponent', () => {
     expect(component.assessmentsCount()).toBeNull();
     expect(component.summary()?.name).toBe('Eider Sánchez');
   });
+
+  it('derives the medal from the student classification', async () => {
+    const { component } = createComponent('s1', { ...summary, knowledge_classification: 'Avanzado' });
+    await flush();
+    expect(component.medal()?.rank).toBe(3);
+  });
 });

@@ -15,6 +15,9 @@
         <h2 class="prog__name">{{ s.name }}</h2>
         <span class="prog__badge">{{ classificationLabel(s.knowledge_classification) }}</span>
       </div>
+      @if (medal(); as m) {
+        <app-level-medal class="prog__medal" [name]="m.name" [color]="m.color" [rank]="m.rank" />
+      }
     </div>
 
     <div class="prog__grid">
