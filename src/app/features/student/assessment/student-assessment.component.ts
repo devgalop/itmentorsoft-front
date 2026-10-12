@@ -6,6 +6,7 @@ import { GradingWatcherService } from '@core/assessments/grading-watcher.service
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 import { environment } from '../../../../environments/environment';
 import { PagerComponent } from '@shared/ui/pager/pager.component';
+import { AssessmentResultComponent } from './assessment-result.component';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import {
   AssessmentAnswerInput,
@@ -29,7 +30,7 @@ export const HISTORY_PAGE_SIZE = 6;
 @Component({
   selector: 'app-student-assessment',
   standalone: true,
-  imports: [FormsModule, PagerComponent],
+  imports: [FormsModule, PagerComponent, AssessmentResultComponent],
   templateUrl: './student-assessment.component.html',
   styleUrl: './student-assessment.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

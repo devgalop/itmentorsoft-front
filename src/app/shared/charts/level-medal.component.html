@@ -1,4 +1,4 @@
-<div class="dash__medal" [attr.aria-label]="'Tu nivel actual: ' + name()">
+<div class="dash__medal" [attr.aria-label]="caption() + ': ' + name()">
   <svg
     class="dash__medal-icon"
     [style.--medal]="color()"
@@ -46,6 +46,6 @@
   </svg>
   <div class="dash__medal-text">
     <span class="dash__medal-name">{{ name() }}</span>
-    <span class="dash__medal-tag">Tu nivel actual</span>
+    <span class="dash__medal-tag">{{ caption() }}</span>
   </div>
 </div>

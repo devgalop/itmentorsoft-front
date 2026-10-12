@@ -45,16 +45,16 @@ describe('MultiLineChartComponent', () => {
     expect(a.coords[2]!.py).toBeLessThan(a.coords[0]!.py);
   });
 
-  it('draws one line and one dot per point, with the series color', () => {
+  it('draws one line per segment and one dot per point, with the series color', () => {
     setup(series);
-    expect(el().querySelectorAll('polyline')).toHaveLength(2);
+    expect(el().querySelectorAll('line.ml__line')).toHaveLength(3);
     expect(el().querySelectorAll('circle')).toHaveLength(5);
-    expect(el().querySelector('polyline')?.getAttribute('stroke')).toBe('#3B6FD4');
+    expect(el().querySelector('line.ml__line')?.getAttribute('stroke')).toBe('#3B6FD4');
   });
 
   it('does not draw a line for a series with a single point but still draws its dot', () => {
     setup([{ key: 'a', label: 'Tema A', color: '#3B6FD4', points: [{ x: 0, value: 50 }] }]);
-    expect(el().querySelector('polyline')).toBeNull();
+    expect(el().querySelector('line.ml__line')).toBeNull();
     expect(el().querySelectorAll('circle')).toHaveLength(1);
   });
 
@@ -121,5 +121,63 @@ describe('MultiLineChartComponent', () => {
       'Tema A: 20%, 60%, 100%. Tema B: 0%, 40%',
     );
     expect(el().querySelector('circle title')?.textContent).toContain('Tema A · Evaluación 1: 20%');
+  });
+
+  describe('series that coincide', () => {
+    const pts = (...values: number[]) => values.map((value, x) => ({ x, value }));
+    const a = { key: 'a', label: 'A', color: '#111111', points: pts(0, 0, 100) };
+    const b = { key: 'b', label: 'B', color: '#222222', points: pts(0, 0, 100) };
+    const c = { key: 'c', label: 'C', color: '#333333', points: pts(0, 50, 20) };
+
+    function make(series: typeof a[]) {
+      TestBed.resetTestingModule();
+      const fixture = TestBed.createComponent(MultiLineChartComponent);
+      fixture.componentRef.setInput('series', series);
+      fixture.detectChanges();
+      return { component: fixture.componentInstance, el: fixture.nativeElement as HTMLElement };
+    }
+
+    it('keeps solid lines when only the dots coincide', () => {
+      const { component, el } = make([a, c]);
+      expect(component.segments().every((s) => s.dash === null)).toBe(true);
+      expect(component.markers().some((m) => m.r > 4.5)).toBe(true); // el primer punto coincide
+      expect(el.querySelector('.ml__hint')).not.toBeNull();
+    });
+
+    it('alternates the strokes of two series that trace the same segment, in complementary slots', () => {
+      const { component } = make([a, b]);
+      const first = component.segments().filter((s) => s.key.startsWith('a-'));
+      const second = component.segments().filter((s) => s.key.startsWith('b-'));
+      expect(first.every((s) => s.dash === '5 5')).toBe(true);
+      expect(first.map((s) => s.dashOffset)).toEqual([0, 0]);
+      expect(second.map((s) => s.dashOffset)).toEqual([-5, -5]);
+    });
+
+    it('uses as many slots as series that share the segment', () => {
+      const { component } = make([a, b, { ...c, key: 'd', points: pts(0, 0, 100) }]);
+      expect(component.segments().find((s) => s.key === 'd-0')!.dash).toBe('5 10');
+      expect(component.segments().find((s) => s.key === 'd-0')!.dashOffset).toBe(-10);
+    });
+
+    it('only the shared segments are dashed; the rest of the series stays solid', () => {
+      const { component } = make([a, { ...c, key: 'e', points: pts(0, 0, 40) }]);
+      const e = component.segments().filter((s) => s.key.startsWith('e-'));
+      expect(e[0]!.dash).not.toBeNull();
+      expect(e[1]!.dash).toBeNull();
+    });
+
+    it('draws coinciding dots as concentric rings, the biggest first so every color shows', () => {
+      const { component } = make([a, b]);
+      const atFirst = component.markers().filter((m) => m.cx === component.markers()[0]!.cx && m.cy === component.markers()[0]!.cy);
+      expect(atFirst).toHaveLength(2);
+      expect(atFirst[0]!.r).toBeGreaterThan(atFirst[1]!.r);
+      expect(new Set(atFirst.map((m) => m.color)).size).toBe(2);
+    });
+
+    it('shows no hint when no series coincide', () => {
+      const { component, el } = make([a, { ...c, key: 'z', points: pts(10, 30, 60) }]);
+      expect(component.hasOverlap()).toBe(false);
+      expect(el.querySelector('.ml__hint')).toBeNull();
+    });
   });
 });

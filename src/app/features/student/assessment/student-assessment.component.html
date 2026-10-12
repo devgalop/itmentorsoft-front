@@ -174,50 +174,7 @@
   <!-- PASO 4: resultado -->
   @if (step() === 'result') {
     @if (result(); as r) {
-      <button type="button" class="ev__link-btn" (click)="backToHistory()">← Volver a mis evaluaciones</button>
-      <div class="ev__result-head">
-        <div class="ev__score-ring">
-          <span class="ev__score-value">{{ scorePct(r.avg_score) }}%</span>
-          <span class="ev__score-label">Promedio</span>
-        </div>
-        <div>
-          <span class="ev__classif">{{ r.classification }}</span>
-          <p class="ev__feedback">{{ r.feedback }}</p>
-        </div>
-      </div>
-
-      <h2 class="ev__card-title ev__section">Detalle por pregunta</h2>
-      <div class="ev__answers">
-        @for (a of r.answer_scores; track a.question_id) {
-          <div class="ev__answer">
-            <div class="ev__answer-head">
-              <p class="ev__answer-q">{{ a.question_text }}</p>
-              <span class="ev__answer-score">{{ scorePct(a.score) }}%</span>
-            </div>
-            <p class="ev__answer-yours"><strong>Tu respuesta:</strong> {{ a.answer }}</p>
-            <p class="ev__answer-fb">{{ a.feedback }}</p>
-
-            @if (a.key_concepts && a.key_concepts.length > 0) {
-              <div class="ev__chips">
-                <span class="ev__chips-label">Conceptos clave:</span>
-                @for (k of a.key_concepts; track k) {
-                  <span class="ev__chip ev__chip--ok">{{ k }}</span>
-                }
-              </div>
-            }
-            @if (a.misconceptions && a.misconceptions.length > 0) {
-              <div class="ev__chips">
-                <span class="ev__chips-label">A reforzar:</span>
-                @for (m of a.misconceptions; track m) {
-                  <span class="ev__chip ev__chip--warn">{{ m }}</span>
-                }
-              </div>
-            }
-          </div>
-        }
-      </div>
-
-      <button type="button" class="ev__primary" (click)="backToHistory()">Volver a mis evaluaciones</button>
+      <app-assessment-result [result]="r" (back)="backToHistory()" (again)="restart()" />
     } @else {
       <div class="ev__card ev__card--center">
         <h2 class="ev__card-title">Evaluación enviada</h2>

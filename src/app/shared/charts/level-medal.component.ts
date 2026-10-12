@@ -16,4 +16,6 @@ export class LevelMedalComponent {
   readonly color = input.required<string>();
   /** 0 (principiante) a 3 (avanzado). */
   readonly rank = input.required<number>();
+  /** Texto bajo el nombre (por defecto el nivel actual del estudiante). */
+  readonly caption = input('Tu nivel actual');
 }

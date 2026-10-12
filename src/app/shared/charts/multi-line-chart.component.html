@@ -16,15 +16,22 @@
     {{ xTitle() }}
   </text>
 
-  @for (l of lines(); track l.key) {
-    @if (l.coords.length > 1) {
-      <polyline class="ml__line" [attr.points]="l.path" [attr.stroke]="l.color" />
-    }
-    @for (c of l.coords; track c.x) {
-      <circle class="ml__dot" [attr.cx]="c.px" [attr.cy]="c.py" r="4.5" [attr.fill]="l.color">
-        <title>{{ l.label }} · {{ xTitle() }} {{ c.x + 1 }}: {{ c.value }}%</title>
-      </circle>
-    }
+  @for (seg of segments(); track seg.key) {
+    <line
+      class="ml__line"
+      [attr.x1]="seg.x1"
+      [attr.y1]="seg.y1"
+      [attr.x2]="seg.x2"
+      [attr.y2]="seg.y2"
+      [attr.stroke]="seg.color"
+      [attr.stroke-dasharray]="seg.dash"
+      [attr.stroke-dashoffset]="seg.dashOffset"
+    />
+  }
+  @for (m of markers(); track m.key) {
+    <circle class="ml__dot" [attr.cx]="m.cx" [attr.cy]="m.cy" [attr.r]="m.r" [attr.fill]="m.color">
+      <title>{{ m.title }}</title>
+    </circle>
   }
 </svg>
 
@@ -36,6 +43,11 @@
     </li>
   }
 </ul>
+@if (hasOverlap()) {
+  <p class="ml__hint">
+    Cuando varios temas tienen el mismo resultado, sus líneas se alternan y sus puntos se ven como anillos.
+  </p>
+}
 
 <section class="ml__table">
   <h3 class="ml__table-title">Datos por evaluación</h3>

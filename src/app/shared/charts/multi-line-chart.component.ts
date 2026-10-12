@@ -21,6 +21,11 @@ const PAD_RIGHT = 16;
 const PAD_TOP = 14;
 const PAD_BOTTOM = 40;
 const GRID_VALUES = [0, 50, 100];
+/** Largo de cada trazo cuando varias líneas coinciden y se alternan. */
+const DASH = 5;
+const DOT_RADIUS = 4.5;
+/** Cuánto crece el radio de cada punto que comparte posición con otros (anillos concéntricos). */
+const DOT_STEP = 2.5;
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
@@ -79,6 +84,75 @@ export class MultiLineChartComponent {
       return { key: s.key, label: s.label, color: s.color, coords, path: coords.map((c) => `${c.px},${c.py}`).join(' ') };
     }),
   );
+
+  /**
+   * Tramos de línea. Si dos o más series trazan exactamente el mismo tramo, ninguna debe tapar a
+   * las otras: sus trazos se alternan (rayado intercalado) y cada color se ve por turnos.
+   */
+  readonly segments = computed(() => {
+    const lines = this.lines();
+    const keyOf = (a: { x: number; value: number }, b: { x: number; value: number }) =>
+      `${a.x}|${a.value}|${b.x}|${b.value}`;
+    const owners = new Map<string, number[]>();
+    lines.forEach((l, i) => {
+      for (let j = 1; j < l.coords.length; j++) {
+        const key = keyOf(l.coords[j - 1]!, l.coords[j]!);
+        owners.set(key, [...(owners.get(key) ?? []), i]);
+      }
+    });
+    return lines.flatMap((l, i) =>
+      l.coords.slice(1).map((c, k) => {
+        const from = l.coords[k]!;
+        const shared = owners.get(keyOf(from, c)) ?? [i];
+        const rank = shared.indexOf(i);
+        const count = shared.length;
+        return {
+          key: `${l.key}-${k}`,
+          color: l.color,
+          x1: from.px,
+          y1: from.py,
+          x2: c.px,
+          y2: c.py,
+          dash: count > 1 ? `${DASH} ${DASH * (count - 1)}` : null,
+          dashOffset: count > 1 && rank > 0 ? -rank * DASH : 0,
+        };
+      }),
+    );
+  });
+
+  /**
+   * Puntos de todas las series. Los que caen en la misma posición se dibujan como anillos
+   * concéntricos (el más grande primero), para que se vea el color de cada tema.
+   */
+  readonly markers = computed(() => {
+    const lines = this.lines();
+    const owners = new Map<string, number[]>();
+    lines.forEach((l, i) =>
+      l.coords.forEach((c) => {
+        const key = `${c.x}|${c.value}`;
+        owners.set(key, [...(owners.get(key) ?? []), i]);
+      }),
+    );
+    return lines
+      .flatMap((l, i) =>
+        l.coords.map((c) => {
+          const shared = owners.get(`${c.x}|${c.value}`) ?? [i];
+          const rank = shared.indexOf(i);
+          return {
+            key: `${l.key}-${c.x}`,
+            color: l.color,
+            cx: c.px,
+            cy: c.py,
+            r: DOT_RADIUS + (shared.length - 1 - rank) * DOT_STEP,
+            title: `${l.label} · ${this.xTitle()} ${c.x + 1}: ${c.value}%`,
+          };
+        }),
+      )
+      .sort((a, b) => b.r - a.r);
+  });
+
+  /** ¿Hay temas con resultados idénticos (líneas alternadas)? */
+  readonly hasOverlap = computed(() => this.segments().some((s) => s.dash !== null) || this.markers().some((m) => m.r > DOT_RADIUS));
 
   /**
    * Datos en forma de tabla: una fila por serie, una columna por medición ("—" si falta) y el
