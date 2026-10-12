@@ -110,11 +110,11 @@
   background: var(--color-white);
   border: 1px solid var(--color-light-1);
   border-radius: 0.75rem;
-  padding: 0.8rem 1rem;
+  padding: 0.6rem 1rem;
 }
 
 .res__stat-value {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: var(--color-primary);
 }
@@ -125,11 +125,31 @@
   color: var(--color-mid-2);
 }
 
+.res__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.5rem 0 0.8rem;
+}
+
 .res__title {
-  margin: 1.75rem 0 0.9rem;
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--color-dark);
+}
+
+.res__toggle-all {
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.res__toggle-all:hover {
+  text-decoration: underline;
 }
 
 .res__answers {
@@ -142,13 +162,26 @@
   background: var(--color-white);
   border: 1px solid var(--color-light-1);
   border-radius: 0.85rem;
-  padding: 1.1rem 1.25rem;
+  padding: 0.85rem 1.1rem;
+  transition: border-color 0.15s ease;
+}
+
+.res__answer--open,
+.res__answer:hover {
+  border-color: var(--color-secondary);
 }
 
 .res__answer-head {
+  width: 100%;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.8rem;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
 }
 
 .res__answer-num {
@@ -163,6 +196,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.res__flag {
+  flex-shrink: 0;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-warning) 18%, var(--color-white));
+  color: color-mix(in srgb, var(--color-warning) 78%, black);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.res__chevron {
+  flex-shrink: 0;
+  width: 1rem;
+  color: var(--color-mid-2);
+  text-align: center;
+}
+
+.res__body {
+  padding-top: 0.2rem;
 }
 
 .res__answer-q {
@@ -181,8 +235,8 @@
 }
 
 .res__bar {
-  height: 6px;
-  margin: 0.75rem 0 0.9rem;
+  height: 5px;
+  margin: 0.65rem 0 0.2rem;
   border-radius: 999px;
   background: var(--color-light-2);
   overflow: hidden;

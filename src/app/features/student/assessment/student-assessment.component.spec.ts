@@ -1,12 +1,8 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, Params } from '@angular/router';
 import { vi } from 'vitest';
-import {
-  GRADING_SPINNER_MS,
-  HISTORY_PAGE_SIZE,
-  REDIRECT_MS,
-  StudentAssessmentComponent,
-} from './student-assessment.component';
+import { GRADING_SPINNER_MS, REDIRECT_MS, StudentAssessmentComponent } from './student-assessment.component';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
 import { GradingWatcherService } from '../../../core/assessments/grading-watcher.service';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -29,7 +25,7 @@ describe('StudentAssessmentComponent', () => {
   }
 
   const routerMock = { navigate: vi.fn().mockResolvedValue(true) };
-  const gradingMock = { watch: vi.fn() };
+  const gradingMock = { watch: vi.fn(), completedCount: signal(0), hasPending: vi.fn(() => false) };
 
   const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
 
@@ -85,7 +81,7 @@ describe('StudentAssessmentComponent', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(c.step()).toBe('history');
-    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1', 0, HISTORY_PAGE_SIZE);
+    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1', 0, 100);
   });
 
   it('loads topics on creation and preselects the first', async () => {
@@ -664,58 +660,6 @@ describe('StudentAssessmentComponent', () => {
       await new Promise((r) => setTimeout(r));
       expect(serviceMock.getResult).toHaveBeenCalledWith('u1', 'assess-9');
       expect(c.step()).toBe('result');
-    });
-  });
-
-  describe('historial paginado', () => {
-    const item = (n: number) => ({
-      assessment_id: 'a' + n,
-      score: 0.5,
-      date_taken: '2026-10-0' + n,
-      classification: 'básico',
-      feedback: null,
-    });
-
-    it('asks for the first page and computes the total pages from the quantity', async () => {
-      serviceMock.getAssessmentsSummary.mockResolvedValue([item(1), item(2)]);
-      serviceMock.getQuantity.mockResolvedValue(13);
-      const c = createComponent();
-      await new Promise((r) => setTimeout(r));
-      expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1', 0, HISTORY_PAGE_SIZE);
-      expect(c.historyTotalPages()).toBe(3);
-      expect(c.historyPage()).toBe(0);
-    });
-
-    it('goes to the next and previous page', async () => {
-      serviceMock.getAssessmentsSummary.mockResolvedValue([item(1)]);
-      serviceMock.getQuantity.mockResolvedValue(13);
-      const c = createComponent();
-      await new Promise((r) => setTimeout(r));
-      await c.nextHistoryPage();
-      expect(serviceMock.getAssessmentsSummary).toHaveBeenLastCalledWith('u1', 1, HISTORY_PAGE_SIZE);
-      expect(c.historyPage()).toBe(1);
-      await c.prevHistoryPage();
-      expect(c.historyPage()).toBe(0);
-    });
-
-    it('does not go before the first page or past the last one', async () => {
-      serviceMock.getAssessmentsSummary.mockResolvedValue([item(1)]);
-      serviceMock.getQuantity.mockResolvedValue(7);
-      const c = createComponent();
-      await new Promise((r) => setTimeout(r));
-      await c.prevHistoryPage();
-      expect(c.historyPage()).toBe(0);
-      await c.nextHistoryPage();
-      await c.nextHistoryPage();
-      expect(c.historyPage()).toBe(1);
-    });
-
-    it('still lets the student move forward when the total cannot be loaded and the page is full', async () => {
-      serviceMock.getAssessmentsSummary.mockResolvedValue(Array.from({ length: HISTORY_PAGE_SIZE }, (_, i) => item(i + 1)));
-      serviceMock.getQuantity.mockRejectedValue(new Error('x'));
-      const c = createComponent();
-      await new Promise((r) => setTimeout(r));
-      expect(c.historyTotalPages()).toBe(2);
     });
   });
 });

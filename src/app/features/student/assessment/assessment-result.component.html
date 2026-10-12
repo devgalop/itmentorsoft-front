@@ -47,41 +47,62 @@
   </li>
 </ul>
 
-<h2 class="res__title">Detalle por pregunta</h2>
+<div class="res__title-row">
+  <h2 class="res__title">Detalle por pregunta</h2>
+  @if (answers().length > 0) {
+    <button type="button" class="res__toggle-all" (click)="toggleAll()">
+      {{ allOpen() ? 'Plegar todas' : 'Desplegar todas' }}
+    </button>
+  }
+</div>
 <div class="res__answers">
   @for (a of answers(); track a.number) {
-    <article class="res__answer">
-      <header class="res__answer-head">
+    <article class="res__answer" [class.res__answer--open]="isOpen(a.number)">
+      <button
+        type="button"
+        class="res__answer-head"
+        [attr.aria-expanded]="isOpen(a.number)"
+        [attr.aria-controls]="'res-answer-' + a.number"
+        (click)="toggle(a.number)"
+      >
         <span class="res__answer-num">{{ a.number }}</span>
-        <p class="res__answer-q">{{ a.question }}</p>
+        <span class="res__answer-q">{{ a.question }}</span>
+        @if (a.misconceptions.length > 0) {
+          <span class="res__flag" title="Conceptos por reforzar">{{ a.misconceptions.length }} por reforzar</span>
+        }
         <span class="res__answer-score">{{ a.score }}%</span>
-      </header>
+        <span class="res__chevron" aria-hidden="true">{{ isOpen(a.number) ? '▾' : '▸' }}</span>
+      </button>
       <div class="res__bar" aria-hidden="true">
         <span class="res__bar-fill" [style.width.%]="a.score" [style.background]="a.color"></span>
       </div>
 
-      <div class="res__block res__block--yours">
-        <span class="res__block-label">Tu respuesta</span>
-        <p>{{ a.answer }}</p>
-      </div>
-      <div class="res__block">
-        <span class="res__block-label">Retroalimentación</span>
-        <p>{{ a.feedback }}</p>
-      </div>
+      @if (isOpen(a.number)) {
+        <div class="res__body" [id]="'res-answer-' + a.number">
+          <div class="res__block res__block--yours">
+            <span class="res__block-label">Tu respuesta</span>
+            <p>{{ a.answer }}</p>
+          </div>
+          <div class="res__block">
+            <span class="res__block-label">Retroalimentación</span>
+            <p>{{ a.feedback }}</p>
+          </div>
 
-      @if (a.keyConcepts.length > 0) {
-        <div class="res__chips">
-          <span class="res__chips-label">Conceptos que dominas</span>
-          @for (k of a.keyConcepts; track k) {
-            <span class="res__chip res__chip--ok">{{ k }}</span>
+          @if (a.keyConcepts.length > 0) {
+            <div class="res__chips">
+              <span class="res__chips-label">Conceptos que dominas</span>
+              @for (k of a.keyConcepts; track k) {
+                <span class="res__chip res__chip--ok">{{ k }}</span>
+              }
+            </div>
           }
-        </div>
-      }
-      @if (a.misconceptions.length > 0) {
-        <div class="res__chips">
-          <span class="res__chips-label">A reforzar</span>
-          @for (m of a.misconceptions; track m) {
-            <span class="res__chip res__chip--warn">{{ m }}</span>
+          @if (a.misconceptions.length > 0) {
+            <div class="res__chips">
+              <span class="res__chips-label">A reforzar</span>
+              @for (m of a.misconceptions; track m) {
+                <span class="res__chip res__chip--warn">{{ m }}</span>
+              }
+            </div>
           }
         </div>
       }

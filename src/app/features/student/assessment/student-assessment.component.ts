@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 import { environment } from '../../../../environments/environment';
-import { PagerComponent } from '@shared/ui/pager/pager.component';
+import { AssessmentHistoryComponent } from './assessment-history.component';
+import { AssessmentQuestionComponent, QuestionItem } from './assessment-question.component';
 import { AssessmentResultComponent } from './assessment-result.component';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import {
@@ -24,13 +25,13 @@ export const REDIRECT_MS = 2500;
 
 /** Límite del backend por respuesta (save_assessments_answers). */
 export const MAX_ANSWER_LENGTH = 600;
-/** Evaluaciones por página en el historial. */
-export const HISTORY_PAGE_SIZE = 6;
+/** El backend entrega como máximo 100 evaluaciones por consulta: se traen de una vez y se paginan aquí. */
+const HISTORY_FETCH_SIZE = 100;
 
 @Component({
   selector: 'app-student-assessment',
   standalone: true,
-  imports: [FormsModule, PagerComponent, AssessmentResultComponent],
+  imports: [FormsModule, AssessmentResultComponent, AssessmentHistoryComponent, AssessmentQuestionComponent],
   templateUrl: './student-assessment.component.html',
   styleUrl: './student-assessment.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,9 +78,8 @@ export class StudentAssessmentComponent {
   // History (historial de evaluaciones)
   readonly history = signal<AssessmentSummary[]>([]);
   readonly isLoadingHistory = signal(false);
-  readonly historyPage = signal(0);
-  readonly historyTotal = signal(0);
-  readonly historyTotalPages = computed(() => Math.ceil(this.historyTotal() / HISTORY_PAGE_SIZE));
+  /** ¿Hay una evaluación enviada que todavía se está calificando? */
+  readonly gradingPending = computed(() => this.grading.hasPending(this.auth.userId()));
 
   // Result
   readonly result = signal<StudentAssessmentResult | null>(null);
@@ -98,6 +98,17 @@ export class StudentAssessmentComponent {
     // Arranca mostrando el historial; los temas se precargan para "Nueva evaluación".
     void this.loadTopics();
     void this.loadHistory();
+
+    // Si termina una calificación mientras el estudiante mira su historial, se actualiza solo.
+    let seen = this.grading.completedCount();
+    effect(() => {
+      const completed = this.grading.completedCount();
+      untracked(() => {
+        if (completed === seen) return;
+        seen = completed;
+        void this.loadHistory();
+      });
+    });
 
     // Enlaces del principal: ?new=1 abre directo la elección de tema y ?result=<id> el detalle.
     const params = this.route?.snapshot.queryParamMap;
@@ -214,6 +225,11 @@ export class StudentAssessmentComponent {
     }));
   });
 
+  /** Lista lateral de preguntas: texto, cuál es la actual y cuáles ya tienen respuesta. */
+  readonly questionItems = computed<QuestionItem[]>(() =>
+    this.questionDots().map((d, i) => ({ ...d, text: this.questions()[i]?.text_to_evaluate ?? '' })),
+  );
+
   /** Cuántas preguntas faltan por responder. */
   readonly unansweredCount = computed(() => this.questionDots().filter((d) => !d.answered).length);
 
@@ -325,37 +341,19 @@ export class StudentAssessmentComponent {
     this.timers.clear();
   }
 
-  /** Carga una página del historial de evaluaciones del estudiante (punto 4). */
-  async loadHistory(page = 0): Promise<void> {
+  /** Carga el historial de evaluaciones del estudiante (punto 4). */
+  async loadHistory(): Promise<void> {
     const userId = this.userId;
     if (!userId) return;
     this.isLoadingHistory.set(true);
     try {
-      const [list, total] = await Promise.all([
-        this.assessments.getAssessmentsSummary(userId, page, HISTORY_PAGE_SIZE),
-        // Si el total falla, se deduce de la página: una página llena permite seguir avanzando.
-        this.assessments.getQuantity(userId).catch(() => null),
-      ]);
-      this.history.set(list);
-      this.historyPage.set(page);
-      this.historyTotal.set(
-        total ?? page * HISTORY_PAGE_SIZE + list.length + (list.length === HISTORY_PAGE_SIZE ? 1 : 0),
-      );
+      this.history.set(await this.assessments.getAssessmentsSummary(userId, 0, HISTORY_FETCH_SIZE));
     } catch {
       // Si falla el historial no bloqueamos la pantalla; queda vacío.
       this.history.set([]);
-      this.historyTotal.set(0);
     } finally {
       this.isLoadingHistory.set(false);
     }
-  }
-
-  async prevHistoryPage(): Promise<void> {
-    if (this.historyPage() > 0) await this.loadHistory(this.historyPage() - 1);
-  }
-
-  async nextHistoryPage(): Promise<void> {
-    if (this.historyPage() + 1 < this.historyTotalPages()) await this.loadHistory(this.historyPage() + 1);
   }
 
   /** Abre el historial desde el setup. */

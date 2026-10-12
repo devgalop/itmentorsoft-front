@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { scoreColor } from '@shared/charts/chart-colors';
 import { levelMedal } from '@shared/charts/level-medal';
@@ -59,6 +59,27 @@ export class AssessmentResultComponent {
       };
     }),
   );
+
+  /** Números de las preguntas desplegadas (todas empiezan plegadas para que la pantalla sea corta). */
+  readonly openNumbers = signal<ReadonlySet<number>>(new Set());
+  readonly allOpen = computed(() => this.answers().length > 0 && this.openNumbers().size === this.answers().length);
+
+  isOpen(number: number): boolean {
+    return this.openNumbers().has(number);
+  }
+
+  toggle(number: number): void {
+    this.openNumbers.update((open) => {
+      const next = new Set(open);
+      if (!next.delete(number)) next.add(number);
+      return next;
+    });
+  }
+
+  /** Despliega todas las preguntas, o las pliega si ya estaban todas abiertas. */
+  toggleAll(): void {
+    this.openNumbers.set(this.allOpen() ? new Set() : new Set(this.answers().map((a) => a.number)));
+  }
 
   /** Resumen rápido: cuántas preguntas hubo, la mejor respuesta y cuántas hay por reforzar. */
   readonly summary = computed(() => {

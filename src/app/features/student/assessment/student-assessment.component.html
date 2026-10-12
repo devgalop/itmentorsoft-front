@@ -1,8 +1,10 @@
 <section class="ev">
-  <header class="ev__header">
-    <h1 class="ev__title">Evaluación</h1>
-    <p class="ev__subtitle">Pon a prueba tu conocimiento y recibe feedback personalizado.</p>
-  </header>
+  @if (step() !== 'history') {
+    <header class="ev__header">
+      <h1 class="ev__title">Evaluación</h1>
+      <p class="ev__subtitle">Pon a prueba tu conocimiento y recibe feedback personalizado.</p>
+    </header>
+  }
 
   @if (error()) {
     <div class="ev__banner ev__banner--error" role="alert">{{ error() }}</div>
@@ -43,77 +45,23 @@
   <!-- PASO 2: responder -->
   @if (step() === 'answering') {
     @if (currentQuestion(); as q) {
-      <div class="ev__card">
-        <div class="ev__progress">
-          <span>{{ progressLabel() }}</span>
-          <span class="ev__topic-badge">{{ q.topic }}</span>
-        </div>
-
-        <ol class="ev__dots" aria-label="Preguntas de la evaluación">
-          @for (d of questionDots(); track d.number; let i = $index) {
-            <li>
-              <button
-                type="button"
-                class="ev__dot"
-                [class.ev__dot--current]="d.current"
-                [class.ev__dot--done]="d.answered"
-                [attr.aria-current]="d.current ? 'step' : null"
-                [attr.aria-label]="'Pregunta ' + d.number + (d.answered ? ', respondida' : ', sin responder')"
-                (click)="goTo(i)"
-              >
-                {{ d.number }}
-              </button>
-            </li>
-          }
-        </ol>
-
-        <p class="ev__question">{{ q.text_to_evaluate }}</p>
-
-        <div class="ev__field">
-          <label for="answer">Tu respuesta</label>
-          <textarea
-            id="answer"
-            rows="6"
-            [attr.maxlength]="maxAnswerLength"
-            [value]="draft()"
-            (input)="onAnswerChange($any($event.target).value)"
-            (paste)="blockClipboard($event, 'pegar')"
-            (copy)="blockClipboard($event, 'copiar')"
-            (cut)="blockClipboard($event, 'cortar')"
-            (contextmenu)="blockContextMenu($event)"
-            (drop)="blockClipboard($event, 'arrastrar')"
-            placeholder="Escribe tu respuesta con tus palabras…"
-          ></textarea>
-          <p class="ev__counter" [class.ev__counter--limit]="draft().length >= maxAnswerLength">
-            {{ draft().length }} / {{ maxAnswerLength }} caracteres
-          </p>
-          @if (clipboardBlocked) {
-            <p class="ev__hint">Por integridad de la evaluación, no se permite copiar ni pegar.</p>
-          }
-        </div>
-
-        <div class="ev__nav">
-          <button type="button" class="ev__ghost" (click)="prev()" [disabled]="currentIndex() === 0">
-            ← Anterior
-          </button>
-
-          <span class="ev__nav-status" aria-live="polite">
-            @if (unansweredCount() === 0) {
-              Todas respondidas
-            } @else {
-              Faltan {{ unansweredCount() }} por responder
-            }
-          </span>
-
-          @if (isLastQuestion()) {
-            <button type="button" class="ev__primary" (click)="submit()" [disabled]="isBusy()">
-              {{ isBusy() ? 'Enviando…' : 'Enviar evaluación' }}
-            </button>
-          } @else {
-            <button type="button" class="ev__primary" (click)="next()">Siguiente →</button>
-          }
-        </div>
-      </div>
+      <app-assessment-question
+        [question]="q"
+        [index]="currentIndex()"
+        [items]="questionItems()"
+        [draft]="draft()"
+        [maxLength]="maxAnswerLength"
+        [clipboardBlocked]="clipboardBlocked"
+        [busy]="isBusy()"
+        [isLast]="isLastQuestion()"
+        (answerChange)="onAnswerChange($event)"
+        (prev)="prev()"
+        (next)="next()"
+        (submitted)="submit()"
+        (jump)="goTo($event)"
+        (clipboard)="blockClipboard($event.event, $event.action)"
+        (menu)="blockContextMenu($event)"
+      />
     }
   }
 
@@ -135,40 +83,16 @@
     </div>
   }
 
-  <!-- PASO HISTORIAL: lista de evaluaciones -->
+  <!-- PASO HISTORIAL: resumen y lista de evaluaciones -->
   @if (step() === 'history') {
-    <div class="ev__card ev__card--wide">
-      <div class="ev__hist-head">
-        <h2 class="ev__card-title">Mis evaluaciones</h2>
-        <button type="button" class="ev__primary" (click)="restart()">+ Nueva evaluación</button>
-      </div>
-
-      @if (isLoadingHistory()) {
-        <p class="ev__hint">Cargando tu historial…</p>
-      } @else if (history().length === 0) {
-        <p class="ev__hint">Todavía no realizaste evaluaciones.</p>
-      } @else {
-        <ul class="ev__hist-list">
-          @for (h of history(); track h.assessment_id) {
-            <li>
-              <button type="button" class="ev__hist-item" (click)="viewResult(h.assessment_id)" [disabled]="isBusy()">
-                <div class="ev__hist-main">
-                  <span class="ev__hist-classif">{{ h.classification ?? 'Sin clasificar' }}</span>
-                  <span class="ev__hist-date">{{ formatDate(h.date_taken) }}</span>
-                </div>
-                <span class="ev__hist-score">{{ scorePct(h.score) }}%</span>
-              </button>
-            </li>
-          }
-        </ul>
-        <app-pager
-          [page]="historyPage()"
-          [totalPages]="historyTotalPages()"
-          (prev)="prevHistoryPage()"
-          (next)="nextHistoryPage()"
-        />
-      }
-    </div>
+    <app-assessment-history
+      [items]="history()"
+      [loading]="isLoadingHistory()"
+      [pending]="gradingPending()"
+      [busy]="isBusy()"
+      (openResult)="viewResult($event)"
+      (create)="restart()"
+    />
   }
 
   <!-- PASO 4: resultado -->

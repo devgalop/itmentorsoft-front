@@ -8,6 +8,7 @@ import { ReportsService } from '@core/reports/reports.service';
 import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
 import { UsersService } from '@core/users/users.service';
 import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
+import { buildSparkline } from '@shared/charts/sparkline';
 import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
 import { LevelMedal, levelMedal } from '@shared/charts/level-medal';
 import { LevelMedalComponent } from '@shared/charts/level-medal.component';
@@ -126,19 +127,15 @@ export class StudentDashboardComponent {
     if (sorted.length === 0) return null;
     const scores = sorted.map((h) => scoreToPct(h.score));
     const latest = sorted[sorted.length - 1]!;
-    const recent = scores.slice(-SPARK_POINTS);
-    const coords = recent.map((value, i) => ({
-      x: 4 + (i * (SPARK_W - 8)) / Math.max(1, recent.length - 1),
-      y: SPARK_H - 4 - (value / 100) * (SPARK_H - 8),
-    }));
+    const spark = buildSparkline(scores.slice(-SPARK_POINTS), SPARK_W, SPARK_H);
     return {
       id: latest.assessment_id,
       score: scores[scores.length - 1]!,
       date: latest.date_taken,
       classification: latest.classification,
       delta: scores.length > 1 ? scores[scores.length - 1]! - scores[scores.length - 2]! : null,
-      spark: coords.length > 1 ? coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ') : null,
-      lastDot: coords.length > 1 ? coords[coords.length - 1]! : null,
+      spark: spark?.points ?? null,
+      lastDot: spark?.last ?? null,
     };
   });
 

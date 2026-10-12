@@ -59,8 +59,10 @@ describe('AssessmentResultComponent', () => {
     expect(component.summary()).toEqual({ total: 0, best: null, toReinforce: 0 });
   });
 
-  it('lists every question with number, score, answer and feedback', () => {
-    const { el } = create();
+  it('lists every question with number, score, answer and feedback once opened', () => {
+    const { component, fixture, el } = create();
+    component.toggleAll();
+    fixture.detectChanges();
     const cards = Array.from(el.querySelectorAll('.res__answer'));
     expect(cards).toHaveLength(3);
     expect(cards[0]!.textContent).toContain('Pregunta uno');
@@ -71,7 +73,9 @@ describe('AssessmentResultComponent', () => {
   });
 
   it('shows the key concepts and the misconceptions only when there are some', () => {
-    const { el } = create();
+    const { component, fixture, el } = create();
+    component.toggleAll();
+    fixture.detectChanges();
     const cards = Array.from(el.querySelectorAll('.res__answer'));
     expect(cards[0]!.querySelector('.res__chip--ok')?.textContent).toContain('clases');
     expect(cards[0]!.querySelector('.res__chip--warn')).toBeNull();
@@ -96,5 +100,65 @@ describe('AssessmentResultComponent', () => {
   it('links to the resources explorer', () => {
     const { el } = create();
     expect(el.querySelector('a[href="/student/explore"]')).not.toBeNull();
+  });
+
+  describe('collapsible questions', () => {
+    it('starts with every question folded: only the number, question and score show', () => {
+      const { component, el } = create();
+      expect(component.openNumbers().size).toBe(0);
+      expect(el.querySelectorAll('.res__body')).toHaveLength(0);
+      const first = el.querySelector('.res__answer')!;
+      expect(first.textContent).toContain('Pregunta uno');
+      expect(first.textContent).toContain('90%');
+      expect(first.textContent).not.toContain('resp 1');
+      expect(first.querySelector('.res__answer-head')?.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('opens and closes a question when its header is clicked', () => {
+      const { fixture, el } = create();
+      const head = () => el.querySelector('.res__answer-head') as HTMLButtonElement;
+      head().click();
+      fixture.detectChanges();
+      expect(el.querySelector('.res__answer')!.textContent).toContain('resp 1');
+      expect(head().getAttribute('aria-expanded')).toBe('true');
+      expect(el.querySelectorAll('.res__body')).toHaveLength(1);
+      head().click();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.res__body')).toHaveLength(0);
+    });
+
+    it('opens one question without closing the others', () => {
+      const { component } = create();
+      component.toggle(1);
+      component.toggle(3);
+      expect([...component.openNumbers()].sort()).toEqual([1, 3]);
+      expect(component.isOpen(2)).toBe(false);
+    });
+
+    it('"Desplegar todas" opens all of them and then folds them again', () => {
+      const { component, fixture, el } = create();
+      const btn = () => el.querySelector('.res__toggle-all') as HTMLButtonElement;
+      expect(btn().textContent).toContain('Desplegar todas');
+      btn().click();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.res__body')).toHaveLength(3);
+      expect(component.allOpen()).toBe(true);
+      expect(btn().textContent).toContain('Plegar todas');
+      btn().click();
+      fixture.detectChanges();
+      expect(el.querySelectorAll('.res__body')).toHaveLength(0);
+    });
+
+    it('flags in the folded row the questions that have something to reinforce', () => {
+      const { el } = create();
+      const flags = el.querySelectorAll('.res__flag');
+      expect(flags).toHaveLength(1);
+      expect(flags[0]!.textContent).toContain('1 por reforzar');
+    });
+
+    it('has no toggle button without questions', () => {
+      const { el } = create({ ...base, answer_scores: [] });
+      expect(el.querySelector('.res__toggle-all')).toBeNull();
+    });
   });
 });
