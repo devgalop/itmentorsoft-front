@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap, Params } from '@angular/router';
 import { vi } from 'vitest';
 import { StudentAssessmentComponent } from './student-assessment.component';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
@@ -22,11 +23,12 @@ describe('StudentAssessmentComponent', () => {
 
   const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
 
-  function createComponent(): StudentAssessmentComponent {
+  function createComponent(query: Params = {}): StudentAssessmentComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         StudentAssessmentComponent,
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
         { provide: StudentAssessmentService, useValue: serviceMock },
         { provide: AuthService, useValue: authMock },
         { provide: ToastService, useValue: toastMock },
@@ -588,6 +590,26 @@ describe('StudentAssessmentComponent', () => {
         'Acción no permitida',
         expect.stringContaining('copiar'),
       );
+    });
+  });
+
+  describe('enlaces del principal', () => {
+    it('opens the history by default', () => {
+      const c = createComponent();
+      expect(c.step()).toBe('history');
+    });
+
+    it('goes straight to the topic selection with ?new=1', () => {
+      const c = createComponent({ new: '1' });
+      expect(c.step()).toBe('setup');
+    });
+
+    it('goes straight to the detail of an evaluation with ?result=<id>', async () => {
+      serviceMock.getResult.mockResolvedValue({ avg_score: 0.8, classification: 'básico', feedback: 'ok', answer_scores: [] });
+      const c = createComponent({ result: 'assess-9' });
+      await new Promise((r) => setTimeout(r));
+      expect(serviceMock.getResult).toHaveBeenCalledWith('u1', 'assess-9');
+      expect(c.step()).toBe('result');
     });
   });
 });

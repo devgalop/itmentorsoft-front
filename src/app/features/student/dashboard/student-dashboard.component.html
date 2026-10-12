@@ -2,66 +2,132 @@
   <div class="dash__banner">
     <div class="dash__banner-text">
       <h1 class="dash__greeting">¡Hola, {{ userName() }}!</h1>
-      @if (classification(); as cat) {
-        <p class="dash__intro">Tu categoría actual es {{ cat }}. Sigue evaluándote para afinar tu ruta.</p>
-        <span class="dash__badge">Categoría: {{ cat }}</span>
-      } @else {
-        <p class="dash__intro">
-          Completa tu evaluación inicial para recibir tu ruta personalizada.
-        </p>
+      @if (!classification()) {
+        <p class="dash__intro">Completa tu evaluación inicial para recibir tu ruta personalizada.</p>
         <span class="dash__badge">Sin categoría asignada aún</span>
       }
     </div>
-    <div class="dash__banner-actions">
-      <a routerLink="/student/assessments" class="dash__btn dash__btn--solid">Iniciar evaluación</a>
-      <span class="dash__banner-note">~20 min · Fundamentos + CT</span>
-    </div>
+    @if (medal(); as m) {
+      <app-level-medal [name]="m.name" [color]="m.color" [rank]="m.rank" />
+    } @else if (showStart()) {
+      <div class="dash__banner-actions">
+        <a routerLink="/student/assessments" [queryParams]="newParams" class="dash__btn dash__btn--solid">Iniciar evaluación</a>
+        <span class="dash__banner-note">~20 min · Fundamentos + CT</span>
+      </div>
+    }
   </div>
 
   <div class="dash__stats">
-    @for (s of stats(); track s.label) {
-      @if (s.route) {
-        <a [routerLink]="s.route" class="dash__stat dash__stat--link">
-          <span class="dash__stat-value">{{ s.value }}</span>
-          <span class="dash__stat-label">{{ s.label }}</span>
-          <span class="dash__stat-hint">{{ s.hint }}</span>
-        </a>
-      } @else {
-        <div class="dash__stat">
-          <span class="dash__stat-value">{{ s.value }}</span>
-          <span class="dash__stat-label">{{ s.label }}</span>
-          <span class="dash__stat-hint">{{ s.hint }}</span>
-        </div>
+    <a routerLink="/student/assessments" [queryParams]="lastParams()" class="dash__stat dash__stat--link">
+      <div class="dash__stat-body">
+        <span class="dash__stat-label">Última evaluación</span>
+        @if (last(); as l) {
+          <span class="dash__stat-value">{{ l.score }}%</span>
+          <span class="dash__stat-hint">
+            {{ formatDate(l.date) }}
+            @if (l.delta !== null && l.delta !== 0) {
+              ·
+              <span [class]="l.delta > 0 ? 'dash__up' : 'dash__down'">
+                {{ l.delta > 0 ? '▲ +' : '▼ −' }}{{ l.delta > 0 ? l.delta : -l.delta }} pts
+              </span>
+            } @else if (l.delta === 0) {
+              · = igual que la anterior
+            }
+          </span>
+        } @else {
+          <span class="dash__stat-value">—</span>
+          <span class="dash__stat-hint">Aún sin evaluaciones</span>
+        }
+      </div>
+      @if (last(); as l) {
+        @if (l.spark; as pts) {
+          <svg
+            class="dash__spark"
+            [attr.viewBox]="'0 0 ' + sparkSize.w + ' ' + sparkSize.h"
+            role="img"
+            aria-label="Puntaje de tus últimas evaluaciones"
+          >
+            <polyline [attr.points]="pts" />
+            @if (l.lastDot; as d) {
+              <circle [attr.cx]="d.x" [attr.cy]="d.y" r="3" />
+            }
+          </svg>
+        }
       }
-    }
+    </a>
+
+    <a routerLink="/student/assessments" class="dash__stat dash__stat--link">
+      <div class="dash__stat-body">
+        <span class="dash__stat-label">Evaluaciones realizadas</span>
+        <span class="dash__stat-value">{{ evaluationsTotal() }}</span>
+        <span class="dash__stat-hint">Ver mi historial</span>
+      </div>
+      <span class="dash__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30">
+          <rect x="5" y="4" width="14" height="17" rx="2" />
+          <path d="M9 4.5h6M9 13l2 2 4-4" />
+        </svg>
+      </span>
+    </a>
+
+    <a routerLink="/student/route" class="dash__stat dash__stat--link">
+      <div class="dash__stat-body">
+        <span class="dash__stat-label">Mi ruta</span>
+        <span class="dash__stat-value dash__stat-value--text">Ver ruta</span>
+        <span class="dash__stat-hint">Tus temas recomendados</span>
+      </div>
+      <span class="dash__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30">
+          <circle cx="6" cy="19" r="2.4" />
+          <circle cx="18" cy="5" r="2.4" />
+          <path d="M6 16.6V13a3 3 0 0 1 3-3h6a3 3 0 0 0 3-3V7.4" />
+        </svg>
+      </span>
+    </a>
   </div>
 
   <div class="dash__grid">
     <div class="dash__card">
-      <h2 class="dash__card-title">¿Cómo funciona ITMentorSoft?</h2>
-      <ol class="dash__steps">
-        @for (step of steps; track step.title; let i = $index) {
-          <li class="dash__step">
-            <span class="dash__step-num">{{ i + 1 }}</span>
-            <div>
-              <p class="dash__step-title">{{ step.title }}</p>
-              <p class="dash__step-desc">{{ step.description }}</p>
-            </div>
-          </li>
-        }
-      </ol>
+      <div class="dash__card-head">
+        <h2 class="dash__card-title">Perfil de conocimiento</h2>
+        <a routerLink="/student/progress" class="dash__link">Ver mi progreso →</a>
+      </div>
+      @if (profileItems().length === 0) {
+        <p class="dash__empty">Sin datos de perfil todavía. Completa una evaluación para verlo.</p>
+      } @else {
+        <app-score-bars [items]="profileItems()" />
+      }
     </div>
 
-    <div class="dash__card dash__card--cta">
-      <div class="dash__cta-circle"></div>
-      @if (classification(); as cat) {
-        <h2 class="dash__card-title">Tu categoría: {{ cat }}</h2>
-        <p class="dash__cta-text">Consulta el detalle de tu progreso por tema.</p>
-        <a routerLink="/student/progress" class="dash__btn dash__btn--solid">Ver mi progreso</a>
+    <div class="dash__card dash__next">
+      <h2 class="dash__card-title">Tu siguiente paso</h2>
+      @if (showStart()) {
+        <p class="dash__next-text">Haz tu evaluación inicial para conocer tu nivel y recibir tu ruta.</p>
+        <a routerLink="/student/assessments" [queryParams]="newParams" class="dash__btn dash__btn--solid">Comenzar ahora</a>
+      } @else if (weakest(); as w) {
+        <p class="dash__next-text">
+          Refuerza <strong>{{ w.label }}</strong>: vas en {{ w.value }}%.
+        </p>
+        <div class="dash__next-actions">
+          <a routerLink="/student/explore" class="dash__btn dash__btn--solid">Explorar recursos</a>
+          <a routerLink="/student/assessments" [queryParams]="newParams" class="dash__btn dash__btn--ghost">Nueva evaluación</a>
+        </div>
+        @if (strongest(); as s) {
+          <p class="dash__next-note">Tu mayor fortaleza es <strong>{{ s.label }}</strong> ({{ s.value }}%).</p>
+        }
       } @else {
-        <h2 class="dash__card-title">Aún sin categoría</h2>
-        <p class="dash__cta-text">Completa la evaluación inicial para conocer tu nivel.</p>
-        <a routerLink="/student/assessments" class="dash__btn dash__btn--solid">Comenzar ahora</a>
+        <p class="dash__next-text">Sigue practicando con una nueva evaluación para afinar tu ruta.</p>
+        <a routerLink="/student/assessments" [queryParams]="newParams" class="dash__btn dash__btn--solid">Nueva evaluación</a>
+      }
+
+      @if (feedback(); as fb) {
+        <div class="dash__feedback-block">
+          <div class="dash__card-head">
+            <h3 class="dash__feedback-title">Feedback para ti</h3>
+            <a routerLink="/student/progress" class="dash__link">Ver más →</a>
+          </div>
+          <p class="dash__feedback">{{ fb }}</p>
+        </div>
       }
     </div>
   </div>

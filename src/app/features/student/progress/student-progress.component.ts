@@ -1,11 +1,15 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AuthService } from '@core/auth/auth.service';
 import { ReportsService } from '@core/reports/reports.service';
-import { StudentSummary } from '@core/reports/reports.types';
+import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
+import { LineSeries, MultiLineChartComponent } from '@shared/charts/multi-line-chart.component';
+import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
+import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
 
 @Component({
   selector: 'app-student-progress',
   standalone: true,
+  imports: [MultiLineChartComponent, ScoreBarsComponent],
   templateUrl: './student-progress.component.html',
   styleUrl: './student-progress.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,6 +19,15 @@ export class StudentProgressComponent {
   private readonly reports = inject(ReportsService);
 
   readonly summary = signal<StudentSummary | null>(null);
+  private readonly progress = signal<StudentProgress | null>(null);
+
+  /** Una línea por tema a lo largo de las evaluaciones (la misma gráfica del reporte del docente). */
+  readonly progressSeries = computed<LineSeries[]>(() => buildTopicSeries(this.progress()?.knowledge_profile ?? []));
+
+  /** Perfil de conocimiento actual, con el color de cada tema. */
+  readonly profileItems = computed<ScoreItem[]>(() =>
+    buildProfileItems(this.summary()?.profile ?? [], this.progressSeries()),
+  );
   readonly isLoading = signal(true);
   readonly loadError = signal<string | null>(null);
 
@@ -32,8 +45,13 @@ export class StudentProgressComponent {
     this.isLoading.set(true);
     this.loadError.set(null);
     try {
-      const summary = await this.reports.getStudentSummary(id);
+      const [summary, progress] = await Promise.all([
+        this.reports.getStudentSummary(id),
+        // El historial por tema es un extra: si falla, el resto de la pantalla sigue funcionando.
+        this.reports.getStudentProgress(id).catch(() => null),
+      ]);
       this.summary.set(summary);
+      this.progress.set(progress);
       if (!summary) {
         this.loadError.set('Todavía no hay datos de tu progreso. Completa una evaluación para verlo.');
       }
@@ -45,8 +63,7 @@ export class StudentProgressComponent {
   }
 
   scorePct(score: number): number {
-    const pct = Math.round(score * 100);
-    return Math.max(0, Math.min(100, pct));
+    return scoreToPct(score);
   }
 
   private isPlaceholder(value: string | null | undefined): boolean {

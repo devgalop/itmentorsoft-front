@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 import { environment } from '../../../../environments/environment';
@@ -30,6 +31,7 @@ export class StudentAssessmentComponent {
   private readonly auth = inject(AuthService);
   private readonly assessments = inject(StudentAssessmentService);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   /** Viene del ambiente: si es true se bloquea copiar/pegar en la respuesta. */
   readonly clipboardBlocked = environment.blockClipboardInAnswers;
@@ -77,6 +79,15 @@ export class StudentAssessmentComponent {
     // Arranca mostrando el historial; los temas se precargan para "Nueva evaluación".
     void this.loadTopics();
     void this.loadHistory();
+
+    // Enlaces del principal: ?new=1 abre directo la elección de tema y ?result=<id> el detalle.
+    const params = this.route?.snapshot.queryParamMap;
+    const resultId = params?.get('result');
+    if (resultId) {
+      void this.viewResult(resultId);
+    } else if (params?.has('new')) {
+      this.restart();
+    }
   }
 
   private get userId(): string | null {

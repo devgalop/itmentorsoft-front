@@ -3,9 +3,9 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ReportsService } from '@core/reports/reports.service';
 import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
-import { CATEGORY_PALETTE, FALLBACK_COLOR } from '@shared/charts/chart-colors';
-import { LineSeries, MultiLineChartComponent, SeriesPoint } from '@shared/charts/multi-line-chart.component';
+import { LineSeries, MultiLineChartComponent } from '@shared/charts/multi-line-chart.component';
 import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
+import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
 
 @Component({
   selector: 'app-student-detail',
@@ -59,48 +59,17 @@ export class StudentDetailComponent {
     }
   }
 
-  /**
-   * Una serie por tema: el backend manda varios puntos por tema, uno por evaluación, y el
-   * `index` dice cuál es (0 = la primera). El puntaje ya viene de 0 a 100.
-   */
-  readonly progressSeries = computed<LineSeries[]>(() => {
-    const byTopic = new Map<string, SeriesPoint[]>();
-    for (const item of this.progress()?.knowledge_profile ?? []) {
-      const points = byTopic.get(item.topic) ?? [];
-      points.push({ x: item.index, value: this.clampPct(item.score) });
-      byTopic.set(item.topic, points);
-    }
-    return [...byTopic].map(([topic, points], i) => ({
-      key: topic,
-      label: topic,
-      color: CATEGORY_PALETTE[i] ?? FALLBACK_COLOR,
-      points: points.sort((p, q) => p.x - q.x),
-    }));
-  });
+  /** Una serie por tema, una línea por evaluación (ver `buildTopicSeries`). */
+  readonly progressSeries = computed<LineSeries[]>(() => buildTopicSeries(this.progress()?.knowledge_profile ?? []));
 
-  /**
-   * Perfil de conocimiento actual: un puntaje (0–100) por tema. Cada tema lleva el mismo color
-   * que su línea en "Progreso por tema" (si ya se conoce).
-   */
-  readonly profileItems = computed<ScoreItem[]>(() => {
-    const colors = new Map(this.progressSeries().map((s) => [s.key, s.color]));
-    return (this.summary()?.profile ?? []).map((p) => ({
-      key: p.topic,
-      label: p.topic,
-      value: this.scorePct(p.score),
-      color: colors.get(p.topic),
-    }));
-  });
-
-  /** Puntaje a 0–100 con un decimal. */
-  private clampPct(value: number): number {
-    return Math.max(0, Math.min(100, Math.round(value * 10) / 10));
-  }
+  /** Perfil de conocimiento actual, con el color de cada tema. */
+  readonly profileItems = computed<ScoreItem[]>(() =>
+    buildProfileItems(this.summary()?.profile ?? [], this.progressSeries()),
+  );
 
   /** Score (0–1) a porcentaje 0–100 para las barras. */
   scorePct(score: number): number {
-    const pct = Math.round(score * 100);
-    return Math.max(0, Math.min(100, pct));
+    return scoreToPct(score);
   }
 
   /** El backend devuelve un placeholder en inglés cuando aún no hay clasificación. */

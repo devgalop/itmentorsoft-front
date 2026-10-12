@@ -1,0 +1,51 @@
+<div class="dash__medal" [attr.aria-label]="'Tu nivel actual: ' + name()">
+  <svg
+    class="dash__medal-icon"
+    [style.--medal]="color()"
+    viewBox="0 0 72 84"
+    width="52"
+    height="61"
+    aria-hidden="true"
+  >
+    <!-- Avanzado: alas -->
+    @if (rank() >= 3) {
+      <g class="medal__wing">
+        <ellipse cx="9" cy="34" rx="10" ry="3.6" transform="rotate(-28 9 34)" />
+        <ellipse cx="8" cy="42" rx="10" ry="3.6" transform="rotate(-8 8 42)" />
+        <ellipse cx="10" cy="50" rx="9" ry="3.4" transform="rotate(14 10 50)" />
+        <ellipse cx="63" cy="34" rx="10" ry="3.6" transform="rotate(28 63 34)" />
+        <ellipse cx="64" cy="42" rx="10" ry="3.6" transform="rotate(8 64 42)" />
+        <ellipse cx="62" cy="50" rx="9" ry="3.4" transform="rotate(-14 62 50)" />
+      </g>
+    }
+    <!-- Básico: cinta -->
+    @if (rank() >= 1) {
+      <g class="medal__ribbon">
+        <polygon points="22,54 12,82 25,75 31,84 38,56" />
+        <polygon points="50,54 60,82 47,75 41,84 34,56" />
+      </g>
+    }
+    <!-- Todos: disco con aro -->
+    <circle class="medal__disc" cx="36" cy="38" r="23" />
+    <circle class="medal__ring" cx="36" cy="38" r="18" />
+    @if (rank() >= 2) {
+      <!-- Intermedio: estrella -->
+      <polygon
+        class="medal__star"
+        points="36,26 39.5,33.4 47.6,34.4 41.7,40 43.2,48 36,44.1 28.8,48 30.3,40 24.4,34.4 32.5,33.4"
+      />
+    } @else {
+      <circle class="medal__dot" cx="36" cy="38" r="6" />
+    }
+    <!-- Avanzado: corona y destellos -->
+    @if (rank() >= 3) {
+      <polygon class="medal__crown" points="25,18 26,5 31,11 36,2 41,11 46,5 47,18" />
+      <path class="medal__spark" d="M66 8l1.6 3.4L71 13l-3.4 1.6L66 18l-1.6-3.4L61 13l3.4-1.6z" />
+      <path class="medal__spark" d="M6 6l1.2 2.6L10 10l-2.8 1.2L6 14l-1.2-2.8L2 10l2.8-1.4z" />
+    }
+  </svg>
+  <div class="dash__medal-text">
+    <span class="dash__medal-name">{{ name() }}</span>
+    <span class="dash__medal-tag">Tu nivel actual</span>
+  </div>
+</div>
