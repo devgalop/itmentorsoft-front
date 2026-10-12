@@ -10,7 +10,7 @@ import { ContentService } from '@core/content/content.service';
 import { contentCategoryLabel, ContentItem } from '@core/content/content.types';
 import { ToastService } from '@shared/ui/toast/toast.service';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;
 
 /**
  * Recursos (admin): listado de los recursos activos y desactivación. El backend oculta de todos

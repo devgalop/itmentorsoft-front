@@ -19,7 +19,7 @@
   background: var(--color-white);
   border: 1px solid var(--color-light-1);
   border-radius: 0.75rem;
-  padding: 0.5rem 1.5rem 1.25rem;
+  padding: 0.25rem 1.25rem 1rem;
 }
 
 .adres__hint {
@@ -34,49 +34,55 @@
   font-size: 0.9rem;
 }
 
-.adres__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.adres__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
 }
 
-.adres__item {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 0;
+.adres__table th {
+  text-align: left;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-mid-2);
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--color-light-1);
+}
+
+.adres__table td {
+  padding: 0.55rem 0.6rem;
   border-bottom: 1px solid var(--color-light-2);
+  vertical-align: middle;
 }
 
-.adres__info {
-  min-width: 0;
+.adres__cell-title {
+  max-width: 340px;
+}
+
+.adres__th-actions,
+.adres__cell-actions {
+  text-align: right;
+  white-space: nowrap;
 }
 
 .adres__link {
+  display: block;
   font-weight: 700;
   color: var(--color-primary);
   text-decoration: none;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .adres__link:hover {
   text-decoration: underline;
 }
 
-.adres__summary {
-  margin: 0.25rem 0 0.5rem;
-  font-size: 0.85rem;
-  color: var(--color-mid-1);
-}
-
-.adres__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
 .adres__tag {
+  display: inline-block;
+  margin: 0.1rem 0.25rem 0.1rem 0;
   font-size: 0.72rem;
   font-weight: 600;
   padding: 0.15rem 0.55rem;

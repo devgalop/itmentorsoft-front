@@ -53,7 +53,7 @@ describe('AdminResourcesComponent', () => {
 
   it('loads the first page of resources', async () => {
     const c = await createComponent(['c1', 'c2'], 12);
-    expect(contentMock.getAllContentsPaged).toHaveBeenCalledWith(0, 10);
+    expect(contentMock.getAllContentsPaged).toHaveBeenCalledWith(0, 8);
     expect(c.resources()).toHaveLength(2);
     expect(c.total()).toBe(12);
     expect(c.totalPages()).toBe(2);
@@ -77,10 +77,10 @@ describe('AdminResourcesComponent', () => {
   it('paginates forward and backward', async () => {
     const c = await createComponent(['c1'], 25);
     await c.nextPage();
-    expect(contentMock.getAllContentsPaged).toHaveBeenLastCalledWith(1, 10);
+    expect(contentMock.getAllContentsPaged).toHaveBeenLastCalledWith(1, 8);
     expect(c.page()).toBe(1);
     await c.prevPage();
-    expect(contentMock.getAllContentsPaged).toHaveBeenLastCalledWith(0, 10);
+    expect(contentMock.getAllContentsPaged).toHaveBeenLastCalledWith(0, 8);
     await c.prevPage();
     expect(c.page()).toBe(0);
   });
@@ -115,7 +115,7 @@ describe('AdminResourcesComponent', () => {
 
     expect(contentMock.updateResourceStatus).toHaveBeenCalledWith('c1', false);
     expect(toastMock.success).toHaveBeenCalled();
-    expect(contentMock.getAllContentsPaged).toHaveBeenCalledWith(0, 10);
+    expect(contentMock.getAllContentsPaged).toHaveBeenCalledWith(0, 8);
     expect(c.confirmingId()).toBeNull();
     expect(c.disablingId()).toBeNull();
   });
@@ -127,7 +127,7 @@ describe('AdminResourcesComponent', () => {
 
     await c.disableResource('c1');
 
-    expect(contentMock.getAllContentsPaged).toHaveBeenCalledWith(0, 10);
+    expect(contentMock.getAllContentsPaged).toHaveBeenCalledWith(0, 8);
   });
 
   it('shows an error toast and keeps the modal data when the backend rejects the change', async () => {
