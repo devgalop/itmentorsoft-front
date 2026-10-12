@@ -1,6 +1,6 @@
 <section class="ap">
   <header class="ap__header">
-    <h1 class="ap__title">Aprobar contenido</h1>
+    <h1 class="ap__title">Aprobar pregunta</h1>
     <p class="ap__subtitle">
       @if (total() > 0) {
         {{ total() }} pregunta(s) pendiente(s) de revisión.
@@ -32,15 +32,7 @@
 
           <p class="ap__question">{{ q.text_to_evaluate }}</p>
 
-          @if (q.definition) {
-            <p class="ap__meta"><strong>Definición:</strong> {{ q.definition }}</p>
-          }
-          @if (q.correct_sample) {
-            <p class="ap__meta ap__meta--ok"><strong>Ejemplo correcto:</strong> {{ q.correct_sample }}</p>
-          }
-          @if (q.wrong_sample) {
-            <p class="ap__meta ap__meta--warn"><strong>Ejemplo incorrecto:</strong> {{ q.wrong_sample }}</p>
-          }
+          <button type="button" class="ap__detail" (click)="openDetail(q)">Ver detalle</button>
 
           @if (resolutionFor(q.question_id); as res) {
             <div
@@ -89,3 +81,73 @@
     </div>
   }
 </section>
+
+@if (detail(); as d) {
+  <div class="ap__overlay" (click)="closeDetail()">
+    <div
+      class="ap__modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ap-detail-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="ap__close" (click)="closeDetail()" aria-label="Cerrar">×</button>
+
+      <div class="ap__modal-head">
+        <h2 id="ap-detail-title" class="ap__modal-title">{{ d.concept }}</h2>
+        <div class="ap__tags">
+          <span class="ap__tag">{{ d.difficulty }}</span>
+          <span class="ap__tag ap__tag--alt">{{ d.classification }}</span>
+          <span class="ap__tag">v{{ d.version }}</span>
+        </div>
+      </div>
+
+      <p class="ap__modal-question">{{ d.text_to_evaluate }}</p>
+
+      @if (d.definition) {
+        <h3 class="ap__label">Definición</h3>
+        <p class="ap__text">{{ d.definition }}</p>
+      }
+      @if (d.simple_explanation) {
+        <h3 class="ap__label">Explicación simple</h3>
+        <p class="ap__text">{{ d.simple_explanation }}</p>
+      }
+      @if (d.correct_sample) {
+        <h3 class="ap__label ap__label--ok">Ejemplo correcto</h3>
+        <p class="ap__text">{{ d.correct_sample }}</p>
+      }
+      @if (d.wrong_sample) {
+        <h3 class="ap__label ap__label--bad">Ejemplo incorrecto</h3>
+        <p class="ap__text">{{ d.wrong_sample }}</p>
+      }
+      @if (d.common_misconceptions.length > 0) {
+        <h3 class="ap__label">Errores comunes</h3>
+        <ul class="ap__bullets">
+          @for (m of d.common_misconceptions; track m) {
+            <li>{{ m }}</li>
+          }
+        </ul>
+      }
+      @if (d.rubric.length > 0) {
+        <h3 class="ap__label">Rúbrica</h3>
+        <ul class="ap__bullets">
+          @for (r of d.rubric; track r.score) {
+            <li><strong>{{ r.score }}</strong> · {{ r.explanation }}</li>
+          }
+        </ul>
+      }
+      @if (d.semantic_keywords.length > 0) {
+        <h3 class="ap__label">Palabras clave</h3>
+        <div class="ap__tags ap__tags--wrap">
+          @for (k of d.semantic_keywords; track k) {
+            <span class="ap__tag">{{ k }}</span>
+          }
+        </div>
+      }
+
+      <div class="ap__modal-actions">
+        <button type="button" class="ap__btn ap__btn--ghost" (click)="closeDetail()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

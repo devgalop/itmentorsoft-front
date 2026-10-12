@@ -12,42 +12,47 @@
     } @else if (resources().length === 0) {
       <p class="adres__hint">No hay recursos para mostrar.</p>
     } @else {
-      <ul class="adres__list">
-        @for (r of resources(); track r.content_id) {
-          <li class="adres__item">
-            <div class="adres__info">
-              <a class="adres__link" [href]="r.url" target="_blank" rel="noopener noreferrer">{{ r.title }}</a>
-              <p class="adres__summary">{{ r.summary }}</p>
-              <div class="adres__tags">
+      <table class="adres__table">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Categoría</th>
+            <th>Temas</th>
+            <th class="adres__th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of resources(); track r.content_id) {
+            <tr>
+              <td class="adres__cell-title">
+                <a class="adres__link" [href]="r.url" target="_blank" rel="noopener noreferrer" [title]="r.summary">{{
+                  r.title
+                }}</a>
+              </td>
+              <td>
                 <span class="adres__tag adres__tag--cat">{{ categoryLabel(r.category) }}</span>
-                @for (t of r.related_topics; track t) {
+              </td>
+              <td>
+                @for (t of r.related_topics.slice(0, 2); track t) {
                   <span class="adres__tag">{{ t }}</span>
                 }
-              </div>
-            </div>
-            <button type="button" class="adres__disable" (click)="askDisable(r.content_id)">
-              Desactivar
-            </button>
-          </li>
-        }
-      </ul>
+                @if (r.related_topics.length > 2) {
+                  <span class="adres__tag" [title]="r.related_topics.slice(2).join(', ')"
+                    >+{{ r.related_topics.length - 2 }}</span
+                  >
+                }
+              </td>
+              <td class="adres__cell-actions">
+                <button type="button" class="adres__disable" (click)="askDisable(r.content_id)">
+                  Desactivar
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
 
-      @if (totalPages() > 1) {
-        <div class="adres__pager">
-          <button type="button" class="adres__page-btn" (click)="prevPage()" [disabled]="page() === 0">
-            ← Anterior
-          </button>
-          <span class="adres__page-info">Página {{ page() + 1 }} de {{ totalPages() }}</span>
-          <button
-            type="button"
-            class="adres__page-btn"
-            (click)="nextPage()"
-            [disabled]="page() + 1 >= totalPages()"
-          >
-            Siguiente →
-          </button>
-        </div>
-      }
+      <app-pager [page]="page()" [totalPages]="totalPages()" (prev)="prevPage()" (next)="nextPage()" />
     }
   </div>
 </section>

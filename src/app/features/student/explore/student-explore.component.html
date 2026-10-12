@@ -93,22 +93,7 @@
         }
       </div>
 
-      @if (totalPages() > 1) {
-        <div class="explore__pager">
-          <button type="button" class="explore__page-btn" (click)="prevPage()" [disabled]="page() === 0">
-            ← Anterior
-          </button>
-          <span class="explore__page-info">Página {{ page() + 1 }} de {{ totalPages() }}</span>
-          <button
-            type="button"
-            class="explore__page-btn"
-            (click)="nextPage()"
-            [disabled]="page() + 1 >= totalPages()"
-          >
-            Siguiente →
-          </button>
-        </div>
-      }
+      <app-pager [page]="page()" [totalPages]="totalPages()" (prev)="prevPage()" (next)="nextPage()" />
     }
   </div>
 </section>

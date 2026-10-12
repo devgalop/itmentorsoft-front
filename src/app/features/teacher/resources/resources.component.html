@@ -92,6 +92,8 @@
           }
         </tbody>
       </table>
+
+      <app-pager [page]="page()" [totalPages]="totalPages()" (prev)="prevPage()" (next)="nextPage()" />
     }
   </div>
 </section>

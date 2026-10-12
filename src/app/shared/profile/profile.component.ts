@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { roleLabel as roleLabelOf } from '@core/users/role-label';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
@@ -147,11 +148,6 @@ export class ProfileComponent {
   }
 
   roleLabel(role: string): string {
-    const map: Record<string, string> = {
-      admin: 'Administrador',
-      teacher: 'Docente',
-      student: 'Estudiante',
-    };
-    return map[(role ?? '').toLowerCase()] ?? role;
+    return roleLabelOf(role ?? '');
   }
 }

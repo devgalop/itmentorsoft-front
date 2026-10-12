@@ -23,6 +23,7 @@ import {
   ContentItem,
   RegisterContentPayload,
 } from '@core/content/content.types';
+import { PagerComponent } from '@shared/ui/pager/pager.component';
 
 /** Requiere al menos `min` elementos seleccionados en un control de tipo string[]. */
 function minSelected(min: number) {
@@ -38,10 +39,12 @@ function httpsUrl(control: AbstractControl): ValidationErrors | null {
   return value.startsWith('https://') ? null : { https: true };
 }
 
+const PAGE_SIZE = 10;
+
 @Component({
   selector: 'app-resources',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, PagerComponent],
   templateUrl: './resources.component.html',
   styleUrl: './resources.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -85,6 +88,10 @@ export class ResourcesComponent {
   }
 
   readonly resources = signal<ContentItem[]>([]);
+  readonly total = signal(0);
+  /** Página actual (empieza en 0). */
+  readonly page = signal(0);
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.total() / PAGE_SIZE)));
   readonly isLoading = signal(false);
   readonly loadError = signal<string | null>(null);
 
@@ -173,20 +180,29 @@ export class ResourcesComponent {
     void this.loadResources();
   }
 
-  async loadResources(): Promise<void> {
+  prevPage(): void {
+    if (this.page() > 0) void this.loadResources(this.page() - 1);
+  }
+
+  nextPage(): void {
+    if (this.page() + 1 < this.totalPages()) void this.loadResources(this.page() + 1);
+  }
+
+  async loadResources(page = 0): Promise<void> {
     this.isLoading.set(true);
     this.loadError.set(null);
     try {
       const title = this.searchTitle().trim();
       const category = this.filterCategory();
 
-      if (title) {
-        this.resources.set((await this.content.getContentsByTitle(title)).items);
-      } else if (category !== 'all') {
-        this.resources.set((await this.content.getContentsByCategory(category)).items);
-      } else {
-        this.resources.set(await this.content.getAllContents());
-      }
+      const result = title
+        ? await this.content.getContentsByTitle(title, page, PAGE_SIZE)
+        : category !== 'all'
+          ? await this.content.getContentsByCategory(category, page, PAGE_SIZE)
+          : await this.content.getAllContentsPaged(page, PAGE_SIZE);
+      this.resources.set(result.items);
+      this.total.set(result.total);
+      this.page.set(page);
     } catch (error) {
       this.loadError.set(error instanceof Error ? error.message : 'Error al cargar recursos');
     } finally {
@@ -255,7 +271,7 @@ export class ResourcesComponent {
         this.resetForm();
         this.editingId.set(null);
         this.closeModal();
-        await this.loadResources();
+        await this.loadResources(this.page());
       } else {
         this.toast.error('No se pudo guardar', response.message || 'Intenta nuevamente.');
       }

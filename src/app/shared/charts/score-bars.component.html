@@ -1,0 +1,26 @@
+<ul class="sbr" [class.sbr--dense]="dense()">
+  @for (i of sorted(); track i.key) {
+    <li class="sbr__row">
+      <div class="sbr__head">
+        @if (i.color) {
+          <span class="sbr__dot" [style.background]="i.color" aria-hidden="true"></span>
+        }
+        <span class="sbr__label">{{ i.label }}</span>
+        @if (i.key === bestKey()) {
+          <span class="sbr__tag sbr__tag--best">▲ Mayor fortaleza</span>
+        }
+        @if (i.key === worstKey()) {
+          <span class="sbr__tag sbr__tag--worst">▼ A reforzar</span>
+        }
+        <strong class="sbr__value">{{ pct(i.value) }}%</strong>
+      </div>
+      <div class="sbr__track" role="img" [attr.aria-label]="i.label + ': ' + pct(i.value) + '%'">
+        <span class="sbr__bar" [style.width.%]="pct(i.value)" [style.background]="gradient(i)"></span>
+        <span class="sbr__tick" aria-hidden="true"></span>
+      </div>
+    </li>
+  }
+</ul>
+@if (!dense()) {
+  <p class="sbr__note">100 % es el mejor resultado.</p>
+}

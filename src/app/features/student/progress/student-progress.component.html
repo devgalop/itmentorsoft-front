@@ -15,6 +15,9 @@
         <h2 class="prog__name">{{ s.name }}</h2>
         <span class="prog__badge">{{ classificationLabel(s.knowledge_classification) }}</span>
       </div>
+      @if (medal(); as m) {
+        <app-level-medal class="prog__medal" [name]="m.name" [color]="m.color" [rank]="m.rank" />
+      }
     </div>
 
     <div class="prog__grid">
@@ -23,19 +26,7 @@
         @if (s.profile.length === 0) {
           <div class="prog__empty"><p>Sin datos de perfil todavía.</p></div>
         } @else {
-          <ul class="prog__profile">
-            @for (p of s.profile; track p.topic) {
-              <li class="prog__row">
-                <div class="prog__row-head">
-                  <span class="prog__topic">{{ p.topic }}</span>
-                  <span class="prog__score">{{ scorePct(p.score) }}%</span>
-                </div>
-                <div class="prog__bar">
-                  <div class="prog__bar-fill" [style.width.%]="scorePct(p.score)"></div>
-                </div>
-              </li>
-            }
-          </ul>
+          <app-score-bars [items]="profileItems()" />
         }
       </div>
 
@@ -45,6 +36,15 @@
           <p class="prog__feedback">{{ fb }}</p>
         } @else {
           <div class="prog__empty"><p>Sin feedback generado aún.</p></div>
+        }
+      </div>
+
+      <div class="prog__card prog__card--wide">
+        <h3 class="prog__card-title">Progreso por tema</h3>
+        @if (progressSeries().length === 0) {
+          <div class="prog__empty"><p>Sin progreso registrado todavía.</p></div>
+        } @else {
+          <app-multi-line-chart [series]="progressSeries()" />
         }
       </div>
     </div>

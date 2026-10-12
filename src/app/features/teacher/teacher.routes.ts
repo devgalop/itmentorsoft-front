@@ -29,11 +29,8 @@ export const TEACHER_ROUTES: Routes = [
         loadComponent: () =>
           import('./questions/question-form.component').then((m) => m.QuestionFormComponent),
       },
-      {
-        path: 'students',
-        loadComponent: () =>
-          import('./students/teacher-students.component').then((m) => m.TeacherStudentsComponent),
-      },
+      // "Mis estudiantes" se unió a Reportes: se mantiene la ruta vieja para enlaces guardados.
+      { path: 'students', redirectTo: 'reports', pathMatch: 'full' },
       {
         path: 'students/:id',
         loadComponent: () =>

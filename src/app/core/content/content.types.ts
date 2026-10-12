@@ -43,17 +43,41 @@ export interface RecommendedContent {
   rating: number;
 }
 
+/** Un tema de la ruta: su id (para consultarlo) y su nombre. */
+export interface TopicPathRef {
+  topic_path_id: string;
+  topic: string;
+}
+
 /** Tema con su lista de contenidos recomendados. */
 export interface RecommendedTopic {
   topic: string;
   contents: RecommendedContent[];
+  /** Id del tema dentro de la ruta. */
+  topic_path_id?: string;
+  /** Avance de 0 a 100. */
+  progress?: number;
 }
 
+/** Respuesta de GET /content/recommended/learning-paths?path_id=: un solo tema. */
 export interface GetRecommendedLearningPathsResponse {
   is_success: boolean;
   message: string;
-  recommendation: RecommendedTopic[];
+  recommendation: RecommendedTopic | null;
 }
+
+/** Respuesta de POST /content/generate/learning-path?student_id=. */
+export interface GenerateLearningPathResponse {
+  is_success: boolean;
+  message: string;
+  learning_path: TopicPathRef[] | null;
+}
+
+/** Resultado de pedir que se genere la ruta del estudiante. */
+export type GenerateLearningPathResult =
+  | { created: true; paths: TopicPathRef[] }
+  /** `exists`: ya tiene una ruta sin completar (el backend no devuelve sus ids). */
+  | { created: false; reason: 'exists' | 'no-evaluation' | 'failed'; message: string };
 
 export interface RegisterContentPayload {
   title: string;

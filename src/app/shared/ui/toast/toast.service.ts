@@ -2,6 +2,13 @@ import { Injectable, signal } from '@angular/core';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
+/** Enlace opcional dentro del aviso (por ejemplo "Ver resultado"). */
+export interface ToastAction {
+  label: string;
+  route: string[];
+  queryParams?: Record<string, string>;
+}
+
 export interface Toast {
   id: number;
   type: ToastType;
@@ -9,6 +16,7 @@ export interface Toast {
   message?: string;
   /** ms hasta el auto-cierre; 0 = no se cierra solo. */
   duration: number;
+  action?: ToastAction;
 }
 
 const DEFAULT_DURATION = 4000;
@@ -20,10 +28,10 @@ export class ToastService {
   private timers = new Map<number, ReturnType<typeof setTimeout>>();
 
   /** Toast genérico. Los de tipo 'error' no se cierran solos por defecto. */
-  show(type: ToastType, title: string, message?: string, duration?: number): number {
+  show(type: ToastType, title: string, message?: string, duration?: number, action?: ToastAction): number {
     const id = this.nextId++;
     const finalDuration = duration ?? (type === 'error' ? 0 : DEFAULT_DURATION);
-    const toast: Toast = { id, type, title, message, duration: finalDuration };
+    const toast: Toast = { id, type, title, message, duration: finalDuration, action };
     this.toasts.update((list) => [...list, toast]);
     if (finalDuration > 0) {
       this.timers.set(

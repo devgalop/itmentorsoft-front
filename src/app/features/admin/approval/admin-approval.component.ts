@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '@core/auth/auth.service';
 import { ApprovalService } from '@core/admin/approval.service';
@@ -33,6 +33,9 @@ export class AdminApprovalComponent {
 
   readonly minComment = MIN_COMMENT;
 
+  /** Pregunta abierta en el modal de detalle (usa los datos ya cargados). */
+  readonly detail = signal<PendingQuestion | null>(null);
+
   constructor() {
     void this.load();
   }
@@ -51,6 +54,19 @@ export class AdminApprovalComponent {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  openDetail(question: PendingQuestion): void {
+    this.detail.set(question);
+  }
+
+  closeDetail(): void {
+    this.detail.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.detail()) this.closeDetail();
   }
 
   commentFor(id: string): string {

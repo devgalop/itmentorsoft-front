@@ -1,0 +1,33 @@
+<p class="sc__total">
+  <strong class="sc__total-num">{{ total() }}</strong>
+  @if (caption()) {
+    <span class="sc__caption">{{ caption() }}</span>
+  }
+</p>
+
+<ul class="sc__grid">
+  @for (i of items(); track i.key) {
+    <li>
+      @if (selectable()) {
+        <button
+          type="button"
+          class="sc__card sc__card--btn"
+          [class.sc__card--on]="selectedKey() === i.key"
+          [style.border-top-color]="i.color"
+          [attr.aria-pressed]="selectedKey() === i.key"
+          (click)="select.emit(i.key)"
+        >
+          <span class="sc__label">{{ i.label }}</span>
+          <strong class="sc__value">{{ i.count }}</strong>
+          <span class="sc__pct">{{ percent(i.count) }}%</span>
+        </button>
+      } @else {
+        <div class="sc__card" [style.border-top-color]="i.color">
+          <span class="sc__label">{{ i.label }}</span>
+          <strong class="sc__value">{{ i.count }}</strong>
+          <span class="sc__pct">{{ percent(i.count) }}%</span>
+        </div>
+      }
+    </li>
+  }
+</ul>

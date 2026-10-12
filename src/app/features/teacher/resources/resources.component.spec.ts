@@ -22,7 +22,7 @@ afterEach(() => { toastMock.success.mockClear(); toastMock.error.mockClear(); })
 
 describe('ResourcesComponent', () => {
   let serviceMock: {
-    getAllContents: ReturnType<typeof vi.fn>;
+    getAllContentsPaged: ReturnType<typeof vi.fn>;
     registerContent: ReturnType<typeof vi.fn>;
     updateContent: ReturnType<typeof vi.fn>;
     getContentsByTitle: ReturnType<typeof vi.fn>;
@@ -46,7 +46,7 @@ describe('ResourcesComponent', () => {
 
   beforeEach(() => {
     serviceMock = {
-      getAllContents: vi.fn().mockResolvedValue([]),
+      getAllContentsPaged: vi.fn().mockResolvedValue({ items: [], total: 0 }),
       registerContent: vi.fn(),
       updateContent: vi.fn(),
       getContentsByTitle: vi.fn().mockResolvedValue({ items: [], total: 0 }),
@@ -66,11 +66,11 @@ describe('ResourcesComponent', () => {
   }
 
   it('loads resources and available categories on creation', async () => {
-    serviceMock.getAllContents.mockResolvedValue([existing]);
+    serviceMock.getAllContentsPaged.mockResolvedValue({ items: [existing], total: 1 });
     const component = createComponent();
     await Promise.resolve();
     await Promise.resolve();
-    expect(serviceMock.getAllContents).toHaveBeenCalled();
+    expect(serviceMock.getAllContentsPaged).toHaveBeenCalledWith(0, 10);
     expect(assessmentsMock.getTopics).toHaveBeenCalled();
     expect(component.resources()).toHaveLength(1);
     expect(component.availableTopics()).toEqual(CATEGORIES);
@@ -203,7 +203,7 @@ describe('ResourcesComponent', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(serviceMock.getContentsByTitle).toHaveBeenCalledWith('Recurso');
+    expect(serviceMock.getContentsByTitle).toHaveBeenCalledWith('Recurso', 0, 10);
     expect(serviceMock.getContentsByCategory).not.toHaveBeenCalled();
     expect(component.resources()).toEqual([existing]);
   });
@@ -231,23 +231,79 @@ describe('ResourcesComponent', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(serviceMock.getContentsByCategory).toHaveBeenCalledWith('intermedio');
+    expect(serviceMock.getContentsByCategory).toHaveBeenCalledWith('intermedio', 0, 10);
     expect(component.resources()).toEqual([existing]);
     expect(component.hasActiveFilter()).toBe(true);
   });
 
-  it('falls back to getAllContents when filters are cleared', async () => {
-    serviceMock.getAllContents.mockResolvedValue([existing]);
+  it('falls back to the full paginated list when filters are cleared', async () => {
+    serviceMock.getAllContentsPaged.mockResolvedValue({ items: [existing], total: 1 });
     const component = createComponent();
     await Promise.resolve();
-    serviceMock.getAllContents.mockClear();
+    serviceMock.getAllContentsPaged.mockClear();
 
     component.onCategoryFilterChange('all');
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(serviceMock.getAllContents).toHaveBeenCalled();
+    expect(serviceMock.getAllContentsPaged).toHaveBeenCalledWith(0, 10);
     expect(component.hasActiveFilter()).toBe(false);
+  });
+
+  describe('pagination', () => {
+    async function withPages(total: number) {
+      serviceMock.getAllContentsPaged.mockResolvedValue({ items: [existing], total });
+      const component = createComponent();
+      await vi.waitFor(() => expect(component.isLoading()).toBe(false));
+      return component;
+    }
+
+    it('computes the total pages from the total and the page size', async () => {
+      const component = await withPages(25);
+      expect(component.total()).toBe(25);
+      expect(component.totalPages()).toBe(3);
+      expect(component.page()).toBe(0);
+    });
+
+    it('has a single page when there are no resources', async () => {
+      const component = await withPages(0);
+      expect(component.totalPages()).toBe(1);
+    });
+
+    it('loads the next and the previous page', async () => {
+      const component = await withPages(25);
+      component.nextPage();
+      await vi.waitFor(() => expect(component.page()).toBe(1));
+      expect(serviceMock.getAllContentsPaged).toHaveBeenLastCalledWith(1, 10);
+
+      component.prevPage();
+      await vi.waitFor(() => expect(component.page()).toBe(0));
+    });
+
+    it('does not move past the first or the last page', async () => {
+      const component = await withPages(5);
+      serviceMock.getAllContentsPaged.mockClear();
+      component.prevPage();
+      component.nextPage();
+      expect(serviceMock.getAllContentsPaged).not.toHaveBeenCalled();
+    });
+
+    it('paginates the filtered results and goes back to page 0 when the filter changes', async () => {
+      serviceMock.getContentsByCategory.mockResolvedValue({ items: [existing], total: 25 });
+      const component = await withPages(25);
+      component.nextPage();
+      await vi.waitFor(() => expect(component.page()).toBe(1));
+
+      component.onCategoryFilterChange('intermedio');
+      await vi.waitFor(() =>
+        expect(serviceMock.getContentsByCategory).toHaveBeenCalledWith('intermedio', 0, 10),
+      );
+      await vi.waitFor(() => expect(component.page()).toBe(0));
+      component.nextPage();
+      await vi.waitFor(() =>
+        expect(serviceMock.getContentsByCategory).toHaveBeenLastCalledWith('intermedio', 1, 10),
+      );
+    });
   });
 
   it('shows an error when the backend responds is_success false', async () => {

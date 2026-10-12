@@ -3,13 +3,17 @@
     <div class="dash__banner-text">
       <h1 class="dash__greeting">Panel de Administración</h1>
       <p class="dash__intro">
-        Control total · Usuarios, roles, contenido y configuración del sistema.
+        Control total · Usuarios, roles, recursos y configuración del sistema.
       </p>
       <span class="dash__role">Rol: Administrador</span>
     </div>
     <div class="dash__banner-actions">
-      <a routerLink="/admin/users" class="dash__btn dash__btn--solid">Crear usuario</a>
-      <a routerLink="/admin/roles" class="dash__btn dash__btn--ghost">Roles</a>
+      <a
+        routerLink="/admin/users"
+        [queryParams]="{ crear: 1 }"
+        class="dash__btn dash__btn--solid"
+        >Crear usuario</a
+      >
     </div>
   </div>
 
@@ -24,7 +28,7 @@
       <span class="dash__stat-label">Usuarios conectados</span>
       <span class="dash__stat-hint">{{ connectedTotal() === null ? 'Sin datos' : 'Sesión activa' }}</span>
     </div>
-    <a routerLink="/admin/roles" class="dash__stat dash__stat--link">
+    <a routerLink="/admin/users" class="dash__stat dash__stat--link">
       <span class="dash__stat-value">{{ rolesTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Roles configurados</span>
       <span class="dash__stat-hint">{{ rolesTotal() === null ? 'Sin datos' : 'Disponibles' }}</span>
@@ -87,8 +91,24 @@
       </div>
 
       <div class="dash__card">
-        <h2 class="dash__card-title">Estado del sistema</h2>
-        <div class="dash__empty"><p>Sin datos disponibles.</p></div>
+        <h2 class="dash__card-title">Modelos de IA actuales</h2>
+        @if (modelsInUse(); as models) {
+          <ul class="dash__models">
+            @for (m of models; track m.label) {
+              <li class="dash__model">
+                <span class="dash__model-label">{{ m.label }}</span>
+                @if (m.model) {
+                  <strong class="dash__model-name">{{ m.model }}</strong>
+                } @else {
+                  <span class="dash__model-none">Sin modelo asignado</span>
+                }
+              </li>
+            }
+          </ul>
+          <a routerLink="/admin/config" class="dash__see-all">Configurar →</a>
+        } @else {
+          <div class="dash__empty"><p>Sin datos disponibles.</p></div>
+        }
       </div>
     </div>
   </div>

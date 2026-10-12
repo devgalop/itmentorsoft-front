@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AssessmentsService } from '@core/assessments/assessments.service';
 import { ContentService } from '@core/content/content.service';
+import { PagerComponent } from '@shared/ui/pager/pager.component';
 import { CONTENT_CATEGORIES, contentCategoryLabel, ContentItem } from '@core/content/content.types';
 
 const PAGE_SIZE = 12;
@@ -13,6 +14,7 @@ const PAGE_SIZE = 12;
 @Component({
   selector: 'app-student-explore',
   standalone: true,
+  imports: [PagerComponent],
   templateUrl: './student-explore.component.html',
   styleUrl: './student-explore.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,7 +1,10 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router, convertToParamMap, Params } from '@angular/router';
 import { vi } from 'vitest';
-import { StudentAssessmentComponent } from './student-assessment.component';
+import { GRADING_SPINNER_MS, REDIRECT_MS, StudentAssessmentComponent } from './student-assessment.component';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
+import { GradingWatcherService } from '../../../core/assessments/grading-watcher.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 
@@ -13,6 +16,7 @@ describe('StudentAssessmentComponent', () => {
     getQualificationStatus: ReturnType<typeof vi.fn>;
     getResult: ReturnType<typeof vi.fn>;
     getAssessmentsSummary: ReturnType<typeof vi.fn>;
+    getQuantity: ReturnType<typeof vi.fn>;
   };
   let authMock: { userId: ReturnType<typeof vi.fn> };
 
@@ -20,16 +24,22 @@ describe('StudentAssessmentComponent', () => {
     return { question_id: id, topic: 'POO', text_to_evaluate: '¿Qué es ' + id + '?' };
   }
 
+  const routerMock = { navigate: vi.fn().mockResolvedValue(true) };
+  const gradingMock = { watch: vi.fn(), completedCount: signal(0), hasPending: vi.fn(() => false) };
+
   const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
 
-  function createComponent(): StudentAssessmentComponent {
+  function createComponent(query: Params = {}): StudentAssessmentComponent {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         StudentAssessmentComponent,
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
         { provide: StudentAssessmentService, useValue: serviceMock },
         { provide: AuthService, useValue: authMock },
         { provide: ToastService, useValue: toastMock },
+        { provide: Router, useValue: routerMock },
+        { provide: GradingWatcherService, useValue: gradingMock },
       ],
     });
     const component = TestBed.inject(StudentAssessmentComponent);
@@ -39,6 +49,8 @@ describe('StudentAssessmentComponent', () => {
   }
 
   beforeEach(() => {
+    gradingMock.watch.mockClear();
+    routerMock.navigate.mockClear();
     serviceMock = {
       getTopics: vi.fn().mockResolvedValue(['POO', 'APIs']),
       generateByTopic: vi.fn().mockResolvedValue({
@@ -48,6 +60,7 @@ describe('StudentAssessmentComponent', () => {
       }),
       saveAnswers: vi.fn().mockResolvedValue({ is_success: true, message: 'ok' }),
       getQualificationStatus: vi.fn().mockResolvedValue(true),
+      getQuantity: vi.fn().mockResolvedValue(0),
       getResult: vi.fn().mockResolvedValue({
         assessment_id: 'assess-1',
         user_id: 'u1',
@@ -68,7 +81,7 @@ describe('StudentAssessmentComponent', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(c.step()).toBe('history');
-    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1');
+    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1', 0, 100);
   });
 
   it('loads topics on creation and preselects the first', async () => {
@@ -131,7 +144,7 @@ describe('StudentAssessmentComponent', () => {
     expect(c.error()).toContain('falta');
   });
 
-  it('submits, polls qualification and loads the result', async () => {
+  it('submits the answers, hands the grading to the watcher and later loads the result', async () => {
     const c = createComponent();
     await Promise.resolve();
     await c.startAssessment();
@@ -146,11 +159,9 @@ describe('StudentAssessmentComponent', () => {
     expect(payload.assessment_id).toBe('assess-1');
     expect(payload.user_id).toBe('u1');
     expect(payload.answers).toHaveLength(2);
-    expect(serviceMock.getQualificationStatus).toHaveBeenCalledWith('u1', 'assess-1');
-    // Al terminar la calificación se muestra el historial (punto 8).
-    expect(serviceMock.getAssessmentsSummary).toHaveBeenCalledWith('u1');
-    expect(c.step()).toBe('history');
-    expect(c.history()).toHaveLength(1);
+    expect(gradingMock.watch).toHaveBeenCalledWith('u1', 'assess-1');
+    expect(serviceMock.getQualificationStatus).not.toHaveBeenCalled();
+    expect(c.step()).toBe('grading');
 
     // Al clickear una evaluación del historial se carga su detalle.
     await c.viewResult('assess-1');
@@ -331,6 +342,45 @@ describe('StudentAssessmentComponent', () => {
       expect(c.currentQuestion()).toBeNull();
     });
 
+    it('marks which questions are answered and which one is current', async () => {
+      const c = await started();
+      expect(c.questionDots().map((d) => [d.current, d.answered])).toEqual([
+        [true, false],
+        [false, false],
+      ]);
+      expect(c.unansweredCount()).toBe(2);
+      c.onAnswerChange('mi respuesta');
+      c.next();
+      expect(c.questionDots().map((d) => [d.current, d.answered])).toEqual([
+        [false, true],
+        [true, false],
+      ]);
+      expect(c.unansweredCount()).toBe(1);
+    });
+
+    it('does not count a blank answer as answered', async () => {
+      const c = await started();
+      c.onAnswerChange('   ');
+      expect(c.unansweredCount()).toBe(2);
+    });
+
+    it('jumps straight to a question and keeps its saved answer', async () => {
+      const c = await started();
+      c.onAnswerChange('primera');
+      c.goTo(1);
+      expect(c.currentIndex()).toBe(1);
+      expect(c.draft()).toBe('');
+      c.goTo(0);
+      expect(c.draft()).toBe('primera');
+    });
+
+    it('ignores a jump to an invalid question', async () => {
+      const c = await started();
+      c.goTo(9);
+      c.goTo(-1);
+      expect(c.currentIndex()).toBe(0);
+    });
+
     it('allAnswered is false until answers are given', async () => {
       const c = await started();
       expect(c.allAnswered()).toBe(false);
@@ -429,59 +479,68 @@ describe('StudentAssessmentComponent', () => {
     });
   });
 
-  describe('grading poll', () => {
+  describe('envío asíncrono', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
-    async function startedWithTimers(): Promise<StudentAssessmentComponent> {
+    async function submitted(): Promise<StudentAssessmentComponent> {
       const c = createComponent();
       await vi.advanceTimersByTimeAsync(0);
       await c.startAssessment();
       answerAll(c);
+      await c.submit();
       return c;
     }
 
-    it('keeps polling until the grade is ready', async () => {
-      serviceMock.getQualificationStatus
-        .mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(true);
-      const c = await startedWithTimers();
-
-      const done = c.submit();
-      await vi.advanceTimersByTimeAsync(3000 * 3);
-      await done;
-
-      expect(serviceMock.getQualificationStatus).toHaveBeenCalledTimes(3);
-      expect(c.step()).toBe('history');
-    });
-
-    it('retries silently when a poll fails', async () => {
-      serviceMock.getQualificationStatus
-        .mockRejectedValueOnce(new Error('boom'))
-        .mockResolvedValueOnce(true);
-      const c = await startedWithTimers();
-
-      const done = c.submit();
-      await vi.advanceTimersByTimeAsync(3000 * 2);
-      await done;
-
-      expect(serviceMock.getQualificationStatus).toHaveBeenCalledTimes(2);
-      expect(c.step()).toBe('history');
-      expect(c.error()).toBeNull();
-    });
-
-    it('tells the student the grading is taking longer than expected after too many polls', async () => {
-      serviceMock.getQualificationStatus.mockResolvedValue(false);
-      const c = await startedWithTimers();
-
-      const done = c.submit();
-      await vi.advanceTimersByTimeAsync(3000 * 41);
-      await done;
-
-      expect(serviceMock.getQualificationStatus).toHaveBeenCalledTimes(40);
+    it('hands the evaluation to the grading watcher and shows the spinner right away', async () => {
+      const c = await submitted();
+      expect(gradingMock.watch).toHaveBeenCalledWith('u1', 'assess-1');
       expect(c.step()).toBe('grading');
-      expect(c.gradingMessage()).toContain('tardando más de lo esperado');
+      expect(c.gradingPhase()).toBe('working');
+      expect(routerMock.navigate).not.toHaveBeenCalled();
+      expect(c.isBusy()).toBe(false);
+    });
+
+    it('after the spinner it says the student will be notified, and then goes to the dashboard', async () => {
+      const c = await submitted();
+      await vi.advanceTimersByTimeAsync(GRADING_SPINNER_MS);
+      expect(c.gradingPhase()).toBe('sent');
+      expect(routerMock.navigate).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(REDIRECT_MS);
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/student/dashboard']);
+      expect(toastMock.info).toHaveBeenCalledWith('Evaluación enviada', expect.stringContaining('avisaremos'), expect.any(Number));
+    });
+
+    it('lets the student go to the dashboard right away, without navigating twice', async () => {
+      const c = await submitted();
+      await vi.advanceTimersByTimeAsync(GRADING_SPINNER_MS);
+      await c.goToDashboard();
+      expect(routerMock.navigate).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(REDIRECT_MS * 2);
+      expect(routerMock.navigate).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not redirect if the student leaves the page first', async () => {
+      await submitted();
+      TestBed.resetTestingModule();
+      await vi.advanceTimersByTimeAsync(GRADING_SPINNER_MS + REDIRECT_MS * 2);
+      expect(routerMock.navigate).not.toHaveBeenCalled();
+    });
+
+    it('does not wait for the grade before moving on', async () => {
+      serviceMock.getQualificationStatus.mockResolvedValue(false);
+      await submitted();
+      await vi.advanceTimersByTimeAsync(GRADING_SPINNER_MS + REDIRECT_MS);
+      expect(serviceMock.getQualificationStatus).not.toHaveBeenCalled();
+    });
+
+    it('does not start watching nor leave when the answers are not saved', async () => {
+      serviceMock.saveAnswers.mockResolvedValue({ is_success: false, message: 'Evaluación cerrada' });
+      const c = await submitted();
+      await vi.advanceTimersByTimeAsync(GRADING_SPINNER_MS + REDIRECT_MS);
+      expect(gradingMock.watch).not.toHaveBeenCalled();
+      expect(routerMock.navigate).not.toHaveBeenCalled();
+      expect(c.step()).toBe('answering');
     });
   });
 
@@ -574,13 +633,6 @@ describe('StudentAssessmentComponent', () => {
       expect(c.formatDate('no es una fecha')).toBe('no es una fecha');
     });
 
-    it('restart restores the grading message', async () => {
-      const c = createComponent();
-      c.gradingMessage.set('otro mensaje');
-      c.restart();
-      expect(c.gradingMessage()).toBe('Estamos calificando tus respuestas…');
-    });
-
     it('blockClipboard names the blocked action in the warning', () => {
       const c = createComponent();
       c.blockClipboard({ preventDefault: vi.fn() } as unknown as Event, 'copiar');
@@ -588,6 +640,26 @@ describe('StudentAssessmentComponent', () => {
         'Acción no permitida',
         expect.stringContaining('copiar'),
       );
+    });
+  });
+
+  describe('enlaces del principal', () => {
+    it('opens the history by default', () => {
+      const c = createComponent();
+      expect(c.step()).toBe('history');
+    });
+
+    it('goes straight to the topic selection with ?new=1', () => {
+      const c = createComponent({ new: '1' });
+      expect(c.step()).toBe('setup');
+    });
+
+    it('goes straight to the detail of an evaluation with ?result=<id>', async () => {
+      serviceMock.getResult.mockResolvedValue({ avg_score: 0.8, classification: 'básico', feedback: 'ok', answer_scores: [] });
+      const c = createComponent({ result: 'assess-9' });
+      await new Promise((r) => setTimeout(r));
+      expect(serviceMock.getResult).toHaveBeenCalledWith('u1', 'assess-9');
+      expect(c.step()).toBe('result');
     });
   });
 });

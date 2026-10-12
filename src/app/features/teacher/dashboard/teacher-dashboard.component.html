@@ -3,18 +3,17 @@
     <div class="dash__banner-text">
       <h1 class="dash__greeting">Hola, {{ userName() }}</h1>
       <p class="dash__intro">
-        Gestiona contenido, rúbricas y analiza el progreso de tus estudiantes.
+        Gestiona recursos, rúbricas y analiza el progreso de tus estudiantes.
       </p>
       <span class="dash__role">Rol: Docente</span>
     </div>
     <div class="dash__banner-actions">
       <a routerLink="/teacher/resources" class="dash__btn dash__btn--solid">Nuevo recurso</a>
-      <a routerLink="/teacher/students" class="dash__btn dash__btn--ghost">Ver estudiantes</a>
     </div>
   </div>
 
   <div class="dash__stats">
-    <a routerLink="/teacher/students" class="dash__stat dash__stat--link">
+    <a routerLink="/teacher/reports" class="dash__stat dash__stat--link">
       <span class="dash__stat-value">{{ studentsTotal() ?? '—' }}</span>
       <span class="dash__stat-label">Estudiantes activos</span>
       <span class="dash__stat-hint">{{ studentsTotal() === null ? 'Sin datos' : 'Registrados' }}</span>
@@ -35,7 +34,7 @@
     <div class="dash__card dash__card--wide">
       <div class="dash__card-head">
         <h2 class="dash__card-title">Últimos estudiantes activos</h2>
-        <a routerLink="/teacher/students" class="dash__see-all">Ver todos →</a>
+        <a routerLink="/teacher/reports" class="dash__see-all">Ver todos →</a>
       </div>
 
       @if (isLoading()) {

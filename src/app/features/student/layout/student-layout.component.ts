@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '@shared/ui/sidebar/sidebar.component';
 import { SidebarService } from '@shared/ui/sidebar/sidebar.service';
+import { AuthService } from '@core/auth/auth.service';
+import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
 import { InitialAssessmentService } from '@core/student/initial-assessment.service';
 import { STUDENT_NAV_ITEMS } from './student-nav-items';
 
@@ -29,6 +31,7 @@ const GATED_ROUTES = ['/student/route', '/student/progress'];
 
     .student-layout__content {
       flex: 1;
+      min-width: 0;
       margin-left: 250px;
       padding: 2rem;
       background-color: var(--color-light-2);
@@ -51,6 +54,8 @@ const GATED_ROUTES = ['/student/route', '/student/progress'];
 export class StudentLayoutComponent {
   private readonly sidebarService = inject(SidebarService);
   private readonly initialAssessment = inject(InitialAssessmentService);
+  private readonly auth = inject(AuthService);
+  private readonly grading = inject(GradingWatcherService);
 
   protected readonly isCollapsed = this.sidebarService.isCollapsed;
 
@@ -64,6 +69,9 @@ export class StudentLayoutComponent {
 
   constructor() {
     void this.loadStatus();
+    // Si el estudiante recarga con una evaluación en calificación, se retoma la espera.
+    const userId = this.auth.userId?.();
+    if (userId) this.grading.resume(userId);
   }
 
   private async loadStatus(): Promise<void> {

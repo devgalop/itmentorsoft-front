@@ -1,8 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 import { environment } from '../../../../environments/environment';
+import { AssessmentHistoryComponent } from './assessment-history.component';
+import { AssessmentQuestionComponent, QuestionItem } from './assessment-question.component';
+import { AssessmentResultComponent } from './assessment-result.component';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import {
   AssessmentAnswerInput,
@@ -13,15 +18,20 @@ import {
 
 type Step = 'setup' | 'answering' | 'grading' | 'history' | 'result';
 
-const POLL_INTERVAL_MS = 3000;
+/** El spinner de "Calificando…" dura solo esto; después se avisa que se notificará. */
+export const GRADING_SPINNER_MS = 2000;
+/** Tiempo que se muestra el aviso antes de llevar al estudiante al principal. */
+export const REDIRECT_MS = 2500;
+
 /** Límite del backend por respuesta (save_assessments_answers). */
 export const MAX_ANSWER_LENGTH = 600;
-const MAX_POLLS = 40; // ~2 min de espera máxima
+/** El backend entrega como máximo 100 evaluaciones por consulta: se traen de una vez y se paginan aquí. */
+const HISTORY_FETCH_SIZE = 100;
 
 @Component({
   selector: 'app-student-assessment',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, AssessmentResultComponent, AssessmentHistoryComponent, AssessmentQuestionComponent],
   templateUrl: './student-assessment.component.html',
   styleUrl: './student-assessment.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,6 +40,12 @@ export class StudentAssessmentComponent {
   private readonly auth = inject(AuthService);
   private readonly assessments = inject(StudentAssessmentService);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router);
+  private readonly grading = inject(GradingWatcherService);
+  private readonly timers = new Set<ReturnType<typeof setTimeout>>();
+
+  private readonly cleanup = inject(DestroyRef).onDestroy(() => this.clearTimers());
 
   /** Viene del ambiente: si es true se bloquea copiar/pegar en la respuesta. */
   readonly clipboardBlocked = environment.blockClipboardInAnswers;
@@ -39,6 +55,8 @@ export class StudentAssessmentComponent {
   readonly step = signal<Step>('history');
   readonly error = signal<string | null>(null);
   readonly isBusy = signal(false);
+  /** 'working': spinner de calificando; 'sent': aviso de que se notificará y se irá al principal. */
+  readonly gradingPhase = signal<'working' | 'sent'>('working');
 
   // Setup
   readonly topics = signal<string[]>([]);
@@ -50,6 +68,8 @@ export class StudentAssessmentComponent {
   readonly currentIndex = signal(0);
   private assessmentId: string | null = null;
   private readonly answers = new Map<string, string>();
+  /** El Map no es reactivo: este contador avisa cuando cambia una respuesta. */
+  private readonly answersVersion = signal(0);
   private questionStartedAt = Date.now();
   private readonly timePerQuestion = new Map<string, number>();
   /** Texto de la respuesta visible; se sincroniza por pregunta (arregla el bug visual). */
@@ -58,10 +78,11 @@ export class StudentAssessmentComponent {
   // History (historial de evaluaciones)
   readonly history = signal<AssessmentSummary[]>([]);
   readonly isLoadingHistory = signal(false);
+  /** ¿Hay una evaluación enviada que todavía se está calificando? */
+  readonly gradingPending = computed(() => this.grading.hasPending(this.auth.userId()));
 
   // Result
   readonly result = signal<StudentAssessmentResult | null>(null);
-  readonly gradingMessage = signal('Estamos calificando tus respuestas…');
 
   readonly currentQuestion = computed<TopicQuestion | null>(
     () => this.questions()[this.currentIndex()] ?? null,
@@ -77,6 +98,26 @@ export class StudentAssessmentComponent {
     // Arranca mostrando el historial; los temas se precargan para "Nueva evaluación".
     void this.loadTopics();
     void this.loadHistory();
+
+    // Si termina una calificación mientras el estudiante mira su historial, se actualiza solo.
+    let seen = this.grading.completedCount();
+    effect(() => {
+      const completed = this.grading.completedCount();
+      untracked(() => {
+        if (completed === seen) return;
+        seen = completed;
+        void this.loadHistory();
+      });
+    });
+
+    // Enlaces del principal: ?new=1 abre directo la elección de tema y ?result=<id> el detalle.
+    const params = this.route?.snapshot.queryParamMap;
+    const resultId = params?.get('result');
+    if (resultId) {
+      void this.viewResult(resultId);
+    } else if (params?.has('new')) {
+      this.restart();
+    }
   }
 
   private get userId(): string | null {
@@ -138,6 +179,7 @@ export class StudentAssessmentComponent {
     const q = this.currentQuestion();
     if (q) {
       this.answers.set(q.question_id, value);
+      this.answersVersion.update((v) => v + 1);
     }
     this.draft.set(value);
   }
@@ -170,6 +212,33 @@ export class StudentAssessmentComponent {
     const elapsed = Math.max(0, Math.round((Date.now() - this.questionStartedAt) / 1000));
     this.timePerQuestion.set(q.question_id, (this.timePerQuestion.get(q.question_id) ?? 0) + elapsed);
     this.questionStartedAt = Date.now();
+  }
+
+  /** Un punto por pregunta: cuál es la actual y cuáles ya tienen respuesta. */
+  readonly questionDots = computed(() => {
+    this.answersVersion();
+    const current = this.currentIndex();
+    return this.questions().map((q, i) => ({
+      number: i + 1,
+      current: i === current,
+      answered: (this.answers.get(q.question_id) ?? '').trim().length > 0,
+    }));
+  });
+
+  /** Lista lateral de preguntas: texto, cuál es la actual y cuáles ya tienen respuesta. */
+  readonly questionItems = computed<QuestionItem[]>(() =>
+    this.questionDots().map((d, i) => ({ ...d, text: this.questions()[i]?.text_to_evaluate ?? '' })),
+  );
+
+  /** Cuántas preguntas faltan por responder. */
+  readonly unansweredCount = computed(() => this.questionDots().filter((d) => !d.answered).length);
+
+  /** Salta directo a una pregunta (los puntos de arriba). */
+  goTo(index: number): void {
+    if (index < 0 || index >= this.questions().length || index === this.currentIndex()) return;
+    this.recordTime();
+    this.currentIndex.set(index);
+    this.syncDraft();
   }
 
   next(): void {
@@ -230,8 +299,15 @@ export class StudentAssessmentComponent {
         this.error.set(saved.message || 'No se pudieron guardar las respuestas');
         return;
       }
+      // La calificación es asíncrona: se espera en segundo plano. Un par de segundos de spinner,
+      // luego el aviso de que se notificará, y de ahí al principal.
+      this.grading.watch(userId, this.assessmentId);
+      this.gradingPhase.set('working');
       this.step.set('grading');
-      await this.waitForQualificationAndLoadResult(userId, this.assessmentId);
+      this.later(() => {
+        this.gradingPhase.set('sent');
+        this.later(() => void this.goToDashboard(), REDIRECT_MS);
+      }, GRADING_SPINNER_MS);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Error al enviar la evaluación');
       this.step.set('answering');
@@ -240,27 +316,29 @@ export class StudentAssessmentComponent {
     }
   }
 
-  /** Polling del estado de calificación; al terminar, muestra el historial. */
-  private async waitForQualificationAndLoadResult(
-    userId: string,
-    assessmentId: string,
-  ): Promise<void> {
-    for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
-      try {
-        const ready = await this.assessments.getQualificationStatus(userId, assessmentId);
-        if (ready) {
-          await this.loadHistory();
-          this.step.set('history');
-          return;
-        }
-      } catch {
-        // Reintenta silenciosamente durante el polling.
-      }
-      await this.delay(POLL_INTERVAL_MS);
-    }
-    this.gradingMessage.set(
-      'La calificación está tardando más de lo esperado. Puedes revisar el resultado más tarde.',
+  /** Lleva al estudiante al principal (sin esperar al temporizador si pulsó el botón). */
+  async goToDashboard(): Promise<void> {
+    this.clearTimers();
+    // El aviso flotante sigue visible ya sobre el principal.
+    this.toast.info(
+      'Evaluación enviada',
+      'Estamos calificando tus respuestas. Te avisaremos aquí y por correo cuando termine.',
+      8000,
     );
+    await this.router.navigate(['/student/dashboard']);
+  }
+
+  private later(fn: () => void, ms: number): void {
+    const id = setTimeout(() => {
+      this.timers.delete(id);
+      fn();
+    }, ms);
+    this.timers.add(id);
+  }
+
+  private clearTimers(): void {
+    this.timers.forEach((id) => clearTimeout(id));
+    this.timers.clear();
   }
 
   /** Carga el historial de evaluaciones del estudiante (punto 4). */
@@ -269,8 +347,7 @@ export class StudentAssessmentComponent {
     if (!userId) return;
     this.isLoadingHistory.set(true);
     try {
-      const list = await this.assessments.getAssessmentsSummary(userId);
-      this.history.set(list);
+      this.history.set(await this.assessments.getAssessmentsSummary(userId, 0, HISTORY_FETCH_SIZE));
     } catch {
       // Si falla el historial no bloqueamos la pantalla; queda vacío.
       this.history.set([]);
@@ -316,10 +393,6 @@ export class StudentAssessmentComponent {
     this.step.set('history');
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
   scorePct(score: number): number {
     const pct = Math.round(score * 100);
     return Math.max(0, Math.min(100, pct));
@@ -335,7 +408,6 @@ export class StudentAssessmentComponent {
     this.timePerQuestion.clear();
     this.currentIndex.set(0);
     this.draft.set('');
-    this.gradingMessage.set('Estamos calificando tus respuestas…');
   }
 
   /** Fecha legible para el historial. */

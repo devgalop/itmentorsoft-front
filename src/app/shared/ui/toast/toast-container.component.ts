@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { Toast, ToastService, ToastType } from './toast.service';
+import { RouterLink } from '@angular/router';
+import { ToastService, ToastType } from './toast.service';
 
 @Component({
   selector: 'app-toast-container',
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="toasts" aria-live="polite" aria-atomic="true">
@@ -15,6 +16,11 @@ import { Toast, ToastService, ToastType } from './toast.service';
             <p class="toast__title">{{ t.title }}</p>
             @if (t.message) {
               <p class="toast__message">{{ t.message }}</p>
+            }
+            @if (t.action; as a) {
+              <a class="toast__action" [routerLink]="a.route" [queryParams]="a.queryParams" (click)="dismiss(t.id)">
+                {{ a.label }}
+              </a>
             }
           </div>
           <button type="button" class="toast__close" (click)="dismiss(t.id)" aria-label="Cerrar">

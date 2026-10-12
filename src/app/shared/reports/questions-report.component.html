@@ -1,0 +1,32 @@
+<section class="qr">
+  <h2 class="qr__title">Banco de preguntas</h2>
+
+  @if (isLoading()) {
+    <p class="qr__hint">Cargando preguntas…</p>
+  } @else if (loadError()) {
+    <p class="qr__hint" role="alert">{{ loadError() }}</p>
+  } @else {
+    @if (pendingTotal() !== null && pendingTotal()! > 0) {
+      <p class="qr__alert" role="status">
+        <span aria-hidden="true">⚠</span>
+        {{ pendingTotal() }} pregunta(s) esperan aprobación.
+        <a routerLink="/admin/content-approval">Revisarlas →</a>
+      </p>
+    }
+
+    <div class="qr__grid">
+      <div class="qr__card">
+        <h3 class="qr__card-title">Preguntas por dificultad</h3>
+        <app-column-chart [items]="difficultyItems()" caption="preguntas activas" />
+      </div>
+      <div class="qr__card">
+        <h3 class="qr__card-title">Preguntas por estado</h3>
+        <app-stat-cards [items]="statusItems()" caption="preguntas activas" />
+      </div>
+      <div class="qr__card qr__card--wide">
+        <h3 class="qr__card-title">Preguntas por categoría</h3>
+        <app-pie-chart [items]="categoryItems()" caption="preguntas activas" />
+      </div>
+    </div>
+  }
+</section>

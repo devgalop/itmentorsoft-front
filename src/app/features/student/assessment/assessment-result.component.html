@@ -1,0 +1,117 @@
+<button type="button" class="res__back" (click)="back.emit()">← Volver a mis evaluaciones</button>
+
+<section class="res__hero">
+  <div class="res__ring" role="img" [attr.aria-label]="'Promedio: ' + score() + '%'">
+    <svg viewBox="0 0 110 110" width="124" height="124" aria-hidden="true">
+      <circle class="res__ring-track" cx="55" cy="55" r="46" />
+      <circle
+        class="res__ring-arc"
+        cx="55"
+        cy="55"
+        r="46"
+        [attr.stroke-dasharray]="ringDash()"
+        [attr.stroke]="scoreColor()"
+        transform="rotate(-90 55 55)"
+      />
+    </svg>
+    <span class="res__ring-text">
+      <strong class="res__ring-value">{{ score() }}%</strong>
+      <span class="res__ring-label">Promedio</span>
+    </span>
+  </div>
+
+  <div class="res__hero-body">
+    @if (result().classification) {
+      <span class="res__classif">Nivel: {{ result().classification }}</span>
+    }
+    <p class="res__feedback">{{ result().feedback }}</p>
+  </div>
+
+  @if (medal(); as m) {
+    <app-level-medal [name]="m.name" [color]="m.color" [rank]="m.rank" caption="Nivel de esta evaluación" />
+  }
+</section>
+
+<ul class="res__stats">
+  <li class="res__stat">
+    <strong class="res__stat-value">{{ summary().total }}</strong>
+    <span class="res__stat-label">Preguntas</span>
+  </li>
+  <li class="res__stat">
+    <strong class="res__stat-value">{{ summary().best ?? '—' }}{{ summary().best !== null ? '%' : '' }}</strong>
+    <span class="res__stat-label">Mejor respuesta</span>
+  </li>
+  <li class="res__stat">
+    <strong class="res__stat-value">{{ summary().toReinforce }}</strong>
+    <span class="res__stat-label">Por reforzar</span>
+  </li>
+</ul>
+
+<div class="res__title-row">
+  <h2 class="res__title">Detalle por pregunta</h2>
+  @if (answers().length > 0) {
+    <button type="button" class="res__toggle-all" (click)="toggleAll()">
+      {{ allOpen() ? 'Plegar todas' : 'Desplegar todas' }}
+    </button>
+  }
+</div>
+<div class="res__answers">
+  @for (a of answers(); track a.number) {
+    <article class="res__answer" [class.res__answer--open]="isOpen(a.number)">
+      <button
+        type="button"
+        class="res__answer-head"
+        [attr.aria-expanded]="isOpen(a.number)"
+        [attr.aria-controls]="'res-answer-' + a.number"
+        (click)="toggle(a.number)"
+      >
+        <span class="res__answer-num">{{ a.number }}</span>
+        <span class="res__answer-q">{{ a.question }}</span>
+        @if (a.misconceptions.length > 0) {
+          <span class="res__flag" title="Conceptos por reforzar">{{ a.misconceptions.length }} por reforzar</span>
+        }
+        <span class="res__answer-score">{{ a.score }}%</span>
+        <span class="res__chevron" aria-hidden="true">{{ isOpen(a.number) ? '▾' : '▸' }}</span>
+      </button>
+      <div class="res__bar" aria-hidden="true">
+        <span class="res__bar-fill" [style.width.%]="a.score" [style.background]="a.color"></span>
+      </div>
+
+      @if (isOpen(a.number)) {
+        <div class="res__body" [id]="'res-answer-' + a.number">
+          <div class="res__block res__block--yours">
+            <span class="res__block-label">Tu respuesta</span>
+            <p>{{ a.answer }}</p>
+          </div>
+          <div class="res__block">
+            <span class="res__block-label">Retroalimentación</span>
+            <p>{{ a.feedback }}</p>
+          </div>
+
+          @if (a.keyConcepts.length > 0) {
+            <div class="res__chips">
+              <span class="res__chips-label">Conceptos que dominas</span>
+              @for (k of a.keyConcepts; track k) {
+                <span class="res__chip res__chip--ok">{{ k }}</span>
+              }
+            </div>
+          }
+          @if (a.misconceptions.length > 0) {
+            <div class="res__chips">
+              <span class="res__chips-label">A reforzar</span>
+              @for (m of a.misconceptions; track m) {
+                <span class="res__chip res__chip--warn">{{ m }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </article>
+  }
+</div>
+
+<div class="res__actions">
+  <button type="button" class="res__btn res__btn--ghost" (click)="back.emit()">Volver a mis evaluaciones</button>
+  <a routerLink="/student/explore" class="res__btn res__btn--ghost">Explorar recursos</a>
+  <button type="button" class="res__btn res__btn--solid" (click)="again.emit()">Nueva evaluación</button>
+</div>

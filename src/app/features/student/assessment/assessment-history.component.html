@@ -1,0 +1,134 @@
+<header class="hst__head">
+  <div>
+    <h2 class="hst__title">Mis evaluaciones</h2>
+    <p class="hst__subtitle">Revisa tus resultados y cómo vas avanzando.</p>
+  </div>
+  <button type="button" class="hst__btn" (click)="create.emit()">+ Nueva evaluación</button>
+</header>
+
+@if (loading() && items().length === 0) {
+  <p class="hst__hint">Cargando tu historial…</p>
+} @else {
+  @if (stats(); as s) {
+    <ul class="hst__stats">
+      <li class="hst__stat">
+        <span class="hst__stat-label">Realizadas</span>
+        <strong class="hst__stat-value">{{ s.total }}</strong>
+      </li>
+      <li class="hst__stat">
+        <span class="hst__stat-label">Promedio</span>
+        <strong class="hst__stat-value">{{ s.average }}%</strong>
+      </li>
+      <li class="hst__stat">
+        <span class="hst__stat-label">Mejor resultado</span>
+        <strong class="hst__stat-value">{{ s.best }}%</strong>
+      </li>
+      <li class="hst__stat hst__stat--last">
+        <div>
+          <span class="hst__stat-label">Última</span>
+          <strong class="hst__stat-value">{{ s.last.score }}%</strong>
+          <span class="hst__stat-hint">
+            {{ s.last.relative }}
+            @if (s.last.delta !== null && s.last.delta !== 0) {
+              ·
+              <span [class]="s.last.delta > 0 ? 'hst__up' : 'hst__down'">
+                {{ s.last.delta > 0 ? '▲ +' : '▼ −' }}{{ s.last.delta > 0 ? s.last.delta : -s.last.delta }} pts
+              </span>
+            }
+          </span>
+        </div>
+        @if (s.spark; as sp) {
+          <svg
+            class="hst__spark"
+            [attr.viewBox]="'0 0 ' + sparkSize.w + ' ' + sparkSize.h"
+            role="img"
+            aria-label="Puntaje de tus últimas evaluaciones"
+          >
+            <polyline [attr.points]="sp.points" />
+            <circle [attr.cx]="sp.last.x" [attr.cy]="sp.last.y" r="3" />
+          </svg>
+        }
+      </li>
+    </ul>
+  }
+
+  @if (pending()) {
+    <div class="hst__pending" role="status">
+      <span class="hst__spinner" aria-hidden="true"></span>
+      Estamos calificando una evaluación nueva. Te avisaremos cuando termine.
+    </div>
+  }
+
+  @if (items().length === 0) {
+    <div class="hst__empty">
+      <p class="hst__empty-title">Todavía no realizaste evaluaciones</p>
+      <p class="hst__hint">Haz tu primera evaluación para conocer tu nivel y recibir tu ruta.</p>
+      <button type="button" class="hst__btn" (click)="create.emit()">Empezar mi primera evaluación</button>
+    </div>
+  } @else {
+    <div class="hst__toolbar">
+      <div class="hst__chips" role="group" aria-label="Filtrar por nivel">
+        @for (l of levels(); track l.rank) {
+          <button
+            type="button"
+            class="hst__chip"
+            [class.hst__chip--on]="levelFilter() === l.rank"
+            [attr.aria-pressed]="levelFilter() === l.rank"
+            (click)="setLevel(l.rank)"
+          >
+            {{ l.name }}
+          </button>
+        }
+      </div>
+      <label class="hst__sort">
+        Ordenar por
+        <select [value]="sort()" (change)="setSort($any($event.target).value)">
+          <option value="recent">Más recientes</option>
+          <option value="best">Mayor puntaje</option>
+          <option value="worst">Menor puntaje</option>
+        </select>
+      </label>
+    </div>
+
+    <ul class="hst__list">
+      @for (r of pageRows(); track r.id) {
+        <li>
+          <button type="button" class="hst__row" (click)="openResult.emit(r.id)" [disabled]="busy()">
+            <div class="hst__score">
+              <strong [style.color]="r.color">{{ r.score }}%</strong>
+              <span class="hst__bar" aria-hidden="true">
+                <span [style.width.%]="r.score" [style.background]="r.color"></span>
+              </span>
+            </div>
+            <div class="hst__main">
+              <div class="hst__line">
+                <span
+                  class="hst__level"
+                  [style.background]="r.levelColor ? 'color-mix(in srgb, ' + r.levelColor + ' 25%, white)' : null"
+                  >{{ r.level }}</span
+                >
+                @if (r.isBest) {
+                  <span class="hst__best">★ Mejor resultado</span>
+                }
+                <span class="hst__date" [attr.title]="formatDate(r.date)">{{ r.relative }}</span>
+                @if (r.delta !== null && r.delta !== 0) {
+                  <span [class]="r.delta > 0 ? 'hst__up' : 'hst__down'">
+                    {{ r.delta > 0 ? '▲ +' : '▼ −' }}{{ r.delta > 0 ? r.delta : -r.delta }} pts
+                  </span>
+                }
+              </div>
+              @if (r.feedback) {
+                <p class="hst__feedback">{{ r.feedback }}</p>
+              }
+            </div>
+            <span class="hst__go" aria-hidden="true">Ver resultado →</span>
+          </button>
+        </li>
+      } @empty {
+        <li class="hst__none">No hay evaluaciones con ese nivel.</li>
+      }
+    </ul>
+
+    <app-pager [page]="page()" [totalPages]="totalPages()" (prev)="prevPage()" (next)="nextPage()" />
+  }
+}

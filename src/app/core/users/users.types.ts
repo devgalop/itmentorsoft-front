@@ -46,6 +46,8 @@ export interface GetConnectedUsersResponse {
 }
 
 export interface CreateUserPayload {
+  /** Obligatorio en el backend (3 a 100 caracteres). */
+  name: string;
   email: string;
   username: string;
   role: string;

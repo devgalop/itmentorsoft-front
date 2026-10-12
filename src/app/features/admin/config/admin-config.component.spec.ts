@@ -72,6 +72,22 @@ describe('AdminConfigComponent', () => {
     expect(c.processes().find((p) => p.process === 'classifier')?.currentModel).toBe('model_2');
   });
 
+  it('adds the selected model to the options when it is not in the available list', async () => {
+    setup({ models: ['model_1', 'model_2'], selected: [{ process: 'qualifier', model_id: 'modelo_externo' }] });
+    await flush();
+    const c = fixture.componentInstance;
+    const p = c.processes().find((x) => x.process === 'qualifier')!;
+    expect(c.modelOptions(p)).toEqual(['modelo_externo', 'model_1', 'model_2']);
+  });
+
+  it('does not duplicate the selected model when it is already available', async () => {
+    setup({ models: ['model_1', 'model_2'], selected: [{ process: 'qualifier', model_id: 'model_1' }] });
+    await flush();
+    const c = fixture.componentInstance;
+    const p = c.processes().find((x) => x.process === 'qualifier')!;
+    expect(c.modelOptions(p)).toEqual(['model_1', 'model_2']);
+  });
+
   it('shows null currentModel for a process with no selection yet', async () => {
     setup({ selected: [] });
     await flush();

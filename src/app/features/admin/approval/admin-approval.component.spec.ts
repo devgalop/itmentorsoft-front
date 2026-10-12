@@ -114,4 +114,26 @@ describe('AdminApprovalComponent', () => {
     expect(c.errorFor('q1')).toBe('Error en el servidor');
     expect(c.resolutionFor('q1')).toBeNull();
   });
+
+  describe('detail modal', () => {
+    it('opens with the selected question and closes', async () => {
+      const c = createComponent();
+      await Promise.resolve();
+      await Promise.resolve();
+      const q = pending('q-detail');
+      c.openDetail(q);
+      expect(c.detail()).toBe(q);
+      c.closeDetail();
+      expect(c.detail()).toBeNull();
+    });
+
+    it('Escape closes it and does nothing when it is already closed', async () => {
+      const c = createComponent();
+      c.onEscape();
+      expect(c.detail()).toBeNull();
+      c.openDetail(pending('q-detail'));
+      c.onEscape();
+      expect(c.detail()).toBeNull();
+    });
+  });
 });

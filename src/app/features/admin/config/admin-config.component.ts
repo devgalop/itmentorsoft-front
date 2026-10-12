@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { AssessmentsService } from '@core/assessments/assessments.service';
-import { AiProcess, AI_PROCESSES } from '@core/assessments/assessments.types';
+import { AiProcess, AI_PROCESSES, AI_PROCESS_LABELS } from '@core/assessments/assessments.types';
 import { ToastService } from '@shared/ui/toast/toast.service';
 
 interface ProcessConfig {
@@ -9,11 +9,7 @@ interface ProcessConfig {
   currentModel: string | null;
 }
 
-/** Etiquetas legibles de cada proceso de IA configurable. */
-const PROCESS_LABELS: Record<AiProcess, string> = {
-  qualifier: 'Calificación de respuestas',
-  classifier: 'Clasificación de estudiantes',
-};
+const PROCESS_LABELS = AI_PROCESS_LABELS;
 
 @Component({
   selector: 'app-admin-config',
@@ -63,6 +59,15 @@ export class AdminConfigComponent {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  /**
+   * Opciones del selector: los modelos disponibles y, si el modelo seleccionado no figura en
+   * esa lista, también ese (para que el selector refleje lo que realmente está configurado).
+   */
+  modelOptions(p: ProcessConfig): string[] {
+    const models = this.availableModels();
+    return p.currentModel && !models.includes(p.currentModel) ? [p.currentModel, ...models] : models;
   }
 
   async onModelChange(process: AiProcess, modelId: string): Promise<void> {

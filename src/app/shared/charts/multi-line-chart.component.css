@@ -1,0 +1,171 @@
+:host {
+  display: block;
+}
+
+/* La gráfica va centrada en la tarjeta. */
+.ml__svg {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.ml__grid {
+  stroke: var(--color-light-2);
+  stroke-width: 1;
+}
+
+.ml__ytext,
+.ml__xtext {
+  font-size: 9px;
+  fill: var(--color-mid-2);
+}
+
+.ml__xtitle {
+  font-size: 9px;
+  font-weight: 700;
+  fill: var(--color-mid-1);
+}
+
+.ml__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.ml__dot {
+  stroke: var(--color-white);
+  stroke-width: 2;
+}
+
+.ml__legend {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1.25rem;
+}
+
+.ml__item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--color-dark);
+}
+
+.ml__swatch {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.ml__table {
+  margin-top: 0.9rem;
+}
+
+.ml__table-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.ml__scroll {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid var(--color-light-1);
+  border-radius: 0.6rem;
+}
+
+.ml__table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.ml__table th {
+  padding: 0.55rem 0.75rem;
+  background: var(--color-light-3);
+  border-bottom: 1px solid var(--color-light-1);
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-mid-2);
+  white-space: nowrap;
+}
+
+.ml__table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-light-2);
+  text-align: center;
+}
+
+.ml__table tr:last-child td {
+  border-bottom: none;
+}
+
+.ml__table .ml__th-topic,
+.ml__table .ml__topic {
+  text-align: left;
+}
+
+.ml__topic {
+  display: table-cell;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.ml__topic .ml__swatch {
+  display: inline-block;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+/* El tono de cada celda crece con el puntaje: se ve de un vistazo en qué evaluación estuvo mejor. */
+.ml__cell {
+  display: inline-block;
+  min-width: 3.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--color-accent) calc(var(--v) * 0.6%), var(--color-white));
+  color: var(--color-dark);
+  font-weight: 700;
+}
+
+.ml__none {
+  color: var(--color-mid-2);
+}
+
+.ml__chg {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-light-2);
+  color: var(--color-mid-1);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ml__chg--up {
+  background: var(--color-accent-pale);
+  color: var(--color-secondary);
+}
+
+.ml__chg--down {
+  background: color-mix(in srgb, var(--color-error) 10%, var(--color-white));
+  color: var(--color-error);
+}
+
+.ml__hint {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-mid-2);
+}

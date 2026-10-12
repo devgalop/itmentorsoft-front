@@ -7,25 +7,42 @@ import {
   signal,
 } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { ReportsService } from '@core/reports/reports.service';
+import { roleLabel } from '@core/users/role-label';
 import { UsersService } from '@core/users/users.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { CreateUserPayload, UserStatus } from '@core/users/users.types';
 
-/** Usuario de la lista de gestión: id y rol vienen del reporte; el resto, del detalle del usuario. */
+/**
+ * Usuario de la tabla: id, rol y (cuando el backend lo informe) estado vienen del reporte;
+ * el resto, del detalle de cada usuario.
+ */
 export interface ManagedUser {
   user_id: string;
   name: string;
   username: string;
   email: string;
+  role: string;
+  /** null = el servidor aún no informa el estado de este usuario. */
+  status: UserStatus | null;
 }
 
-/** Estados a los que se puede mover un usuario activo (el listado solo trae usuarios activos). */
+export const STATUS_LABELS: Record<UserStatus, string> = {
+  active: 'Activo',
+  inactive: 'Inactivo',
+  suspended: 'Suspendido',
+};
+
+/** Acciones de estado: `label` es cómo se nombra el estado resultante en el aviso. */
 export const STATUS_ACTIONS: { value: UserStatus; action: string; label: string }[] = [
+  { value: 'active', action: 'Activar', label: 'activo' },
   { value: 'inactive', action: 'Inactivar', label: 'inactivo' },
   { value: 'suspended', action: 'Suspender', label: 'suspendido' },
 ];
+
+const KNOWN_STATUSES = new Set<string>(['active', 'inactive', 'suspended']);
 
 /** username: alfanumérico + guion bajo (coincide con \w+ del backend). */
 function usernamePattern(control: AbstractControl): ValidationErrors | null {
@@ -48,13 +65,18 @@ export class AdminUsersComponent {
   private readonly toast = inject(ToastService);
   private readonly reports = inject(ReportsService);
   private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly roles = signal<string[]>([]);
   readonly isLoadingRoles = signal(false);
 
   readonly isSubmitting = signal(false);
+  /** Modal de "Crear usuario". */
+  readonly isCreateOpen = signal(false);
 
   readonly form = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
     email: [
       '',
       [Validators.required, Validators.minLength(5), Validators.maxLength(255), Validators.email],
@@ -66,9 +88,7 @@ export class AdminUsersComponent {
     role: ['', [Validators.required]],
   });
 
-  readonly statusActions = STATUS_ACTIONS;
-
-  /** Gestión de estado: usuarios activos del rol elegido. */
+  /** Tabla de usuarios del rol elegido. */
   readonly manageRole = signal('');
   readonly managedUsers = signal<ManagedUser[]>([]);
   readonly isLoadingManaged = signal(false);
@@ -83,6 +103,34 @@ export class AdminUsersComponent {
 
   constructor() {
     void this.loadRoles();
+    // El botón "Crear usuario" del dashboard llega con ?crear=1 y abre el modal de una vez.
+    if (this.route.snapshot.queryParamMap.get('crear') === '1') {
+      this.openCreate();
+      void this.router.navigate([], {
+        queryParams: { crear: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+  }
+
+  roleLabel(role: string): string {
+    return roleLabel(role);
+  }
+
+  statusLabel(status: UserStatus | null): string {
+    return status ? STATUS_LABELS[status] : '—';
+  }
+
+  /**
+   * Acciones disponibles según el estado. Si el servidor aún no informa el estado se ofrece
+   * inactivar o suspender; si se sabe que no está activo, se ofrece activarlo.
+   */
+  actionsFor(user: ManagedUser): { value: UserStatus; action: string; label: string }[] {
+    if (user.status === 'inactive' || user.status === 'suspended') {
+      return STATUS_ACTIONS.filter((a) => a.value === 'active');
+    }
+    return STATUS_ACTIONS.filter((a) => a.value !== 'active');
   }
 
   /** Un admin no puede cambiarse el estado a sí mismo (quedaría sin acceso). */
@@ -114,13 +162,15 @@ export class AdminUsersComponent {
             name: info?.name ?? '(sin datos)',
             username: info?.username ?? u.user_id.slice(0, 8),
             email: info?.email ?? '',
+            role: u.role ?? role,
+            status: u.status && KNOWN_STATUSES.has(u.status) ? (u.status as UserStatus) : null,
           };
         }),
       );
     } catch {
-      // El backend responde con error cuando el rol no tiene usuarios activos.
+      // El backend responde con error cuando el rol no tiene usuarios.
       if (this.manageRole() !== role) return;
-      this.manageError.set('No hay usuarios activos con este rol (o no se pudieron cargar).');
+      this.manageError.set('No hay usuarios con este rol (o no se pudieron cargar).');
     } finally {
       if (this.manageRole() === role) this.isLoadingManaged.set(false);
     }
@@ -136,10 +186,25 @@ export class AdminUsersComponent {
     this.pendingChange.set(null);
   }
 
-  /** Escape cierra el modal de confirmación (no mientras se está aplicando el cambio). */
+  openCreate(): void {
+    this.resetForm(this.manageRole());
+    this.form.markAsUntouched();
+    this.isCreateOpen.set(true);
+  }
+
+  closeCreate(): void {
+    if (this.isSubmitting()) return;
+    this.isCreateOpen.set(false);
+  }
+
+  /** Escape cierra el modal abierto (no mientras se está guardando). */
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.pendingChange()) this.cancelStatusChange();
+    if (this.pendingChange()) {
+      this.cancelStatusChange();
+    } else if (this.isCreateOpen()) {
+      this.closeCreate();
+    }
   }
 
   async confirmStatusChange(): Promise<void> {
@@ -156,8 +221,9 @@ export class AdminUsersComponent {
         `${pending.user.name} ahora está ${this.pendingLabel()}.`,
       );
       this.pendingChange.set(null);
-      // El usuario ya no es activo: sale de la lista.
-      this.managedUsers.update((list) => list.filter((u) => u.user_id !== pending.user.user_id));
+      this.managedUsers.update((list) =>
+        list.map((u) => (u.user_id === pending.user.user_id ? { ...u, status: pending.status } : u)),
+      );
     } catch (error) {
       this.toast.error(
         'No se pudo cambiar el estado',
@@ -214,6 +280,9 @@ export class AdminUsersComponent {
       if (response.is_success) {
         this.toast.success('Usuario creado', 'El usuario se registró correctamente.');
         this.resetForm();
+        this.isCreateOpen.set(false);
+        // Se muestra el rol del usuario nuevo para que aparezca en la tabla.
+        void this.loadManagedUsers(payload.role);
       } else {
         this.toast.error('No se pudo crear', response.message || 'Intenta nuevamente.');
       }
@@ -224,8 +293,8 @@ export class AdminUsersComponent {
     }
   }
 
-  private resetForm(): void {
-    const firstRole = this.roles()[0] ?? '';
-    this.form.reset({ email: '', username: '', role: firstRole });
+  private resetForm(role?: string): void {
+    const initial = role || (this.roles()[0] ?? '');
+    this.form.reset({ name: '', email: '', username: '', role: initial });
   }
 }

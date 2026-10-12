@@ -1,4 +1,6 @@
-:host { display: block; }
+:host {
+  display: block;
+}
 
 .rep__title {
   color: var(--color-primary);
@@ -6,63 +8,65 @@
   font-weight: 800;
 }
 
-.rep__subtitle {
-  color: var(--color-mid-2);
-  font-size: 0.9rem;
-  margin-top: 0.2rem;
+.rep__section-title {
+  margin: 1.75rem 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-primary);
 }
 
-.rep__filters {
-  margin-top: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.rep__filters label {
+.rep__hint {
   font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-dark);
-}
-
-.rep__filters select {
-  padding: 0.5rem 0.8rem;
-  border: 1px solid var(--color-light-1);
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--color-dark);
-  background: var(--color-white);
-  min-width: 180px;
-}
-
-.rep__hint,
-.rep__count {
   color: var(--color-mid-2);
-  font-size: 0.9rem;
-  margin-top: 1rem;
+}
+
+.rep__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.rep__count {
+  font-size: 0.85rem;
+  color: var(--color-mid-1);
+}
+
+.rep__clear {
+  padding: 0.3rem 0.9rem;
+  border: 1px solid var(--color-light-1);
+  border-radius: 999px;
+  background: var(--color-white);
+  color: var(--color-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rep__clear:hover {
+  background: var(--color-accent-pale);
 }
 
 .rep__error {
-  margin-top: 1rem;
-  background: color-mix(in srgb, var(--color-error) 8%, var(--color-white));
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
-  border-radius: 0.5rem;
   padding: 0.7rem 1rem;
+  border: 1px solid var(--color-error);
+  border-radius: 0.5rem;
+  color: var(--color-error);
   font-size: 0.88rem;
 }
 
 .rep__empty {
-  margin-top: 1.25rem;
+  padding: 1.5rem 1rem;
   border: 1px dashed var(--color-light-1);
   border-radius: 0.75rem;
-  padding: 2rem 1rem;
   text-align: center;
   color: var(--color-mid-1);
 }
 
 .rep__table {
-  margin-top: 0.75rem;
   background: var(--color-white);
   border: 1px solid var(--color-light-1);
   border-radius: 0.75rem;
@@ -71,10 +75,12 @@
 
 .rep__row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 9rem 8rem;
   align-items: center;
-  padding: 0.85rem 1.25rem;
+  gap: 0.75rem;
+  padding: 0.7rem 1.1rem;
   border-bottom: 1px solid var(--color-light-2);
+  font-size: 0.9rem;
 }
 
 .rep__row:last-child {
@@ -82,42 +88,47 @@
 }
 
 .rep__row--head {
-  background: var(--color-light-2);
-  font-size: 0.75rem;
+  background: var(--color-light-3);
+  font-size: 0.72rem;
   font-weight: 700;
-  color: var(--color-mid-2);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  color: var(--color-mid-2);
 }
 
 .rep__student {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  font-weight: 600;
-  color: var(--color-dark);
+  gap: 0.65rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  min-width: 0;
 }
 
 .rep__avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--color-secondary);
-  color: var(--color-white);
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-size: 0.72rem;
   font-weight: 800;
 }
 
+/* Cada nivel conserva su color (el mismo de las tarjetas). */
 .rep__badge {
-  background: var(--color-accent-pale);
-  color: var(--color-accent);
+  display: inline-block;
+  padding: 0.15rem 0.7rem;
+  border: 1px solid var(--lv, var(--color-light-1));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lv, var(--color-light-2)) 22%, var(--color-white));
+  color: var(--color-dark);
   font-size: 0.75rem;
   font-weight: 700;
-  padding: 0.2rem 0.7rem;
-  border-radius: 999px;
 }
 
 .rep__actions-col {
@@ -125,112 +136,27 @@
 }
 
 .rep__link {
-  color: var(--color-primary);
+  color: var(--color-secondary);
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   text-decoration: none;
 }
 
-.rep__pager {
-  margin-top: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  font-size: 0.85rem;
-  color: var(--color-mid-2);
+.rep__link:hover {
+  text-decoration: underline;
 }
 
-.rep__pager button {
-  background: var(--color-white);
-  border: 1px solid var(--color-light-1);
-  border-radius: 0.5rem;
-  padding: 0.45rem 1rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  cursor: pointer;
+.rep__block {
+  display: block;
+  margin-top: 2.25rem;
 }
 
-.rep__pager button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Distribución por categoría */
-.rep__dist {
-  background: var(--color-white);
-  border: 1px solid var(--color-light-1);
-  border-radius: 0.75rem;
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.rep__dist-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin: 0 0 0.25rem;
-}
-
-.rep__dist-total,
-.rep__dist-hint {
-  font-size: 0.8rem;
-  color: var(--color-mid-2);
-  margin: 0 0 0.875rem;
-}
-
-.rep__dist-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.rep__dist-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.3rem;
-}
-
-.rep__dist-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-.rep__dist-count {
-  font-size: 0.8rem;
-  color: var(--color-mid-1);
-}
-
-.rep__dist-bar {
-  height: 8px;
-  background: var(--color-light-2);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.rep__dist-fill {
-  height: 100%;
-  background: var(--color-accent);
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
-
-@media (max-width: 640px) {
-  .rep__row--head {
-    display: none;
-  }
-
+@media (max-width: 600px) {
   .rep__row {
-    grid-template-columns: 1fr;
-    gap: 0.4rem;
-    align-items: flex-start;
+    grid-template-columns: 1fr auto;
   }
 
-  .rep__actions-col {
-    text-align: left;
+  .rep__row > :nth-child(2) {
+    display: none;
   }
 }

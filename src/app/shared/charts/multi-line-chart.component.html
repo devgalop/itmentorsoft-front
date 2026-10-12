@@ -1,0 +1,97 @@
+<svg
+  class="ml__svg"
+  [attr.viewBox]="'0 0 ' + width + ' ' + height"
+  role="img"
+  [attr.aria-label]="summary()"
+>
+  @for (g of grid; track g.value) {
+    <line class="ml__grid" [attr.x1]="left" [attr.x2]="right" [attr.y1]="g.y" [attr.y2]="g.y" />
+    <text class="ml__ytext" [attr.x]="left - 6" [attr.y]="g.y + 3" text-anchor="end">{{ g.value }}%</text>
+  }
+
+  @for (t of ticks(); track t.x) {
+    <text class="ml__xtext" [attr.x]="t.px" [attr.y]="height - 22" text-anchor="middle">{{ t.label }}</text>
+  }
+  <text class="ml__xtitle" [attr.x]="(left + right) / 2" [attr.y]="height - 6" text-anchor="middle">
+    {{ xTitle() }}
+  </text>
+
+  @for (seg of segments(); track seg.key) {
+    <line
+      class="ml__line"
+      [attr.x1]="seg.x1"
+      [attr.y1]="seg.y1"
+      [attr.x2]="seg.x2"
+      [attr.y2]="seg.y2"
+      [attr.stroke]="seg.color"
+      [attr.stroke-dasharray]="seg.dash"
+      [attr.stroke-dashoffset]="seg.dashOffset"
+    />
+  }
+  @for (m of markers(); track m.key) {
+    <circle class="ml__dot" [attr.cx]="m.cx" [attr.cy]="m.cy" [attr.r]="m.r" [attr.fill]="m.color">
+      <title>{{ m.title }}</title>
+    </circle>
+  }
+</svg>
+
+<ul class="ml__legend">
+  @for (l of lines(); track l.key) {
+    <li class="ml__item">
+      <span class="ml__swatch" [style.background]="l.color" aria-hidden="true"></span>
+      {{ l.label }}
+    </li>
+  }
+</ul>
+@if (hasOverlap()) {
+  <p class="ml__hint">
+    Cuando varios temas tienen el mismo resultado, sus líneas se alternan y sus puntos se ven como anillos.
+  </p>
+}
+
+<section class="ml__table">
+  <h3 class="ml__table-title">Datos por evaluación</h3>
+  <div class="ml__scroll">
+    <table>
+      <thead>
+        <tr>
+          <th class="ml__th-topic">Tema</th>
+          @for (t of ticks(); track t.x) {
+            <th>{{ xTitle() }} {{ t.label }}</th>
+          }
+          <th>Cambio</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of rows(); track r.key) {
+          <tr>
+            <td class="ml__topic">
+              <span class="ml__swatch" [style.background]="r.color" aria-hidden="true"></span>
+              {{ r.label }}
+            </td>
+            @for (v of r.cells; track $index) {
+              <td>
+                @if (v === null) {
+                  <span class="ml__none">—</span>
+                } @else {
+                  <span class="ml__cell" [style.--v]="v">{{ v }}%</span>
+                }
+              </td>
+            }
+            <td>
+              @if (r.change === null) {
+                <span class="ml__none">—</span>
+              } @else if (r.change > 0) {
+                <span class="ml__chg ml__chg--up">▲ +{{ r.change }} pts</span>
+              } @else if (r.change < 0) {
+                <span class="ml__chg ml__chg--down">▼ {{ r.change }} pts</span>
+              } @else {
+                <span class="ml__chg">= sin cambio</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

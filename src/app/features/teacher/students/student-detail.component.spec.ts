@@ -60,6 +60,44 @@ describe('StudentDetailComponent', () => {
     expect(component.summary()?.name).toBe('Eider Sánchez');
   });
 
+  it('builds the knowledge profile items with the score as a percentage', async () => {
+    const { component } = createComponent('s1', summary);
+    await flush();
+    expect(component.profileItems()).toEqual([
+      { key: 'POO', label: 'POO', value: 80 },
+      { key: 'APIs', label: 'APIs', value: 40 },
+    ]);
+  });
+
+  it('gives each profile topic the same color as its line in the progress chart', async () => {
+    const progress = {
+      student_id: 's1',
+      classification: 'básico',
+      knowledge_profile: [
+        { topic: 'APIs', score: 10, index: 0 },
+        { topic: 'POO', score: 90, index: 0 },
+      ],
+    };
+    const { component } = createComponent('s1', summary, { progress });
+    await flush();
+    const colors = new Map(component.progressSeries().map((s) => [s.key, s.color]));
+    const items = component.profileItems();
+    expect(items.find((i) => i.key === 'POO')!.color).toBe(colors.get('POO'));
+    expect(items.find((i) => i.key === 'APIs')!.color).toBe(colors.get('APIs'));
+    expect(colors.get('POO')).not.toBe(colors.get('APIs'));
+  });
+
+  it('leaves the profile without its own colors when the progress is not available', async () => {
+    const { component } = createComponent('s1', summary);
+    await flush();
+    expect(component.profileItems().every((i) => i.color === undefined)).toBe(true);
+  });
+
+  it('has no profile items before the summary loads', () => {
+    const { component } = createComponent('s1', summary);
+    expect(component.profileItems()).toEqual([]);
+  });
+
   it('converts a score to a clamped percentage', () => {
     const { component } = createComponent('s1', summary);
     expect(component.scorePct(0.8)).toBe(80);
@@ -67,27 +105,52 @@ describe('StudentDetailComponent', () => {
     expect(component.scorePct(-0.2)).toBe(0);
   });
 
-  it('lists progress topics ordered by index with score already in percent', async () => {
+  it('builds one series per topic, joining its points by index with the score already in percent', async () => {
     const progress = {
       student_id: 's1',
-      classification: 'Intermediate',
+      classification: 'básico',
       knowledge_profile: [
-        { topic: 'APIs', score: 40, index: 2 },
-        { topic: 'POO', score: 85, index: 1 },
+        { topic: 'APIs', score: 66.66666666666666, index: 1 },
+        { topic: 'POO', score: 33.33333333333333, index: 0 },
+        { topic: 'APIs', score: 0, index: 0 },
+        { topic: 'POO', score: 100, index: 1 },
+        { topic: 'APIs', score: 100, index: 2 },
       ],
     };
     const { component } = createComponent('s1', summary, { progress });
     await flush();
-    const topics = component.progressTopics();
-    expect(topics.map((t) => t.topic)).toEqual(['POO', 'APIs']);
-    expect(topics[0].score).toBe(85);
-    expect(topics[1].score).toBe(40);
+    const series = component.progressSeries();
+    expect(series.map((s) => s.label)).toEqual(['APIs', 'POO']);
+    expect(series[0]!.points).toEqual([
+      { x: 0, value: 0 },
+      { x: 1, value: 66.7 },
+      { x: 2, value: 100 },
+    ]);
+    expect(series[1]!.points).toEqual([
+      { x: 0, value: 33.3 },
+      { x: 1, value: 100 },
+    ]);
+    expect(series[0]!.color).not.toBe(series[1]!.color);
   });
 
-  it('returns an empty progress list when there is no progress', async () => {
+  it('clamps scores outside 0–100', async () => {
+    const progress = {
+      student_id: 's1',
+      classification: 'básico',
+      knowledge_profile: [
+        { topic: 'APIs', score: 140, index: 0 },
+        { topic: 'APIs', score: -5, index: 1 },
+      ],
+    };
+    const { component } = createComponent('s1', summary, { progress });
+    await flush();
+    expect(component.progressSeries()[0]!.points.map((p) => p.value)).toEqual([100, 0]);
+  });
+
+  it('has no series when there is no progress', async () => {
     const { component } = createComponent('s1', summary);
     await flush();
-    expect(component.progressTopics()).toEqual([]);
+    expect(component.progressSeries()).toEqual([]);
   });
 
   it('shows an error message when there is no summary', async () => {
@@ -122,5 +185,11 @@ describe('StudentDetailComponent', () => {
     await flush();
     expect(component.assessmentsCount()).toBeNull();
     expect(component.summary()?.name).toBe('Eider Sánchez');
+  });
+
+  it('derives the medal from the student classification', async () => {
+    const { component } = createComponent('s1', { ...summary, knowledge_classification: 'Avanzado' });
+    await flush();
+    expect(component.medal()?.rank).toBe(3);
   });
 });
