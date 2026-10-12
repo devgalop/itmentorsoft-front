@@ -12,9 +12,14 @@ export interface GetUserResponse {
   user: UserInfo | null;
 }
 
+  id: string;
+  name: string;
+  homologate_name: string;
+}
+
 export interface GetAvailableRolesResponse {
   is_success: boolean;
-  roles: string[];
+  roles: (string | RoleDetail)[];
 }
 
 export interface AssignRoleResponse {
