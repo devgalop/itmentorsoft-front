@@ -12,6 +12,7 @@ export interface GetUserResponse {
   user: UserInfo | null;
 }
 
+export interface RoleDetail {
   id: string;
   name: string;
   homologate_name: string;
