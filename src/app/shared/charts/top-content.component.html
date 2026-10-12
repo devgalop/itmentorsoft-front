@@ -1,0 +1,65 @@
+<section class="tc">
+  <div class="tc__head">
+    <h2 class="tc__title">Contenidos mejor y peor valorados</h2>
+    @if (topics().length > 0) {
+      <label class="tc__filter">
+        <span>Tema</span>
+        <select
+          [value]="selectedTopic()"
+          (change)="onTopicChange($any($event.target).value)"
+          [disabled]="isLoadingTop()"
+        >
+          @for (t of topics(); track t) {
+            <option [value]="t" [selected]="t === selectedTopic()">{{ t }}</option>
+          }
+        </select>
+      </label>
+    }
+  </div>
+
+  @if (topics().length === 0) {
+    <p class="tc__hint">No hay temas disponibles para consultar.</p>
+  } @else if (isLoadingTop()) {
+    <p class="tc__hint">Cargando contenidos…</p>
+  } @else {
+    @if (topUnavailable()) {
+      <p class="tc__hint">No se pudo cargar parte de la información de este tema.</p>
+    }
+    <div class="tc__grid">
+      <div>
+        <h3 class="tc__subtitle">Mejor valorados</h3>
+        @if (topBest().length === 0) {
+          <p class="tc__hint">Sin contenidos calificados en este tema.</p>
+        } @else {
+          <ol class="tc__list">
+            @for (c of topBest(); track c.content_id) {
+              <li class="tc__item">
+                <span class="tc__name">{{ c.title }}</span>
+                <span class="tc__rating" [attr.aria-label]="formatRating(c.rating) + ' de 5'">
+                  {{ '★'.repeat(stars(c.rating)) }} {{ formatRating(c.rating) }}
+                </span>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+      <div>
+        <h3 class="tc__subtitle">Peor valorados</h3>
+        @if (topWorse().length === 0) {
+          <p class="tc__hint">Sin contenidos calificados en este tema.</p>
+        } @else {
+          <ol class="tc__list">
+            @for (c of topWorse(); track c.content_id) {
+              <li class="tc__item">
+                <span class="tc__name">{{ c.title }}</span>
+                <span class="tc__rating" [attr.aria-label]="formatRating(c.rating) + ' de 5'">
+                  {{ '★'.repeat(stars(c.rating)) }} {{ formatRating(c.rating) }}
+                </span>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    </div>
+  }
+</section>

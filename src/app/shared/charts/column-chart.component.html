@@ -1,0 +1,18 @@
+<p class="cc__total">
+  <strong class="cc__total-num">{{ total() }}</strong>
+  @if (caption()) {
+    <span class="cc__caption">{{ caption() }}</span>
+  }
+</p>
+
+<div class="cc__plot" role="img" [attr.aria-label]="summary()">
+  @for (i of items(); track i.key) {
+    <div class="cc__col" [attr.title]="i.label + ': ' + i.count + ' (' + percent(i.count) + '%)'">
+      <div class="cc__track">
+        <span class="cc__value">{{ i.count }}</span>
+        <div class="cc__bar" [style.height.px]="barPx(i.count)" [style.background]="i.color"></div>
+      </div>
+      <span class="cc__label">{{ i.label }}</span>
+    </div>
+  }
+</div>

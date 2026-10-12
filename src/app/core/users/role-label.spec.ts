@@ -5,7 +5,7 @@ describe('roleLabel', () => {
     ['admin', 'Administrador'],
     ['teacher', 'Docente'],
     ['student', 'Estudiante'],
-    ['user', 'Invitado'],
+    ['user', 'Usuario Inicial'],
   ])('translates %s', (role, label) => {
     expect(roleLabel(role)).toBe(label);
   });

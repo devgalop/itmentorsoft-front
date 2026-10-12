@@ -20,11 +20,6 @@ describe('AdminAnalyticsComponent', () => {
     getCategorySummary: ReturnType<typeof vi.fn>;
   };
   let usersServiceMock: { getAvailableRoles: ReturnType<typeof vi.fn> };
-  let assessmentsMock: { getTopics: ReturnType<typeof vi.fn> };
-  let contentMock: {
-    getTopBestContent: ReturnType<typeof vi.fn>;
-    getTopWorseContent: ReturnType<typeof vi.fn>;
-  };
 
   function setup(opts?: {
     roles?: string[];
@@ -32,18 +27,7 @@ describe('AdminAnalyticsComponent', () => {
     byRole?: Record<string, number>;
     byRoleReject?: Error;
     byCategory?: Record<string, number>;
-    topics?: string[];
-    topBest?: unknown[];
-    topWorse?: unknown[];
-    topBestReject?: Error;
   }): void {
-    assessmentsMock = { getTopics: vi.fn().mockResolvedValue(opts?.topics ?? ['APIs', 'POO']) };
-    contentMock = {
-      getTopBestContent: opts?.topBestReject
-        ? vi.fn().mockRejectedValue(opts.topBestReject)
-        : vi.fn().mockResolvedValue(opts?.topBest ?? []),
-      getTopWorseContent: vi.fn().mockResolvedValue(opts?.topWorse ?? []),
-    };
     usersServiceMock = {
       getAvailableRoles: opts?.rolesReject
         ? vi.fn().mockRejectedValue(opts.rolesReject)
@@ -63,8 +47,9 @@ describe('AdminAnalyticsComponent', () => {
       providers: [
         { provide: ReportsService, useValue: reportsMock },
         { provide: UsersService, useValue: usersServiceMock },
-        { provide: AssessmentsService, useValue: assessmentsMock },
-        { provide: ContentService, useValue: contentMock },
+        // El bloque de "mejor y peor valorados" es un componente aparte con sus propias pruebas.
+        { provide: AssessmentsService, useValue: { getTopics: vi.fn().mockResolvedValue([]) } },
+        { provide: ContentService, useValue: {} },
       ],
     });
 
@@ -99,6 +84,17 @@ describe('AdminAnalyticsComponent', () => {
     expect(c.roleLabel('other')).toBe('other');
   });
 
+  it('builds the role chart items with a fixed color per role', async () => {
+    setup({ roles: ['admin', 'teacher'], byRole: { admin: 1, teacher: 2 } });
+    await flush();
+    const items = fixture.componentInstance.roleItems();
+    expect(items.map((i) => [i.key, i.label, i.count])).toEqual([
+      ['admin', 'Administrador', 1],
+      ['teacher', 'Docente', 2],
+    ]);
+    expect(new Set(items.map((i) => i.color)).size).toBe(2);
+  });
+
   it('loads the students-by-category distribution for the 4 known categories', async () => {
     setup({ byCategory: { principiante: 3, básico: 2, intermedio: 1, avanzado: 4 } });
     await flush();
@@ -108,6 +104,25 @@ describe('AdminAnalyticsComponent', () => {
     expect(reportsMock.getCategorySummary).toHaveBeenCalledTimes(4);
     expect(c.studentsByCategory().length).toBe(4);
     expect(c.studentsByCategoryTotal()).toBe(10);
+  });
+
+  it('orders the level chart from beginner to advanced with a light-to-dark ramp', async () => {
+    setup({ byCategory: { principiante: 3, básico: 2, intermedio: 1, avanzado: 4 } });
+    await flush();
+    const items = fixture.componentInstance.levelItems();
+    expect(items.map((i) => i.label)).toEqual(['Principiante', 'Básico', 'Intermedio', 'Avanzado']);
+    expect(items.map((i) => i.count)).toEqual([3, 2, 1, 4]);
+  });
+
+  it('renders the roles as cards and the levels as columns with their totals', async () => {
+    setup({ roles: ['admin', 'student'], byRole: { admin: 1, student: 3 }, byCategory: { avanzado: 2 } });
+    await flush();
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('app-stat-cards .sc__total-num')?.textContent).toBe('4');
+    expect(root.querySelector('app-column-chart .cc__total-num')?.textContent).toBe('2');
+    expect(root.querySelectorAll('app-stat-cards .sc__card')).toHaveLength(2);
+    expect(root.querySelectorAll('app-column-chart .cc__col')).toHaveLength(4);
   });
 
   it('keeps the users-by-role distribution empty when roles fail to load', async () => {
@@ -125,63 +140,5 @@ describe('AdminAnalyticsComponent', () => {
 
     const c = fixture.componentInstance;
     expect(c.usersByRole()).toEqual([{ value: 'admin', label: 'Administrador', count: 0 }]);
-  });
-  describe('top content', () => {
-    const best = [{ content_id: 'c1', title: 'Capas', summary: '', rating: 4.8 }];
-    const worse = [{ content_id: 'c2', title: 'Intro', summary: '', rating: 1.2 }];
-
-    it('loads the best and worst content of the first topic', async () => {
-      setup({ topBest: best, topWorse: worse });
-      await flush(10);
-      const c = fixture.componentInstance;
-      expect(contentMock.getTopBestContent).toHaveBeenCalledWith('APIs');
-      expect(contentMock.getTopWorseContent).toHaveBeenCalledWith('APIs');
-      expect(c.selectedTopic()).toBe('APIs');
-      expect(c.topBest()).toEqual(best);
-      expect(c.topWorse()).toEqual(worse);
-      expect(c.isLoadingTop()).toBe(false);
-      expect(c.topUnavailable()).toBe(false);
-    });
-
-    it('reloads when the topic changes', async () => {
-      setup({ topBest: best, topWorse: worse });
-      await flush(10);
-      fixture.componentInstance.onTopicChange('POO');
-      await flush(10);
-      expect(contentMock.getTopBestContent).toHaveBeenLastCalledWith('POO');
-      expect(fixture.componentInstance.selectedTopic()).toBe('POO');
-    });
-
-    it('keeps the other list and flags the failure when one request fails', async () => {
-      setup({ topBestReject: new Error('x'), topWorse: worse });
-      await flush(10);
-      const c = fixture.componentInstance;
-      expect(c.topBest()).toEqual([]);
-      expect(c.topWorse()).toEqual(worse);
-      expect(c.topUnavailable()).toBe(true);
-    });
-
-    it('does not query when there are no topics', async () => {
-      setup({ topics: [] });
-      await flush(10);
-      expect(contentMock.getTopBestContent).not.toHaveBeenCalled();
-      expect(fixture.componentInstance.topics()).toEqual([]);
-    });
-
-    it('formatRating shows a single decimal', () => {
-      setup();
-      const c = fixture.componentInstance;
-      expect(c.formatRating(4.333333333333333)).toBe('4.3');
-      expect(c.formatRating(4)).toBe('4.0');
-      expect(c.formatRating(1)).toBe('1.0');
-    });
-
-    it('stars clamps the rating between 0 and 5', async () => {
-      setup();
-      const c = fixture.componentInstance;
-      expect(c.stars(4.5)).toBe(5);
-      expect(c.stars(-1)).toBe(0);
-      expect(c.stars(9)).toBe(5);
-    });
   });
 });

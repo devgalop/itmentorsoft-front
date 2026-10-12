@@ -1,0 +1,16 @@
+<p class="sc__total">
+  <strong class="sc__total-num">{{ total() }}</strong>
+  @if (caption()) {
+    <span class="sc__caption">{{ caption() }}</span>
+  }
+</p>
+
+<ul class="sc__grid">
+  @for (i of items(); track i.key) {
+    <li class="sc__card" [style.border-top-color]="i.color">
+      <span class="sc__label">{{ i.label }}</span>
+      <strong class="sc__value">{{ i.count }}</strong>
+      <span class="sc__pct">{{ percent(i.count) }}%</span>
+    </li>
+  }
+</ul>

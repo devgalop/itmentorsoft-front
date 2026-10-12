@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { ReportsService } from '@core/reports/reports.service';
 import { StudentClassification } from '@core/reports/reports.types';
+import { TopContentComponent } from '@shared/charts/top-content.component';
 
 interface CategoryOption {
   value: string;
@@ -20,7 +21,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-teacher-reports',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TopContentComponent],
   templateUrl: './teacher-reports.component.html',
   styleUrl: './teacher-reports.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -3,7 +3,7 @@ const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrador',
   teacher: 'Docente',
   student: 'Estudiante',
-  user: 'Invitado',
+  user: 'Usuario Inicial',
 };
 
 export function roleLabel(role: string): string {
