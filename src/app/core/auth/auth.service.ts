@@ -115,6 +115,10 @@ export class AuthService {
       }
       return response;
     } catch (error) {
+      // El backend responde 400 tanto si el código no coincide como si ya venció (o hay uno más nuevo).
+      if (error instanceof HttpErrorResponse && error.status === 400) {
+        throw new Error('El código es incorrecto o ya venció. Pide uno nuevo con "Reenviar código".');
+      }
       throw this.mapHttpError(error);
     }
   }

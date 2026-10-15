@@ -123,6 +123,19 @@ describe('AuthService', () => {
     await otpPromise;
   });
 
+  it('validateOtp() explains that the code is wrong or expired when the backend answers 400', async () => {
+    const otpPromise = service.validateOtp('user-abc-123', '123456');
+    httpMock.expectOne(otpUrl).flush({ detail: 'Invalid OTP or OTP expired.' }, { status: 400, statusText: 'Bad Request' });
+    await expect(otpPromise).rejects.toThrow('El código es incorrecto o ya venció. Pide uno nuevo con "Reenviar código".');
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  it('validateOtp() keeps the usual messages for other errors', async () => {
+    const otpPromise = service.validateOtp('user-abc-123', '123456');
+    httpMock.expectOne(otpUrl).flush({ detail: 'x' }, { status: 500, statusText: 'x' });
+    await expect(otpPromise).rejects.toThrow('Error en el servidor, intenta más tarde');
+  });
+
   it('login() returns the block state when the 401 detail says the account is temporarily blocked', async () => {
     const detail = {
       is_successful: false,
