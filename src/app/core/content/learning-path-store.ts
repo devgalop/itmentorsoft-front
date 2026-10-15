@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { TopicPathRef } from './content.types';
 
 const KEY_PREFIX = 'itm.learning-paths.';
+const DONE_PREFIX = 'itm.learning-path-done.';
 
 /**
  * Guarda en el navegador los ids de los temas de la ruta del estudiante. El backend los entrega
@@ -32,9 +33,31 @@ export class LearningPathStore {
     }
   }
 
+  /**
+   * Recursos que el estudiante marcó como vistos, como "pathId|contentId". El backend no devuelve
+   * qué recursos están completos, así que se recuerdan aquí para mostrarlos al volver.
+   */
+  getDone(userId: string): Set<string> {
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(DONE_PREFIX + userId) ?? '[]');
+      return new Set(Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === 'string') : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  setDone(userId: string, done: ReadonlySet<string>): void {
+    try {
+      localStorage.setItem(DONE_PREFIX + userId, JSON.stringify([...done]));
+    } catch {
+      // Sin almacenamiento: queda marcado mientras la página esté abierta.
+    }
+  }
+
   clear(userId: string): void {
     try {
       localStorage.removeItem(KEY_PREFIX + userId);
+      localStorage.removeItem(DONE_PREFIX + userId);
     } catch {
       // Nada que limpiar.
     }

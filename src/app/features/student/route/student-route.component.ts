@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { AuthService } from '@core/auth/auth.service';
 import { ContentService } from '@core/content/content.service';
 import { LearningPathStore } from '@core/content/learning-path-store';
-import { RecommendedTopic, TopicPathRef } from '@core/content/content.types';
+import { RecommendedContent, RecommendedTopic, TopicPathRef } from '@core/content/content.types';
+import { CATEGORY_PALETTE, FALLBACK_COLOR } from '@shared/charts/chart-colors';
 import { ToastService } from '@shared/ui/toast/toast.service';
 
 @Component({
@@ -30,6 +31,101 @@ export class StudentRouteComponent {
   /** content_id del recurso que se está abriendo (para mostrar el spinner en ese item). */
   readonly openingId = signal<string | null>(null);
 
+  /** Temas desplegados (por `topicKey`). Al cargar, solo el primero. */
+  readonly openTopics = signal<ReadonlySet<string>>(new Set());
+
+  /** Identificador estable de un tema dentro de la pantalla. */
+  topicKey(topic: RecommendedTopic): string {
+    return topic.topic_path_id ?? topic.topic;
+  }
+
+  isTopicOpen(topic: RecommendedTopic): boolean {
+    return this.openTopics().has(this.topicKey(topic));
+  }
+
+  toggleTopic(topic: RecommendedTopic): void {
+    const key = this.topicKey(topic);
+    this.openTopics.update((open) => {
+      const next = new Set(open);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
+
+  /** Color del tema (el mismo orden de la paleta que usan las gráficas). */
+  topicColor(index: number): string {
+    return CATEGORY_PALETTE[index] ?? FALLBACK_COLOR;
+  }
+
+  /** Cuántos recursos de un tema ya están vistos. */
+  doneCount(topic: RecommendedTopic): number {
+    return topic.contents.filter((c) => this.isDone(topic, c)).length;
+  }
+
+  /** Resumen de toda la ruta: temas, recursos, vistos y avance general (0–100). */
+  readonly overview = computed(() => {
+    const topics = this.topics();
+    const total = this.totalContents();
+    const done = topics.reduce((sum, t) => sum + this.doneCount(t), 0);
+    const reported = topics.map((t) => t.progress).filter((p): p is number => p !== undefined);
+    const overall = reported.length > 0
+      ? Math.round(reported.reduce((a, b) => a + b, 0) / reported.length)
+      : total > 0
+        ? Math.round((done / total) * 100)
+        : 0;
+    return { topics: topics.length, total, done, overall: Math.max(0, Math.min(100, overall)) };
+  });
+
+  /** Recursos vistos, como "pathId|contentId". */
+  readonly done = signal<ReadonlySet<string>>(new Set());
+  /** Recurso cuyo estado se está guardando ("pathId|contentId"). */
+  readonly savingKey = signal<string | null>(null);
+
+  /** Clave de un recurso dentro de un tema. */
+  doneKey(topic: RecommendedTopic, contentId: string): string {
+    return `${topic.topic_path_id ?? topic.topic}|${contentId}`;
+  }
+
+  isDone(topic: RecommendedTopic, item: RecommendedContent): boolean {
+    return item.is_completed ?? this.done().has(this.doneKey(topic, item.content_id));
+  }
+
+  /** Marca el recurso como visto (o lo vuelve a pendiente) y actualiza el avance del tema. */
+  async toggleDone(topic: RecommendedTopic, item: RecommendedContent): Promise<void> {
+    const userId = this.auth.userId();
+    const pathId = topic.topic_path_id;
+    if (!userId || !pathId || this.savingKey()) return;
+    const key = this.doneKey(topic, item.content_id);
+    const next = !this.isDone(topic, item);
+    this.savingKey.set(key);
+    try {
+      const progress = await this.content.setLearningPathContentStatus(pathId, item.content_id, next);
+      const done = new Set(this.done());
+      if (next) done.add(key);
+      else done.delete(key);
+      this.done.set(done);
+      this.store.setDone(userId, done);
+      this.topics.update((list) =>
+        list.map((t) =>
+          t.topic_path_id === pathId
+            ? {
+                ...t,
+                progress,
+                contents: t.contents.map((c) => (c.content_id === item.content_id ? { ...c, is_completed: undefined } : c)),
+              }
+            : t,
+        ),
+      );
+    } catch (error) {
+      this.toast.error(
+        'No se pudo actualizar el recurso',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
+    } finally {
+      this.savingKey.set(null);
+    }
+  }
+
   /** content_id del recurso que se está calificando (deshabilita sus estrellas mientras tanto). */
   readonly ratingId = signal<string | null>(null);
   /** Calificación del estudiante por content_id: las ya guardadas en el backend más las de esta sesión. */
@@ -55,6 +151,7 @@ export class StudentRouteComponent {
     this.loadError.set(null);
     this.unavailable.set(false);
     try {
+      this.done.set(this.store.getDone(id));
       await this.loadPath(id, true);
       await this.loadMyRatings(id);
     } catch (error) {
@@ -97,6 +194,7 @@ export class StudentRouteComponent {
       return;
     }
     this.topics.set(topics);
+    this.openTopics.set(new Set(topics[0] ? [this.topicKey(topics[0])] : []));
   }
 
   /** Consulta cada tema por su id; los que fallan se omiten (si fallan todos, queda vacío). */

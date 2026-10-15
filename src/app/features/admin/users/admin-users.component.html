@@ -34,7 +34,7 @@
       <p class="usr__empty">No hay usuarios para mostrar.</p>
     } @else {
       <div class="usr__scroll">
-        <table class="usr__table">
+        <table class="usr__table table-cards">
           <thead>
             <tr>
               <th>Nombre</th>
@@ -48,20 +48,20 @@
           <tbody>
             @for (u of managedUsers(); track u.user_id) {
               <tr>
-                <td class="usr__name">{{ u.name }}</td>
-                <td>{{ u.username }}</td>
-                <td class="usr__email">{{ u.email || '—' }}</td>
-                <td>
+                <td data-label="Nombre" class="usr__name">{{ u.name }}</td>
+                <td data-label="Usuario">{{ u.username }}</td>
+                <td data-label="Correo electrónico" class="usr__email">{{ u.email || '—' }}</td>
+                <td data-label="Rol">
                   <span class="usr__badge usr__badge--role">{{ roleLabel(u.role) }}</span>
                 </td>
-                <td>
+                <td data-label="Estado">
                   @if (u.status) {
                     <span class="usr__badge usr__badge--{{ u.status }}">{{ statusLabel(u.status) }}</span>
                   } @else {
                     <span class="usr__unknown" title="El servidor aún no informa el estado">—</span>
                   }
                 </td>
-                <td class="usr__cell-actions">
+                <td data-label="Acciones" class="usr__cell-actions">
                   @if (isSelf(u.user_id)) {
                     <span class="usr__self">Tu cuenta</span>
                   } @else {

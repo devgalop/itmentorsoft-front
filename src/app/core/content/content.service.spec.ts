@@ -57,6 +57,39 @@ describe('ContentService', () => {
     });
   });
 
+  describe('setLearningPathContentStatus', () => {
+    const url = '/content/learning-path/update/status';
+
+    it('PUTs the path, the content and the status, and returns the new progress', async () => {
+      const promise = service.setLearningPathContentStatus('p1', 'c1', true);
+      const req = httpMock.expectOne(url);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ path_id: 'p1', content_id: 'c1', status: true });
+      req.flush({ is_success: true, message: 'ok', path_progress: 50 });
+      expect(await promise).toBe(50);
+    });
+
+    it('can mark a resource as pending again', async () => {
+      const promise = service.setLearningPathContentStatus('p1', 'c1', false);
+      const req = httpMock.expectOne(url);
+      expect(req.request.body.status).toBe(false);
+      req.flush({ is_success: true, message: 'ok', path_progress: 0 });
+      expect(await promise).toBe(0);
+    });
+
+    it('fails with the backend message when it is not successful', async () => {
+      const promise = service.setLearningPathContentStatus('p1', 'c1', true);
+      httpMock.expectOne(url).flush({ is_success: false, message: 'No encontrado', path_progress: 0 });
+      await expect(promise).rejects.toThrow('No encontrado');
+    });
+
+    it('maps HTTP errors to the usual messages', async () => {
+      const promise = service.setLearningPathContentStatus('p1', 'c1', true);
+      httpMock.expectOne(url).flush({ detail: 'x' }, { status: 500, statusText: 'x' });
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
+    });
+  });
+
   describe('generateLearningPath', () => {
     const url = (r: { url: string }) => r.url === '/content/generate/learning-path';
 

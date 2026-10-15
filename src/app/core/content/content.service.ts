@@ -18,6 +18,8 @@ import {
   RateContentResponse,
   RecommendedTopic,
   TopicPathRef,
+  UpdatePathContentStatusPayload,
+  UpdatePathContentStatusResponse,
   RegisterContentPayload,
   RegisterContentResponse,
   TopContentItem,
@@ -49,6 +51,28 @@ export class ContentService {
       return topic ? { ...topic, topic_path_id: topic.topic_path_id ?? pathId } : null;
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) return null;
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Marca (o desmarca) un recurso de la ruta como visto. Devuelve el avance del tema (0–100)
+   * ya recalculado por el backend. Solo rol student.
+   */
+  async setLearningPathContentStatus(pathId: string, contentId: string, status: boolean): Promise<number> {
+    try {
+      const payload: UpdatePathContentStatusPayload = { path_id: pathId, content_id: contentId, status };
+      const response = await firstValueFrom(
+        this.http.put<UpdatePathContentStatusResponse>(
+          `${environment.apiUrl}${ENDPOINTS.content.updateLearningPathStatus}`,
+          payload,
+        ),
+      );
+      if (!response.is_success) {
+        throw new Error(response.message || 'No se pudo actualizar el recurso.');
+      }
+      return response.path_progress ?? 0;
+    } catch (error) {
       throw this.mapHttpError(error);
     }
   }

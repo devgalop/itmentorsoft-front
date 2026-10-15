@@ -12,7 +12,8 @@
     } @else if (resources().length === 0) {
       <p class="adres__hint">No hay recursos para mostrar.</p>
     } @else {
-      <table class="adres__table">
+      <div class="adres__table-scroll">
+        <table class="adres__table table-cards">
         <thead>
           <tr>
             <th>Título</th>
@@ -24,15 +25,15 @@
         <tbody>
           @for (r of resources(); track r.content_id) {
             <tr>
-              <td class="adres__cell-title">
+              <td data-label="Título" class="adres__cell-title">
                 <a class="adres__link" [href]="r.url" target="_blank" rel="noopener noreferrer" [title]="r.summary">{{
                   r.title
                 }}</a>
               </td>
-              <td>
+              <td data-label="Categoría">
                 <span class="adres__tag adres__tag--cat">{{ categoryLabel(r.category) }}</span>
               </td>
-              <td>
+              <td data-label="Temas">
                 @for (t of r.related_topics.slice(0, 2); track t) {
                   <span class="adres__tag">{{ t }}</span>
                 }
@@ -42,7 +43,7 @@
                   >
                 }
               </td>
-              <td class="adres__cell-actions">
+              <td data-label="Acciones" class="adres__cell-actions">
                 <button type="button" class="adres__disable" (click)="askDisable(r.content_id)">
                   Desactivar
                 </button>
@@ -51,6 +52,7 @@
           }
         </tbody>
       </table>
+      </div>
 
       <app-pager [page]="page()" [totalPages]="totalPages()" (prev)="prevPage()" (next)="nextPage()" />
     }

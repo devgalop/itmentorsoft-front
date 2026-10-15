@@ -1,5 +1,6 @@
 :host {
   display: block;
+  min-width: 0;
 }
 
 .prog__title {
@@ -32,6 +33,7 @@
 .prog__head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
   margin: 1.25rem 0 1.5rem;
 }
@@ -68,7 +70,7 @@
 
 .prog__grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
 }
@@ -95,7 +97,7 @@
 
 @media (max-width: 900px) {
   .prog__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

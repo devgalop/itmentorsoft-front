@@ -9,6 +9,7 @@ describe('StudentRouteComponent', () => {
   let contentMock: {
     getLearningPathTopic: ReturnType<typeof vi.fn>;
     generateLearningPath: ReturnType<typeof vi.fn>;
+    setLearningPathContentStatus: ReturnType<typeof vi.fn>;
     getContentById: ReturnType<typeof vi.fn>;
     rateContent: ReturnType<typeof vi.fn>;
     getRatingsByUser: ReturnType<typeof vi.fn>;
@@ -47,6 +48,7 @@ describe('StudentRouteComponent', () => {
     contentMock = {
       getLearningPathTopic: vi.fn().mockResolvedValue(topic),
       generateLearningPath: vi.fn().mockResolvedValue({ created: true, paths: refs }),
+      setLearningPathContentStatus: vi.fn().mockResolvedValue(100),
       getContentById: vi.fn(),
       rateContent: vi.fn().mockResolvedValue({ is_success: true, message: 'Content rated successfully.' }),
       getRatingsByUser: vi.fn().mockResolvedValue([]),
@@ -162,6 +164,143 @@ describe('StudentRouteComponent', () => {
       expect(c.progressPct({ ...topic, progress: 33.6 })).toBe(34);
       expect(c.progressPct({ ...topic, progress: 140 })).toBe(100);
       expect(c.progressPct({ ...topic, progress: undefined })).toBe(0);
+    });
+  });
+
+  describe('marcar recursos como vistos', () => {
+    const item = topic.contents[0]!;
+
+    it('marks a resource as seen, updates the progress of the topic and remembers it', async () => {
+      const c = createComponent();
+      await flush();
+      expect(c.isDone(c.topics()[0]!, item)).toBe(false);
+      await c.toggleDone(c.topics()[0]!, item);
+      expect(contentMock.setLearningPathContentStatus).toHaveBeenCalledWith('p1', 'c1', true);
+      expect(c.isDone(c.topics()[0]!, item)).toBe(true);
+      expect(c.topics()[0]!.progress).toBe(100);
+      expect(JSON.parse(localStorage.getItem('itm.learning-path-done.s1')!)).toEqual(['p1|c1']);
+    });
+
+    it('turns it back to pending when it is marked again', async () => {
+      contentMock.setLearningPathContentStatus.mockResolvedValueOnce(100).mockResolvedValueOnce(0);
+      const c = createComponent();
+      await flush();
+      await c.toggleDone(c.topics()[0]!, item);
+      await c.toggleDone(c.topics()[0]!, item);
+      expect(contentMock.setLearningPathContentStatus).toHaveBeenLastCalledWith('p1', 'c1', false);
+      expect(c.isDone(c.topics()[0]!, item)).toBe(false);
+      expect(c.topics()[0]!.progress).toBe(0);
+    });
+
+    it('shows the resources already seen when the student comes back', async () => {
+      localStorage.setItem('itm.learning-paths.s1', JSON.stringify(refs));
+      localStorage.setItem('itm.learning-path-done.s1', JSON.stringify(['p1|c1']));
+      const c = createComponent();
+      await flush();
+      expect(c.isDone(c.topics()[0]!, item)).toBe(true);
+    });
+
+    it('trusts the backend when it says whether the resource is completed', async () => {
+      contentMock.getLearningPathTopic.mockResolvedValue({
+        ...topic,
+        contents: [{ ...item, is_completed: true }],
+      });
+      const c = createComponent();
+      await flush();
+      expect(c.isDone(c.topics()[0]!, c.topics()[0]!.contents[0]!)).toBe(true);
+    });
+
+    it('keeps the previous state and warns when saving fails', async () => {
+      contentMock.setLearningPathContentStatus.mockRejectedValue(new Error('Error en el servidor, intenta más tarde'));
+      const c = createComponent();
+      await flush();
+      await c.toggleDone(c.topics()[0]!, item);
+      expect(c.isDone(c.topics()[0]!, item)).toBe(false);
+      expect(c.topics()[0]!.progress).toBe(40);
+      expect(toastMock.error).toHaveBeenCalledWith('No se pudo actualizar el recurso', 'Error en el servidor, intenta más tarde');
+      expect(c.savingKey()).toBeNull();
+    });
+
+    it('ignores a second click while one is being saved', async () => {
+      let release: (n: number) => void = () => {};
+      contentMock.setLearningPathContentStatus.mockReturnValue(new Promise<number>((r) => (release = r)));
+      const c = createComponent();
+      await flush();
+      const first = c.toggleDone(c.topics()[0]!, item);
+      await c.toggleDone(c.topics()[0]!, item);
+      expect(contentMock.setLearningPathContentStatus).toHaveBeenCalledTimes(1);
+      release(100);
+      await first;
+    });
+
+    it('does nothing for a topic without id or when there is no user', async () => {
+      const c = createComponent();
+      await flush();
+      await c.toggleDone({ ...topic, topic_path_id: undefined }, item);
+      authMock.userId.mockReturnValue(null);
+      await c.toggleDone(c.topics()[0]!, item);
+      expect(contentMock.setLearningPathContentStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('vista de la ruta', () => {
+    const second = { ...topic, topic_path_id: 'p2', topic: 'APIs', progress: 100, contents: [
+      { content_id: 'c2', title: 'REST', description: 'x', rating: 3 },
+      { content_id: 'c3', title: 'HTTP', description: 'y', rating: 4 },
+    ] };
+
+    async function loaded(): Promise<StudentRouteComponent> {
+      localStorage.setItem('itm.learning-paths.s1', JSON.stringify([...refs, { topic_path_id: 'p2', topic: 'APIs' }]));
+      contentMock.getLearningPathTopic.mockImplementation((id: string) => Promise.resolve(id === 'p2' ? second : topic));
+      const c = createComponent();
+      await flush();
+      return c;
+    }
+
+    it('opens only the first topic when the route loads', async () => {
+      const c = await loaded();
+      expect(c.isTopicOpen(c.topics()[0]!)).toBe(true);
+      expect(c.isTopicOpen(c.topics()[1]!)).toBe(false);
+    });
+
+    it('opens and folds topics independently', async () => {
+      const c = await loaded();
+      c.toggleTopic(c.topics()[1]!);
+      expect(c.isTopicOpen(c.topics()[1]!)).toBe(true);
+      expect(c.isTopicOpen(c.topics()[0]!)).toBe(true);
+      c.toggleTopic(c.topics()[0]!);
+      expect(c.isTopicOpen(c.topics()[0]!)).toBe(false);
+    });
+
+    it('summarizes the whole route: topics, resources, seen and the general progress', async () => {
+      const c = await loaded();
+      expect(c.overview()).toEqual({ topics: 2, total: 3, done: 0, overall: 70 });
+      await c.toggleDone(c.topics()[0]!, topic.contents[0]!);
+      expect(c.overview().done).toBe(1);
+    });
+
+    it('computes the general progress from the seen resources when the backend reports none', async () => {
+      contentMock.getLearningPathTopic.mockResolvedValue({ ...topic, progress: undefined });
+      const c = createComponent();
+      await flush();
+      expect(c.overview().overall).toBe(0);
+      await c.toggleDone(c.topics()[0]!, topic.contents[0]!);
+      expect(c.overview().overall).toBe(100);
+    });
+
+    it('counts how many resources of a topic are seen', async () => {
+      const c = await loaded();
+      expect(c.doneCount(c.topics()[1]!)).toBe(0);
+      localStorage.setItem('itm.learning-path-done.s1', JSON.stringify(['p2|c2']));
+      const again = createComponent();
+      await flush();
+      expect(again.doneCount(again.topics()[1]!)).toBe(1);
+    });
+
+    it('gives each topic a color from the palette, in order', async () => {
+      const c = await loaded();
+      expect(c.topicColor(0)).not.toBe(c.topicColor(1));
+      expect(c.topicColor(99)).toBeTruthy();
     });
   });
 

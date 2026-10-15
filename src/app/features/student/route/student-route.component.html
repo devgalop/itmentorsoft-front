@@ -1,9 +1,7 @@
 <section class="route">
   <header class="route__header">
-    <h1 class="route__title">Mi ruta de aprendizaje</h1>
-    <p class="route__subtitle">
-      Recursos recomendados para ti según tu evaluación diagnóstica.
-    </p>
+    <h1 class="route__title">Mi ruta</h1>
+    <p class="route__subtitle">Recursos recomendados para ti según tu evaluación diagnóstica.</p>
   </header>
 
   @if (isLoading()) {
@@ -24,75 +22,101 @@
       Todavía no tienes recursos recomendados. Completa una evaluación para armar tu ruta.
     </div>
   } @else {
-    <p class="route__summary">
-      {{ topics().length }} tema(s) · {{ totalContents() }} recurso(s) recomendado(s)
-    </p>
+    <ul class="route__stats">
+      <li class="route__stat">
+        <strong class="route__stat-value">{{ overview().topics }}</strong>
+        <span class="route__stat-label">Temas</span>
+      </li>
+      <li class="route__stat">
+        <strong class="route__stat-value">{{ overview().total }}</strong>
+        <span class="route__stat-label">Recursos</span>
+      </li>
+      <li class="route__stat">
+        <strong class="route__stat-value">{{ overview().done }}<small> / {{ overview().total }}</small></strong>
+        <span class="route__stat-label">Vistos</span>
+      </li>
+      <li class="route__stat route__stat--progress">
+        <strong class="route__stat-value">{{ overview().overall }}%</strong>
+        <span class="route__stat-label">Avance general</span>
+        <span class="route__bar" aria-hidden="true"><span [style.width.%]="overview().overall"></span></span>
+      </li>
+    </ul>
 
-    @for (topic of topics(); track topic.topic) {
-      <div class="route__topic">
-        <div class="route__topic-head">
-          <h2 class="route__topic-name">{{ topic.topic }}</h2>
-          @if (topic.progress !== undefined) {
-            <span class="route__progress-text">Avance {{ progressPct(topic) }}%</span>
-          }
-        </div>
-        @if (topic.progress !== undefined) {
-          <div class="route__progress" aria-hidden="true">
-            <span class="route__progress-fill" [style.width.%]="progressPct(topic)"></span>
-          </div>
-        }
+    <div class="route__topics">
+      @for (topic of topics(); track topicKey(topic); let i = $index) {
+        <article class="route__topic" [style.--tone]="topicColor(i)">
+          <button
+            type="button"
+            class="route__topic-head"
+            [attr.aria-expanded]="isTopicOpen(topic)"
+            (click)="toggleTopic(topic)"
+          >
+            <span class="route__topic-num" aria-hidden="true">{{ i + 1 }}</span>
+            <span class="route__topic-body">
+              <span class="route__topic-name">{{ topic.topic }}</span>
+              <span class="route__topic-meta">{{ doneCount(topic) }} de {{ topic.contents.length }} vistos</span>
+              <span class="route__bar" aria-hidden="true">
+                <span [style.width.%]="progressPct(topic)"></span>
+              </span>
+            </span>
+            @if (topic.progress !== undefined) {
+              <span class="route__topic-pct">{{ progressPct(topic) }}%</span>
+            }
+            <span class="route__chevron" aria-hidden="true">{{ isTopicOpen(topic) ? '▾' : '▸' }}</span>
+          </button>
 
-        @if (topic.contents.length === 0) {
-          <p class="route__topic-empty">Sin recursos para este tema todavía.</p>
-        } @else {
-          <ul class="route__list">
-            @for (item of topic.contents; track item.content_id) {
-              <li class="route__item">
-                <button
-                  type="button"
-                  class="route__item-open"
-                  [disabled]="openingId() === item.content_id"
-                  (click)="openResource(item.content_id)"
-                >
-                  <div class="route__item-body">
-                    <p class="route__item-title">
-                      {{ item.title }}
-                      <span class="route__item-link" aria-hidden="true">
-                        {{ openingId() === item.content_id ? 'Abriendo…' : 'Abrir ↗' }}
-                      </span>
-                    </p>
-                    <p class="route__item-desc">{{ item.description }}</p>
-                  </div>
-                </button>
-                <div class="route__item-ratings">
-                  <div class="route__item-rating" [attr.aria-label]="'Valoración ' + item.rating">
-                    @for (s of [1, 2, 3, 4, 5]; track s) {
-                      <span
-                        class="route__star"
-                        [class.route__star--on]="s <= stars(item.rating)"
-                        aria-hidden="true"
-                      >★</span>
-                    }
-                  </div>
-
-                  <fieldset class="route__item-myrating" [disabled]="ratingId() === item.content_id">
-                    <legend class="route__myrating-label">Tu calificación:</legend>
-                    @for (s of [1, 2, 3, 4, 5]; track s) {
+          @if (isTopicOpen(topic)) {
+            @if (topic.contents.length === 0) {
+              <p class="route__topic-empty">Sin recursos para este tema todavía.</p>
+            } @else {
+              <ul class="route__list">
+                @for (item of topic.contents; track item.content_id) {
+                  <li class="route__item" [class.route__item--done]="isDone(topic, item)">
+                    <button
+                      type="button"
+                      class="route__check"
+                      [class.route__check--on]="isDone(topic, item)"
+                      [attr.aria-pressed]="isDone(topic, item)"
+                      [attr.aria-label]="isDone(topic, item) ? 'Quitar de vistos: ' + item.title : 'Marcar como visto: ' + item.title"
+                      [disabled]="savingKey() === doneKey(topic, item.content_id)"
+                      (click)="toggleDone(topic, item)"
+                    >
+                      {{ isDone(topic, item) ? '✓' : '' }}
+                    </button>
+                    <div class="route__item-main">
                       <button
                         type="button"
-                        class="route__star-btn"
-                        [class.route__star-btn--on]="s <= (myRatings()[item.content_id] ?? 0)"
-                        [attr.aria-label]="'Calificar con ' + s + ' estrella(s)'"
-                        (click)="rate(item.content_id, s)"
-                      >★</button>
-                    }
-                  </fieldset>
-                </div>
-              </li>
+                        class="route__item-title"
+                        [disabled]="openingId() === item.content_id"
+                        (click)="openResource(item.content_id)"
+                      >
+                        {{ item.title }}
+                        <span aria-hidden="true">{{ openingId() === item.content_id ? '…' : '↗' }}</span>
+                      </button>
+                      <p class="route__item-desc">{{ item.description }}</p>
+                      <div class="route__item-meta">
+                        <span class="route__avg" [attr.aria-label]="'Valoración ' + item.rating">★ {{ item.rating.toFixed(1) }}</span>
+                        <fieldset class="route__rate" [disabled]="ratingId() === item.content_id">
+                          <legend class="route__rate-label">Tu calificación</legend>
+                          @for (s of [1, 2, 3, 4, 5]; track s) {
+                            <button
+                              type="button"
+                              class="route__star"
+                              [class.route__star--on]="s <= (myRatings()[item.content_id] ?? 0)"
+                              [attr.aria-label]="'Calificar con ' + s + ' estrella(s)'"
+                              (click)="rate(item.content_id, s)"
+                            >★</button>
+                          }
+                        </fieldset>
+                      </div>
+                    </div>
+                  </li>
+                }
+              </ul>
             }
-          </ul>
-        }
-      </div>
-    }
+          }
+        </article>
+      }
+    </div>
   }
 </section>
