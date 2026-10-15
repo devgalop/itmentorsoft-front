@@ -3,11 +3,14 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
+import { ContentService } from '@core/content/content.service';
+import { RecommendedContent, RecommendedTopic } from '@core/content/content.types';
 import { AssessmentSummary } from '@core/assessments/student-assessment.types';
 import { ReportsService } from '@core/reports/reports.service';
 import { StudentProgress, StudentSummary } from '@core/reports/reports.types';
 import { UsersService } from '@core/users/users.service';
 import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
+import { ToastService } from '@shared/ui/toast/toast.service';
 import { buildSparkline } from '@shared/charts/sparkline';
 import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
 import { LevelMedal, levelMedal } from '@shared/charts/level-medal';
@@ -55,6 +58,8 @@ export class StudentDashboardComponent {
   private readonly reports = inject(ReportsService);
   private readonly usersService = inject(UsersService);
   private readonly grading = inject(GradingWatcherService);
+  private readonly content = inject(ContentService);
+  private readonly toast = inject(ToastService);
 
   /** Nombre real del estudiante (se carga del backend). */
   private readonly displayName = signal<string | null>(null);
@@ -73,6 +78,10 @@ export class StudentDashboardComponent {
   private readonly progress = signal<StudentProgress | null>(null);
   private readonly summary = signal<StudentSummary | null>(null);
   private readonly history = signal<AssessmentSummary[]>([]);
+  /** Rutas del estudiante (de la más reciente a la más antigua). */
+  private readonly route = signal<RecommendedTopic[]>([]);
+  /** content_id del recurso que se está abriendo. */
+  readonly openingId = signal<string | null>(null);
 
   /** La medalla del nivel actual (null si todavía no tiene categoría). */
   readonly medal = computed<LevelMedal | null>(() => levelMedal(this.classification()));
@@ -114,6 +123,18 @@ export class StudentDashboardComponent {
     if (items.length < 2) return null;
     const sorted = [...items].sort((a, b) => b.value - a.value);
     return sorted[0]!.value === sorted[sorted.length - 1]!.value ? null : sorted[0]!;
+  });
+
+  /**
+   * Hasta dos recursos de la ruta para el tema más débil que todavía no se han visto, para que el
+   * estudiante sepa por dónde empezar.
+   */
+  readonly weakResources = computed<RecommendedContent[]>(() => {
+    const weak = this.weakest();
+    if (!weak) return [];
+    const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+    const topic = this.route().find((t) => same(t.topic, weak.label));
+    return (topic?.contents ?? []).filter((c) => !c.is_completed).slice(0, 2);
   });
 
   /** Feedback personalizado, sin el texto de relleno del backend. */
@@ -177,6 +198,7 @@ export class StudentDashboardComponent {
   private loadData(id: string): void {
     void this.loadSummary(id);
     void this.loadHistory(id);
+    void this.loadRoute(id);
     void Promise.all([this.loadAssessmentsCount(id), this.loadProgress(id)]).then(() =>
       this.statusLoaded.set(true),
     );
@@ -217,6 +239,32 @@ export class StudentDashboardComponent {
       this.classification.set(progress?.classification ?? null);
     } catch {
       // Silencioso: sin categoría ni evolución.
+    }
+  }
+
+  private async loadRoute(userId: string): Promise<void> {
+    try {
+      this.route.set(await this.content.getCompleteLearningPaths(userId));
+    } catch {
+      // Silencioso: sin recursos sugeridos.
+    }
+  }
+
+  /** Abre un recurso de la ruta en una pestaña nueva (la recomendación no trae la URL). */
+  async openResource(contentId: string): Promise<void> {
+    if (this.openingId()) return;
+    this.openingId.set(contentId);
+    try {
+      const detail = await this.content.getContentById(contentId);
+      if (!detail?.url) {
+        this.toast.error('No se pudo abrir', 'No encontramos el recurso solicitado.');
+        return;
+      }
+      window.open(detail.url, '_blank', 'noopener');
+    } catch (error) {
+      this.toast.error('No se pudo abrir el recurso', error instanceof Error ? error.message : 'Error inesperado');
+    } finally {
+      this.openingId.set(null);
     }
   }
 

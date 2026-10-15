@@ -392,6 +392,46 @@ describe('AdminUsersComponent', () => {
       expect(component.managedUsers().map((u) => u.status)).toEqual(['inactive', 'active', null]);
     });
 
+    it('takes the status from the user detail, which is where the backend sends it', async () => {
+      reportsMock.getUsersByRole.mockResolvedValue([
+        { user_id: 'u1', role: 'admin' },
+        { user_id: 'u2', role: 'admin' },
+        { user_id: 'u3', role: 'admin' },
+      ]);
+      const statuses: Record<string, string> = { u1: 'suspended', u2: 'active', u3: 'desconocido' };
+      serviceMock.getUser.mockImplementation(async (id: string) => ({
+        user_id: id,
+        username: 'user_' + id,
+        email: id + '@itm.co',
+        name: 'Nombre ' + id,
+        role: 'admin',
+        status: statuses[id],
+      }));
+      const component = await ready();
+      expect(component.managedUsers().map((u) => u.status)).toEqual(['suspended', 'active', null]);
+    });
+
+    it('prefers the status of the detail over the one in the report', async () => {
+      reportsMock.getUsersByRole.mockResolvedValue([{ user_id: 'u1', role: 'admin', status: 'inactive' }]);
+      serviceMock.getUser.mockResolvedValue({
+        user_id: 'u1',
+        username: 'user_u1',
+        email: 'u1@itm.co',
+        name: 'Nombre u1',
+        role: 'admin',
+        status: 'active',
+      });
+      const component = await ready();
+      expect(component.managedUsers()[0]!.status).toBe('active');
+    });
+
+    it('falls back to the report status when the detail cannot be loaded', async () => {
+      reportsMock.getUsersByRole.mockResolvedValue([{ user_id: 'u1', role: 'admin', status: 'inactive' }]);
+      serviceMock.getUser.mockRejectedValue(new Error('x'));
+      const component = await ready();
+      expect(component.managedUsers()[0]!.status).toBe('inactive');
+    });
+
     it('offers Inactivar and Suspender when the status is active or unknown', async () => {
       const component = await ready();
       const unknown = { ...component.managedUsers()[0]!, status: null };

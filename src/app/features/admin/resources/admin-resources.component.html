@@ -25,7 +25,7 @@
         <tbody>
           @for (r of resources(); track r.content_id) {
             <tr>
-              <td data-label="Título" class="adres__cell-title">
+              <td data-label="Título" class="adres__cell-title td-block">
                 <a class="adres__link" [href]="r.url" target="_blank" rel="noopener noreferrer" [title]="r.summary">{{
                   r.title
                 }}</a>

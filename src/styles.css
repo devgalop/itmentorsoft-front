@@ -78,6 +78,14 @@ html, body {
     white-space: normal !important;
   }
 
+  /* Textos largos (título, pregunta, correo): la etiqueta arriba y el texto debajo, a la izquierda. */
+  table.table-cards td.td-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    text-align: left;
+  }
+
   table.table-cards td::before {
     content: attr(data-label);
     flex-shrink: 0;

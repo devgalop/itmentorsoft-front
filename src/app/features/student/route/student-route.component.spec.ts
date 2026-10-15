@@ -7,7 +7,7 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 
 describe('StudentRouteComponent', () => {
   let contentMock: {
-    getLearningPathTopic: ReturnType<typeof vi.fn>;
+    getCompleteLearningPaths: ReturnType<typeof vi.fn>;
     generateLearningPath: ReturnType<typeof vi.fn>;
     setLearningPathContentStatus: ReturnType<typeof vi.fn>;
     getContentById: ReturnType<typeof vi.fn>;
@@ -21,10 +21,10 @@ describe('StudentRouteComponent', () => {
   const topic = {
     topic_path_id: 'p1',
     topic: 'Arquitectura',
-    contents: [{ content_id: 'c1', title: 'Capas', description: 'Intro', rating: 4.5 }],
+    contents: [{ content_id: 'c1', title: 'Capas', description: 'Intro', rating: 4.5, is_completed: false }],
     progress: 40,
+    is_completed: false,
   };
-  const refs = [{ topic_path_id: 'p1', topic: 'Arquitectura' }];
 
   async function flush(): Promise<void> {
     for (let i = 0; i < 4; i++) await new Promise((r) => setTimeout(r));
@@ -44,10 +44,9 @@ describe('StudentRouteComponent', () => {
   }
 
   beforeEach(() => {
-    localStorage.clear();
     contentMock = {
-      getLearningPathTopic: vi.fn().mockResolvedValue(topic),
-      generateLearningPath: vi.fn().mockResolvedValue({ created: true, paths: refs }),
+      getCompleteLearningPaths: vi.fn().mockResolvedValue([topic]),
+      generateLearningPath: vi.fn().mockResolvedValue({ created: true, paths: [{ topic_path_id: 'p1', topic: 'Arquitectura' }] }),
       setLearningPathContentStatus: vi.fn().mockResolvedValue(100),
       getContentById: vi.fn(),
       rateContent: vi.fn().mockResolvedValue({ is_success: true, message: 'Content rated successfully.' }),
@@ -59,72 +58,58 @@ describe('StudentRouteComponent', () => {
     toastMock.error.mockClear();
   });
 
-  afterEach(() => localStorage.clear());
-
   describe('cargar la ruta', () => {
-    it('generates the path the first time, saves the ids and loads each topic by its id', async () => {
+    it('loads the paths of the student from the backend', async () => {
+      const c = createComponent();
+      await flush();
+      expect(contentMock.getCompleteLearningPaths).toHaveBeenCalledWith('s1');
+      expect(contentMock.generateLearningPath).not.toHaveBeenCalled();
+      expect(c.topics()).toEqual([topic]);
+      expect(c.totalContents()).toBe(1);
+    });
+
+    it('generates the path when the student has none yet, and loads it again', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValueOnce([]).mockResolvedValueOnce([topic]);
       const c = createComponent();
       await flush();
       expect(contentMock.generateLearningPath).toHaveBeenCalledWith('s1');
-      expect(contentMock.getLearningPathTopic).toHaveBeenCalledWith('p1');
-      expect(c.topics()).toEqual([topic]);
-      expect(c.totalContents()).toBe(1);
-      expect(JSON.parse(localStorage.getItem('itm.learning-paths.s1')!)).toEqual(refs);
-    });
-
-    it('reuses the saved ids without generating again', async () => {
-      localStorage.setItem('itm.learning-paths.s1', JSON.stringify(refs));
-      const c = createComponent();
-      await flush();
-      expect(contentMock.generateLearningPath).not.toHaveBeenCalled();
+      expect(contentMock.getCompleteLearningPaths).toHaveBeenCalledTimes(2);
       expect(c.topics()).toEqual([topic]);
     });
 
-    it('loads every topic of the path, skipping the ones that fail', async () => {
-      localStorage.setItem(
-        'itm.learning-paths.s1',
-        JSON.stringify([...refs, { topic_path_id: 'p2', topic: 'APIs' }]),
-      );
-      contentMock.getLearningPathTopic.mockImplementation((id: string) =>
-        id === 'p2' ? Promise.reject(new Error('boom')) : Promise.resolve(topic),
-      );
+    it('keeps only the latest path of each topic, and prefers one that is not completed', async () => {
+      const newest = { ...topic, topic_path_id: 'nueva', progress: 10 };
+      const repeated = { ...topic, topic_path_id: 'vieja', progress: 90 };
+      const done = { ...topic, topic: 'APIs', topic_path_id: 'a1', is_completed: true };
+      const open = { ...topic, topic: 'APIs', topic_path_id: 'a2', is_completed: false };
+      contentMock.getCompleteLearningPaths.mockResolvedValue([newest, repeated, done, open]);
       const c = createComponent();
       await flush();
-      expect(c.topics()).toHaveLength(1);
-      expect(c.loadError()).toBeNull();
+      expect(c.topics().map((t) => t.topic_path_id)).toEqual(['nueva', 'a2']);
     });
 
-    it('discards saved ids that no longer work and generates the path once more', async () => {
-      localStorage.setItem('itm.learning-paths.s1', JSON.stringify([{ topic_path_id: 'viejo', topic: 'X' }]));
-      contentMock.getLearningPathTopic
-        .mockResolvedValueOnce(null)
-        .mockResolvedValue(topic);
+    it('keeps the latest path when every path of the topic is already completed', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([
+        { ...topic, topic_path_id: 'b', is_completed: true },
+        { ...topic, topic_path_id: 'a', is_completed: true },
+      ]);
       const c = createComponent();
       await flush();
-      expect(contentMock.generateLearningPath).toHaveBeenCalledTimes(1);
-      expect(c.topics()).toEqual([topic]);
-      expect(JSON.parse(localStorage.getItem('itm.learning-paths.s1')!)).toEqual(refs);
+      expect(c.topics().map((t) => t.topic_path_id)).toEqual(['b']);
     });
 
-    it('does not loop forever when nothing can be loaded', async () => {
-      contentMock.getLearningPathTopic.mockResolvedValue(null);
+    it('shows an empty route, without error, when the student has no evaluation yet', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([]);
+      contentMock.generateLearningPath.mockResolvedValue({ created: false, reason: 'no-evaluation', message: '' });
       const c = createComponent();
       await flush();
-      expect(contentMock.generateLearningPath).toHaveBeenCalledTimes(2);
-      expect(c.topics()).toEqual([]);
-    });
-
-    it('explains that the path exists but cannot be recovered when the backend gives no ids', async () => {
-      contentMock.generateLearningPath.mockResolvedValue({ created: false, reason: 'exists', message: 'ya existe' });
-      const c = createComponent();
-      await flush();
-      expect(c.unavailable()).toBe(true);
       expect(c.topics()).toEqual([]);
       expect(c.loadError()).toBeNull();
-      expect(contentMock.getLearningPathTopic).not.toHaveBeenCalled();
+      expect(c.unavailable()).toBe(false);
     });
 
-    it('lets the student try again', async () => {
+    it('lets the student try again when the backend says the path exists but returns nothing', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValueOnce([]).mockResolvedValue([topic]);
       contentMock.generateLearningPath.mockResolvedValueOnce({ created: false, reason: 'exists', message: '' });
       const c = createComponent();
       await flush();
@@ -135,16 +120,8 @@ describe('StudentRouteComponent', () => {
       expect(c.topics()).toEqual([topic]);
     });
 
-    it('shows no error when the student has no evaluation yet, just an empty route', async () => {
-      contentMock.generateLearningPath.mockResolvedValue({ created: false, reason: 'no-evaluation', message: '' });
-      const c = createComponent();
-      await flush();
-      expect(c.topics()).toEqual([]);
-      expect(c.loadError()).toBeNull();
-      expect(c.unavailable()).toBe(false);
-    });
-
     it('shows an error when the generation fails', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([]);
       contentMock.generateLearningPath.mockResolvedValue({ created: false, reason: 'failed', message: 'x' });
       const c = createComponent();
       await flush();
@@ -152,7 +129,7 @@ describe('StudentRouteComponent', () => {
     });
 
     it('shows the error message when a request throws', async () => {
-      contentMock.generateLearningPath.mockRejectedValue(new Error('Sin conexión al servidor'));
+      contentMock.getCompleteLearningPaths.mockRejectedValue(new Error('Sin conexión al servidor'));
       const c = createComponent();
       await flush();
       expect(c.loadError()).toBe('Sin conexión al servidor');
@@ -170,44 +147,39 @@ describe('StudentRouteComponent', () => {
   describe('marcar recursos como vistos', () => {
     const item = topic.contents[0]!;
 
-    it('marks a resource as seen, updates the progress of the topic and remembers it', async () => {
+    it('marks a resource as seen and updates the progress of the topic', async () => {
       const c = createComponent();
       await flush();
       expect(c.isDone(c.topics()[0]!, item)).toBe(false);
       await c.toggleDone(c.topics()[0]!, item);
       expect(contentMock.setLearningPathContentStatus).toHaveBeenCalledWith('p1', 'c1', true);
-      expect(c.isDone(c.topics()[0]!, item)).toBe(true);
+      expect(c.isDone(c.topics()[0]!, c.topics()[0]!.contents[0]!)).toBe(true);
       expect(c.topics()[0]!.progress).toBe(100);
-      expect(JSON.parse(localStorage.getItem('itm.learning-path-done.s1')!)).toEqual(['p1|c1']);
     });
 
     it('turns it back to pending when it is marked again', async () => {
       contentMock.setLearningPathContentStatus.mockResolvedValueOnce(100).mockResolvedValueOnce(0);
       const c = createComponent();
       await flush();
-      await c.toggleDone(c.topics()[0]!, item);
-      await c.toggleDone(c.topics()[0]!, item);
+      await c.toggleDone(c.topics()[0]!, c.topics()[0]!.contents[0]!);
+      await c.toggleDone(c.topics()[0]!, c.topics()[0]!.contents[0]!);
       expect(contentMock.setLearningPathContentStatus).toHaveBeenLastCalledWith('p1', 'c1', false);
-      expect(c.isDone(c.topics()[0]!, item)).toBe(false);
+      expect(c.isDone(c.topics()[0]!, c.topics()[0]!.contents[0]!)).toBe(false);
       expect(c.topics()[0]!.progress).toBe(0);
     });
 
-    it('shows the resources already seen when the student comes back', async () => {
-      localStorage.setItem('itm.learning-paths.s1', JSON.stringify(refs));
-      localStorage.setItem('itm.learning-path-done.s1', JSON.stringify(['p1|c1']));
-      const c = createComponent();
-      await flush();
-      expect(c.isDone(c.topics()[0]!, item)).toBe(true);
-    });
-
-    it('trusts the backend when it says whether the resource is completed', async () => {
-      contentMock.getLearningPathTopic.mockResolvedValue({
-        ...topic,
-        contents: [{ ...item, is_completed: true }],
-      });
+    it('shows as seen what the backend reports as completed', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([{ ...topic, contents: [{ ...item, is_completed: true }] }]);
       const c = createComponent();
       await flush();
       expect(c.isDone(c.topics()[0]!, c.topics()[0]!.contents[0]!)).toBe(true);
+    });
+
+    it('treats a resource without state as pending', async () => {
+      const { is_completed: _omit, ...withoutState } = item;
+      const c = createComponent();
+      await flush();
+      expect(c.isDone(c.topics()[0]!, withoutState)).toBe(false);
     });
 
     it('keeps the previous state and warns when saving fails', async () => {
@@ -215,7 +187,7 @@ describe('StudentRouteComponent', () => {
       const c = createComponent();
       await flush();
       await c.toggleDone(c.topics()[0]!, item);
-      expect(c.isDone(c.topics()[0]!, item)).toBe(false);
+      expect(c.isDone(c.topics()[0]!, c.topics()[0]!.contents[0]!)).toBe(false);
       expect(c.topics()[0]!.progress).toBe(40);
       expect(toastMock.error).toHaveBeenCalledWith('No se pudo actualizar el recurso', 'Error en el servidor, intenta más tarde');
       expect(c.savingKey()).toBeNull();
@@ -244,14 +216,19 @@ describe('StudentRouteComponent', () => {
   });
 
   describe('vista de la ruta', () => {
-    const second = { ...topic, topic_path_id: 'p2', topic: 'APIs', progress: 100, contents: [
-      { content_id: 'c2', title: 'REST', description: 'x', rating: 3 },
-      { content_id: 'c3', title: 'HTTP', description: 'y', rating: 4 },
-    ] };
+    const second = {
+      ...topic,
+      topic_path_id: 'p2',
+      topic: 'APIs',
+      progress: 100,
+      contents: [
+        { content_id: 'c2', title: 'REST', description: 'x', rating: 3, is_completed: true },
+        { content_id: 'c3', title: 'HTTP', description: 'y', rating: 4, is_completed: false },
+      ],
+    };
 
     async function loaded(): Promise<StudentRouteComponent> {
-      localStorage.setItem('itm.learning-paths.s1', JSON.stringify([...refs, { topic_path_id: 'p2', topic: 'APIs' }]));
-      contentMock.getLearningPathTopic.mockImplementation((id: string) => Promise.resolve(id === 'p2' ? second : topic));
+      contentMock.getCompleteLearningPaths.mockResolvedValue([topic, second]);
       const c = createComponent();
       await flush();
       return c;
@@ -274,27 +251,24 @@ describe('StudentRouteComponent', () => {
 
     it('summarizes the whole route: topics, resources, seen and the general progress', async () => {
       const c = await loaded();
-      expect(c.overview()).toEqual({ topics: 2, total: 3, done: 0, overall: 70 });
-      await c.toggleDone(c.topics()[0]!, topic.contents[0]!);
-      expect(c.overview().done).toBe(1);
+      expect(c.overview()).toEqual({ topics: 2, total: 3, done: 1, overall: 70 });
+      await c.toggleDone(c.topics()[0]!, c.topics()[0]!.contents[0]!);
+      expect(c.overview().done).toBe(2);
     });
 
     it('computes the general progress from the seen resources when the backend reports none', async () => {
-      contentMock.getLearningPathTopic.mockResolvedValue({ ...topic, progress: undefined });
+      contentMock.getCompleteLearningPaths.mockResolvedValue([{ ...topic, progress: undefined }]);
       const c = createComponent();
       await flush();
       expect(c.overview().overall).toBe(0);
-      await c.toggleDone(c.topics()[0]!, topic.contents[0]!);
+      await c.toggleDone(c.topics()[0]!, c.topics()[0]!.contents[0]!);
       expect(c.overview().overall).toBe(100);
     });
 
     it('counts how many resources of a topic are seen', async () => {
       const c = await loaded();
-      expect(c.doneCount(c.topics()[1]!)).toBe(0);
-      localStorage.setItem('itm.learning-path-done.s1', JSON.stringify(['p2|c2']));
-      const again = createComponent();
-      await flush();
-      expect(again.doneCount(again.topics()[1]!)).toBe(1);
+      expect(c.doneCount(c.topics()[0]!)).toBe(0);
+      expect(c.doneCount(c.topics()[1]!)).toBe(1);
     });
 
     it('gives each topic a color from the palette, in order', async () => {

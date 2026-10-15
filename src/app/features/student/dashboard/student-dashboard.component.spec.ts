@@ -7,6 +7,7 @@ import { StudentDashboardComponent } from './student-dashboard.component';
 import { AuthService } from '../../../core/auth/auth.service';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
 import { ReportsService } from '../../../core/reports/reports.service';
+import { ContentService } from '../../../core/content/content.service';
 import { GradingWatcherService } from '../../../core/assessments/grading-watcher.service';
 
 async function flush(): Promise<void> {
@@ -28,6 +29,8 @@ interface SetupOptions {
   name?: string | null;
   nameReject?: Error;
   pending?: boolean;
+  route?: unknown[];
+  routeReject?: Error;
 }
 
 describe('StudentDashboardComponent', () => {
@@ -36,6 +39,7 @@ describe('StudentDashboardComponent', () => {
   let studentAssessmentMock: { getQuantity: ReturnType<typeof vi.fn>; getAssessmentsSummary: ReturnType<typeof vi.fn> };
   let reportsMock: { getStudentProgress: ReturnType<typeof vi.fn>; getStudentSummary: ReturnType<typeof vi.fn> };
   let usersMock: { getUser: ReturnType<typeof vi.fn> };
+  let contentMock: { getCompleteLearningPaths: ReturnType<typeof vi.fn>; getContentById: ReturnType<typeof vi.fn> };
   let completedCount: ReturnType<typeof signal<number>>;
 
   const el = () => fixture.nativeElement as HTMLElement;
@@ -87,6 +91,12 @@ describe('StudentDashboardComponent', () => {
     };
 
     completedCount = signal(0);
+    contentMock = {
+      getCompleteLearningPaths: opts.routeReject
+        ? vi.fn().mockRejectedValue(opts.routeReject)
+        : vi.fn().mockResolvedValue(opts.route ?? []),
+      getContentById: vi.fn().mockResolvedValue({ url: 'https://ejemplo.com/recurso' }),
+    };
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [StudentDashboardComponent],
@@ -96,6 +106,7 @@ describe('StudentDashboardComponent', () => {
         { provide: StudentAssessmentService, useValue: studentAssessmentMock },
         { provide: ReportsService, useValue: reportsMock },
         { provide: UsersService, useValue: usersMock },
+        { provide: ContentService, useValue: contentMock },
         {
           provide: GradingWatcherService,
           useValue: { hasPending: () => !!opts.pending, completedCount },
@@ -380,6 +391,70 @@ describe('StudentDashboardComponent', () => {
       await flush();
       expect(reportsMock.getStudentProgress.mock.calls.length).toBe(calls + 1);
       expect(studentAssessmentMock.getAssessmentsSummary.mock.calls.length).toBeGreaterThan(1);
+    });
+  });
+
+  describe('recursos para el tema más débil', () => {
+    const profile = [
+      { topic: 'POO', score: 0.9 },
+      { topic: 'APIs', score: 0.3 },
+    ];
+    const route = [
+      {
+        topic: 'APIs',
+        topic_path_id: 'p2',
+        contents: [
+          { content_id: 'c1', title: 'REST', description: '', rating: 4, is_completed: true },
+          { content_id: 'c2', title: 'HTTP', description: '', rating: 4, is_completed: false },
+          { content_id: 'c3', title: 'Verbos', description: '', rating: 4 },
+          { content_id: 'c4', title: 'Otro', description: '', rating: 4 },
+        ],
+      },
+      { topic: 'POO', topic_path_id: 'p1', contents: [{ content_id: 'z', title: 'Clases', description: '', rating: 4 }] },
+    ];
+
+    it('suggests up to two resources of the weakest topic that are not seen yet', async () => {
+      await setup(undefined, { quantity: 1, classification: 'Básico', profile, route });
+      expect(component.weakResources().map((r) => r.title)).toEqual(['HTTP', 'Verbos']);
+      expect(text()).toContain('HTTP');
+      expect(text()).not.toContain('REST');
+    });
+
+    it('matches the topic ignoring case and spaces', async () => {
+      await setup(undefined, { quantity: 1, classification: 'Básico', profile, route: [{ ...route[0]!, topic: '  apis ' }] });
+      expect(component.weakResources()).toHaveLength(2);
+    });
+
+    it('suggests nothing when the student has no route or the topic is not in it', async () => {
+      await setup(undefined, { quantity: 1, classification: 'Básico', profile, route: [] });
+      expect(component.weakResources()).toEqual([]);
+      await setup(undefined, { quantity: 1, classification: 'Básico', profile, route: [route[1]!] });
+      expect(component.weakResources()).toEqual([]);
+    });
+
+    it('keeps working when the route cannot be loaded', async () => {
+      await setup(undefined, { quantity: 1, classification: 'Básico', profile, routeReject: new Error('x') });
+      expect(component.weakResources()).toEqual([]);
+      expect(text()).toContain('Refuerza');
+    });
+
+    it('opens a suggested resource in a new tab', async () => {
+      const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+      await setup(undefined, { quantity: 1, classification: 'Básico', profile, route });
+      await component.openResource('c2');
+      expect(contentMock.getContentById).toHaveBeenCalledWith('c2');
+      expect(open).toHaveBeenCalledWith('https://ejemplo.com/recurso', '_blank', 'noopener');
+      expect(component.openingId()).toBeNull();
+      open.mockRestore();
+    });
+
+    it('does not open anything when the resource has no url', async () => {
+      const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+      await setup(undefined, { quantity: 1, classification: 'Básico', profile, route });
+      contentMock.getContentById.mockResolvedValue(null);
+      await component.openResource('c2');
+      expect(open).not.toHaveBeenCalled();
+      open.mockRestore();
     });
   });
 });

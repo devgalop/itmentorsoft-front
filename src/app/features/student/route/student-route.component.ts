@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AuthService } from '@core/auth/auth.service';
 import { ContentService } from '@core/content/content.service';
-import { LearningPathStore } from '@core/content/learning-path-store';
-import { RecommendedContent, RecommendedTopic, TopicPathRef } from '@core/content/content.types';
+import { RecommendedContent, RecommendedTopic } from '@core/content/content.types';
 import { CATEGORY_PALETTE, FALLBACK_COLOR } from '@shared/charts/chart-colors';
 import { ToastService } from '@shared/ui/toast/toast.service';
 
@@ -17,15 +16,11 @@ export class StudentRouteComponent {
   private readonly auth = inject(AuthService);
   private readonly content = inject(ContentService);
   private readonly toast = inject(ToastService);
-  private readonly store = inject(LearningPathStore);
 
   readonly topics = signal<RecommendedTopic[]>([]);
   readonly isLoading = signal(true);
   readonly loadError = signal<string | null>(null);
-  /**
-   * La ruta existe pero no se puede mostrar: el backend ya la había generado y no devuelve sus
-   * ids (solo los entrega al crearla), y en este navegador no se guardaron.
-   */
+  /** El backend dice que la ruta ya existe, pero no se pudo traer (caso raro: se puede reintentar). */
   readonly unavailable = signal(false);
 
   /** content_id del recurso que se está abriendo (para mostrar el spinner en ese item). */
@@ -76,8 +71,6 @@ export class StudentRouteComponent {
     return { topics: topics.length, total, done, overall: Math.max(0, Math.min(100, overall)) };
   });
 
-  /** Recursos vistos, como "pathId|contentId". */
-  readonly done = signal<ReadonlySet<string>>(new Set());
   /** Recurso cuyo estado se está guardando ("pathId|contentId"). */
   readonly savingKey = signal<string | null>(null);
 
@@ -86,8 +79,9 @@ export class StudentRouteComponent {
     return `${topic.topic_path_id ?? topic.topic}|${contentId}`;
   }
 
-  isDone(topic: RecommendedTopic, item: RecommendedContent): boolean {
-    return item.is_completed ?? this.done().has(this.doneKey(topic, item.content_id));
+  /** Un recurso está visto según lo que informa el backend. */
+  isDone(_topic: RecommendedTopic, item: RecommendedContent): boolean {
+    return item.is_completed === true;
   }
 
   /** Marca el recurso como visto (o lo vuelve a pendiente) y actualiza el avance del tema. */
@@ -100,18 +94,13 @@ export class StudentRouteComponent {
     this.savingKey.set(key);
     try {
       const progress = await this.content.setLearningPathContentStatus(pathId, item.content_id, next);
-      const done = new Set(this.done());
-      if (next) done.add(key);
-      else done.delete(key);
-      this.done.set(done);
-      this.store.setDone(userId, done);
       this.topics.update((list) =>
         list.map((t) =>
           t.topic_path_id === pathId
             ? {
                 ...t,
                 progress,
-                contents: t.contents.map((c) => (c.content_id === item.content_id ? { ...c, is_completed: undefined } : c)),
+                contents: t.contents.map((c) => (c.content_id === item.content_id ? { ...c, is_completed: next } : c)),
               }
             : t,
         ),
@@ -151,8 +140,7 @@ export class StudentRouteComponent {
     this.loadError.set(null);
     this.unavailable.set(false);
     try {
-      this.done.set(this.store.getDone(id));
-      await this.loadPath(id, true);
+      await this.loadPath(id);
       await this.loadMyRatings(id);
     } catch (error) {
       this.loadError.set(
@@ -170,12 +158,12 @@ export class StudentRouteComponent {
   }
 
   /**
-   * Los ids de los temas se guardan al generar la ruta. Si no hay ninguno guardado se genera; si
-   * los guardados ya no sirven (la ruta cambió), se descartan y se genera una sola vez más.
+   * Trae las rutas del estudiante; si todavía no tiene, las genera a partir de su perfil y las
+   * vuelve a pedir. De cada tema se muestra la ruta más reciente que siga sin completar.
    */
-  private async loadPath(id: string, mayRegenerate: boolean): Promise<void> {
-    let refs = this.store.get(id);
-    if (refs.length === 0) {
+  private async loadPath(id: string): Promise<void> {
+    let paths = await this.content.getCompleteLearningPaths(id);
+    if (paths.length === 0) {
       const generated = await this.content.generateLearningPath(id);
       if (!generated.created) {
         this.topics.set([]);
@@ -183,24 +171,25 @@ export class StudentRouteComponent {
         else if (generated.reason === 'failed') this.loadError.set('No se pudo generar tu ruta de aprendizaje.');
         return;
       }
-      refs = generated.paths;
-      this.store.set(id, refs);
+      paths = await this.content.getCompleteLearningPaths(id);
     }
-
-    const topics = await this.fetchTopics(refs);
-    if (topics.length === 0 && mayRegenerate) {
-      this.store.clear(id);
-      await this.loadPath(id, false);
-      return;
-    }
+    const topics = this.activePerTopic(paths);
     this.topics.set(topics);
     this.openTopics.set(new Set(topics[0] ? [this.topicKey(topics[0])] : []));
   }
 
-  /** Consulta cada tema por su id; los que fallan se omiten (si fallan todos, queda vacío). */
-  private async fetchTopics(refs: TopicPathRef[]): Promise<RecommendedTopic[]> {
-    const results = await Promise.allSettled(refs.map((r) => this.content.getLearningPathTopic(r.topic_path_id)));
-    return results.flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : []));
+  /**
+   * El backend entrega todas las rutas (también las repetidas y las completadas), de la más
+   * reciente a la más antigua. Por tema se toma la más reciente sin completar o, si todas están
+   * completas, la más reciente.
+   */
+  private activePerTopic(paths: RecommendedTopic[]): RecommendedTopic[] {
+    const chosen = new Map<string, RecommendedTopic>();
+    for (const p of paths) {
+      const current = chosen.get(p.topic);
+      if (!current || (current.is_completed && !p.is_completed)) chosen.set(p.topic, p);
+    }
+    return [...chosen.values()];
   }
 
   /** Avance de un tema redondeado a 0–100. */

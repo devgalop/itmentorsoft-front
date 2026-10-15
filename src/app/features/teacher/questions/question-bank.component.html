@@ -88,7 +88,7 @@
           @for (q of rows(); track q.question_id) {
             <tr class="cuest__row">
               <td data-label="ID" class="cuest__id">{{ q.question_id.slice(0, 8) }}</td>
-              <td data-label="Pregunta" class="cuest__text">{{ q.text }}</td>
+              <td data-label="Pregunta" class="cuest__text td-block">{{ q.text }}</td>
               <td data-label="Dificultad">
                 <span class="cuest__badge cuest__badge--diff">{{ difficultyLabel(q.difficulty) }}</span>
               </td>

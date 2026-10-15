@@ -59,13 +59,15 @@ export interface RecommendedTopic {
   topic_path_id?: string;
   /** Avance de 0 a 100. */
   progress?: number;
+  /** La ruta de este tema ya se completó. */
+  is_completed?: boolean;
 }
 
-/** Respuesta de GET /content/recommended/learning-paths?path_id=: un solo tema. */
-export interface GetRecommendedLearningPathsResponse {
+/** Respuesta de GET /content/complete/path?user_id=: todas las rutas del estudiante, de la más reciente a la más antigua. */
+export interface GetCompleteLearningPathResponse {
   is_success: boolean;
   message: string;
-  recommendation: RecommendedTopic | null;
+  learning_path: RecommendedTopic[] | null;
 }
 
 /** Respuesta de POST /content/generate/learning-path?student_id=. */

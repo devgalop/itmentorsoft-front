@@ -17,43 +17,50 @@ describe('ContentService', () => {
 
   afterEach(() => httpMock.verify());
 
-  describe('getLearningPathTopic', () => {
-    it('GETs the topic of a path by path_id and returns it with its id and progress', async () => {
-      const promise = service.getLearningPathTopic('path-1');
+  describe('getCompleteLearningPaths', () => {
+    const url = (r: { url: string }) => r.url === '/content/complete/path';
+
+    it('GETs the paths of the student with the page and returns every topic with its state', async () => {
+      const promise = service.getCompleteLearningPaths('s1');
       const req = httpMock.expectOne(
-        (r) => r.url === '/content/recommended/learning-paths' && r.params.get('path_id') === 'path-1',
+        (r) => url(r) && r.params.get('user_id') === 's1' && r.params.get('page') === '0' && r.params.get('page_size') === '100',
       );
       expect(req.request.method).toBe('GET');
-      const recommendation = {
-        topic_path_id: 'path-1',
-        topic: 'Arquitectura',
-        contents: [{ content_id: 'c1', title: 'Capas', description: 'Intro', rating: 4.5 }],
-        progress: 40,
-      };
-      req.flush({ is_success: true, message: 'ok', recommendation });
-      expect(await promise).toEqual(recommendation);
+      const learning_path = [
+        {
+          topic_path_id: 'p1',
+          topic: 'Arquitectura',
+          progress: 50,
+          is_completed: false,
+          contents: [{ content_id: 'c1', title: 'Capas', description: 'Intro', rating: 4.5, is_completed: true }],
+        },
+      ];
+      req.flush({ is_success: true, message: 'ok', learning_path });
+      expect(await promise).toEqual(learning_path);
     });
 
-    it('falls back to the requested id when the response has none', async () => {
-      const promise = service.getLearningPathTopic('path-9');
-      httpMock
-        .expectOne((r) => r.url === '/content/recommended/learning-paths')
-        .flush({ is_success: true, message: 'ok', recommendation: { topic: 'APIs', contents: [] } });
-      expect((await promise)?.topic_path_id).toBe('path-9');
+    it('returns an empty list when there is no learning path in the response', async () => {
+      const promise = service.getCompleteLearningPaths('s1');
+      httpMock.expectOne(url).flush({ is_success: true, message: 'ok', learning_path: null });
+      expect(await promise).toEqual([]);
     });
 
-    it('returns null when there is no recommendation or the path does not exist', async () => {
-      const first = service.getLearningPathTopic('path-1');
-      httpMock
-        .expectOne((r) => r.url === '/content/recommended/learning-paths')
-        .flush({ is_success: true, message: 'ok', recommendation: null });
-      expect(await first).toBeNull();
+    it('treats "not found" as no paths, whether it comes as a 404 or wrapped in a 500', async () => {
+      const first = service.getCompleteLearningPaths('s1');
+      httpMock.expectOne(url).flush({ detail: 'x' }, { status: 404, statusText: 'Not Found' });
+      expect(await first).toEqual([]);
 
-      const second = service.getLearningPathTopic('path-2');
+      const second = service.getCompleteLearningPaths('s1');
       httpMock
-        .expectOne((r) => r.url === '/content/recommended/learning-paths')
-        .flush({ detail: 'x' }, { status: 404, statusText: 'Not Found' });
-      expect(await second).toBeNull();
+        .expectOne(url)
+        .flush({ detail: '404: La ruta de aprendizaje no fue encontrada' }, { status: 500, statusText: 'x' });
+      expect(await second).toEqual([]);
+    });
+
+    it('keeps the usual messages for other errors', async () => {
+      const promise = service.getCompleteLearningPaths('s1');
+      httpMock.expectOne(url).flush({ detail: 'algo' }, { status: 500, statusText: 'x' });
+      await expect(promise).rejects.toThrow('Error en el servidor, intenta más tarde');
     });
   });
 
@@ -506,9 +513,9 @@ describe('ContentService', () => {
       [422, 'Datos inválidos'],
       [500, 'Error en el servidor, intenta más tarde'],
     ])('maps HTTP %i to "%s"', async (status, message) => {
-      const promise = service.getLearningPathTopic('u1');
+      const promise = service.getCompleteLearningPaths('u1');
       httpMock
-        .expectOne((r) => r.url === '/content/recommended/learning-paths')
+        .expectOne((r) => r.url === '/content/complete/path')
         .flush({ detail: 'x' }, { status, statusText: 'error' });
       await expect(promise).rejects.toThrow(message);
     });

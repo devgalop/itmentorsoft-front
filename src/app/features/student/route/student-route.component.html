@@ -11,10 +11,7 @@
   } @else if (unavailable()) {
     <div class="route__state route__state--warn">
       <p class="route__state-title">Todavía no podemos mostrar tu ruta</p>
-      <p>
-        Tu ruta ya fue generada, pero no se pudo recuperar desde este navegador. Estamos trabajando
-        para que puedas verla desde cualquier dispositivo.
-      </p>
+      <p>Tu ruta ya fue generada, pero no pudimos cargarla en este momento. Intenta de nuevo en unos segundos.</p>
       <button type="button" class="route__retry" (click)="retry()">Reintentar</button>
     </div>
   } @else if (topics().length === 0) {
@@ -54,7 +51,12 @@
             <span class="route__topic-num" aria-hidden="true">{{ i + 1 }}</span>
             <span class="route__topic-body">
               <span class="route__topic-name">{{ topic.topic }}</span>
-              <span class="route__topic-meta">{{ doneCount(topic) }} de {{ topic.contents.length }} vistos</span>
+              <span class="route__topic-meta">
+                {{ doneCount(topic) }} de {{ topic.contents.length }} vistos
+                @if (topic.is_completed) {
+                  · Completada
+                }
+              </span>
               <span class="route__bar" aria-hidden="true">
                 <span [style.width.%]="progressPct(topic)"></span>
               </span>
