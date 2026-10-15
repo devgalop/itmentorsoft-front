@@ -101,6 +101,9 @@ export class StudentAssessmentComponent {
   /** ¿Hay una evaluación enviada que todavía se está calificando? */
   readonly gradingPending = computed(() => this.grading.hasPending(this.auth.userId()));
 
+  /** Historial sin las evaluaciones que todavía se están calificando (se avisan aparte). */
+  readonly finishedHistory = computed(() => this.history().filter((h) => !this.grading.isPendingId(h.assessment_id)));
+
   // Result
   readonly result = signal<StudentAssessmentResult | null>(null);
 
