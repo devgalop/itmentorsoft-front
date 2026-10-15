@@ -31,6 +31,7 @@ interface SetupOptions {
   pending?: boolean;
   route?: unknown[];
   routeReject?: Error;
+  pendingIds?: string[];
 }
 
 describe('StudentDashboardComponent', () => {
@@ -109,7 +110,11 @@ describe('StudentDashboardComponent', () => {
         { provide: ContentService, useValue: contentMock },
         {
           provide: GradingWatcherService,
-          useValue: { hasPending: () => !!opts.pending, completedCount },
+          useValue: {
+            hasPending: () => !!opts.pending,
+            isPendingId: (id: string) => (opts.pendingIds ?? []).includes(id),
+            completedCount,
+          },
         },
       ],
     });
@@ -348,6 +353,30 @@ describe('StudentDashboardComponent', () => {
       });
       expect(component.feedback()).toBeNull();
       expect(text()).not.toContain('Feedback para ti');
+    });
+  });
+
+  describe('evaluación pendiente en el historial', () => {
+    const done = { assessment_id: 'a1', score: 0.8, date_taken: '2026-10-01T10:00:00', classification: 'básico' };
+    const pendingRow = { assessment_id: 'a2', score: 0, date_taken: '2026-10-05T10:00:00', classification: null };
+
+    it('does not show the pending evaluation (score 0) as the last one', async () => {
+      await setup(undefined, { quantity: 2, pending: true, pendingIds: ['a2'], history: [done, pendingRow] });
+      expect(component.last()?.score).toBe(80);
+      expect(component.last()?.delta).toBeNull();
+      expect(text()).toContain('Calificando una evaluación nueva');
+    });
+
+    it('shows "Calificando…" instead of a 0% when the only evaluation is the pending one', async () => {
+      await setup(undefined, { quantity: 1, pending: true, pendingIds: ['a2'], history: [pendingRow] });
+      expect(component.last()).toBeNull();
+      expect(text()).toContain('Calificando…');
+      expect(text()).not.toContain('0%');
+    });
+
+    it('keeps an evaluation without result that is not pending (it never finished)', async () => {
+      await setup(undefined, { quantity: 1, history: [pendingRow] });
+      expect(component.last()?.score).toBe(0);
     });
   });
 

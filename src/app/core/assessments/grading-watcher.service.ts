@@ -50,6 +50,14 @@ export class GradingWatcherService {
   }
 
   /** ¿Hay evaluaciones del estudiante esperando calificación? */
+  /**
+   * ¿Esta evaluación se está calificando? El backend ya la lista en el historial con puntaje 0 y
+   * sin nivel, así que las pantallas la dejan fuera de los resultados mientras siga pendiente.
+   */
+  isPendingId(assessmentId: string): boolean {
+    return this.pending().some((p) => p.assessmentId === assessmentId);
+  }
+
   hasPending(userId: string | null | undefined): boolean {
     return !!userId && this.pending().some((p) => p.userId === userId);
   }

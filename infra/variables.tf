@@ -70,6 +70,24 @@ variable "github_repository" {
   default     = "devgalop/itmentorsoft-front"
 }
 
+variable "github_owner_id" {
+  description = <<-EOT
+    Id numérico del dueño del repositorio en GitHub (el que aparece en el "sub" del token como
+    repo:<dueño>@<id>/...). Vacío = el rol solo acepta el formato clásico del "sub".
+  EOT
+  type        = string
+  default     = "103542712"
+}
+
+variable "github_repository_id" {
+  description = <<-EOT
+    Id numérico del repositorio en GitHub (el que aparece en el "sub" del token como
+    .../<repo>@<id>:ref:...). Vacío = el rol solo acepta el formato clásico del "sub".
+  EOT
+  type        = string
+  default     = "1256635525"
+}
+
 variable "github_deploy_branch" {
   description = "Rama desde la que el workflow puede asumir el rol de despliegue."
   type        = string

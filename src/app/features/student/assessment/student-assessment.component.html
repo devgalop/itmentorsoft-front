@@ -89,7 +89,7 @@
   <!-- PASO HISTORIAL: resumen y lista de evaluaciones -->
   @if (step() === 'history') {
     <app-assessment-history
-      [items]="history()"
+      [items]="finishedHistory()"
       [loading]="isLoadingHistory()"
       [pending]="gradingPending()"
       [busy]="isBusy()"
