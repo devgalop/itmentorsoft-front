@@ -1,0 +1,22 @@
+{
+  "/users": {
+    "target": "http://98.95.193.167:8000",
+    "changeOrigin": true,
+    "secure": false
+  },
+  "/assessments": {
+    "target": "http://98.95.193.167:8000",
+    "changeOrigin": true,
+    "secure": false
+  },
+  "/content": {
+    "target": "http://98.95.193.167:8000",
+    "changeOrigin": true,
+    "secure": false
+  },
+  "/reports": {
+    "target": "http://98.95.193.167:8000",
+    "changeOrigin": true,
+    "secure": false
+  }
+}

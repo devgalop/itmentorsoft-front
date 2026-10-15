@@ -18,17 +18,44 @@ variable "bucket_name" {
 
 variable "api_origin_domain" {
   description = <<-EOT
-    Dominio del API Gateway, sin protocolo (ej. abc123.execute-api.us-east-1.amazonaws.com).
-    Vacío = CloudFront solo sirve el front y no enruta el API todavía.
+    Dominio del backend, sin protocolo: el de un API Gateway (ej. abc123.execute-api.us-east-1.amazonaws.com)
+    o el DNS público del servidor EC2 (ej. ec2-98-95-193-167.compute-1.amazonaws.com). Debe ser un nombre DNS,
+    no una IP. Vacío = CloudFront solo sirve el front y no enruta el API todavía.
   EOT
   type        = string
   default     = ""
 }
 
 variable "api_origin_path" {
-  description = "Prefijo del stage en API Gateway (ej. /prod). Vacío para el stage $default."
+  description = "Prefijo del stage en API Gateway (ej. /prod). Vacío para el stage $default o para el servidor EC2."
   type        = string
   default     = ""
+}
+
+variable "api_origin_protocol" {
+  description = <<-EOT
+    Cómo habla CloudFront con el backend: "https-only" (API Gateway, por defecto) o "http-only" (servidor EC2
+    sin certificado). Con "http-only" el tramo CloudFront -> servidor viaja sin cifrar.
+  EOT
+  type        = string
+  default     = "https-only"
+
+  validation {
+    condition     = contains(["https-only", "http-only"], var.api_origin_protocol)
+    error_message = "api_origin_protocol debe ser \"https-only\" o \"http-only\"."
+  }
+}
+
+variable "api_origin_http_port" {
+  description = "Puerto HTTP del backend cuando api_origin_protocol es \"http-only\" (la API del servidor EC2 escucha en 8000)."
+  type        = number
+  default     = 80
+}
+
+variable "api_origin_https_port" {
+  description = "Puerto HTTPS del backend cuando api_origin_protocol es \"https-only\"."
+  type        = number
+  default     = 443
 }
 
 variable "api_path_prefixes" {

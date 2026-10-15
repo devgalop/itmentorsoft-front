@@ -73,6 +73,28 @@ terraform apply -var 'api_origin_domain=abc123.execute-api.us-east-1.amazonaws.c
 
 Si el API Gateway usa un stage con nombre (ej. `/prod`), agregar `-var 'api_origin_path=/prod'`.
 
+### Apuntar directo al servidor EC2 (sin API Gateway)
+
+El backend también está publicado en un EC2 que expone la API por HTTP en el puerto 8000. CloudFront puede usarlo como origen:
+
+```
+terraform apply \
+  -var 'api_origin_domain=ec2-98-95-193-167.compute-1.amazonaws.com' \
+  -var 'api_origin_protocol=http-only' \
+  -var 'api_origin_http_port=8000'
+```
+
+Para no repetir las variables se pueden guardar en `terraform.tfvars` (ignorado por git).
+
+Cosas a tener en cuenta:
+
+- El origen debe ser el **DNS público** del EC2 (CloudFront no acepta IP). Ese DNS cambia si el servidor se apaga y se enciende, salvo que tenga una IP elástica asociada.
+- El tramo CloudFront -> servidor va **sin cifrar** (HTTP). El navegador sí usa HTTPS contra `itmentorsoft.com`.
+- El grupo de seguridad del EC2 debe permitir el puerto 8000 desde internet (o desde los rangos de CloudFront).
+- Como el API se sirve bajo el mismo dominio que el front, no se necesita CORS.
+- Rutas que llegan al API: `/users`, `/assessments`, `/content` y `/reports` (ver `api_path_prefixes`). `/docs` y `/openapi.json` no pasan por CloudFront; se consultan directo en el puerto del servidor.
+- Comprobar después del `apply` (la distribución tarda unos minutos en actualizarse): `curl -i https://itmentorsoft.com/users/available-roles` debe responder `401` (la respuesta del API) y no la página web.
+
 ## Notas
 
 - `create_github_oidc_provider`: AWS permite un solo proveedor OIDC de GitHub por cuenta. Si ya existe, usar `-var create_github_oidc_provider=false`.
