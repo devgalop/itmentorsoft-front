@@ -118,6 +118,11 @@ export class AdminUsersComponent {
     return roleLabel(role);
   }
 
+  /** El estado solo se muestra si es uno de los conocidos. */
+  private knownStatus(value: string | null | undefined): UserStatus | null {
+    return value && KNOWN_STATUSES.has(value) ? (value as UserStatus) : null;
+  }
+
   statusLabel(status: UserStatus | null): string {
     return status ? STATUS_LABELS[status] : '—';
   }
@@ -163,7 +168,8 @@ export class AdminUsersComponent {
             username: info?.username ?? u.user_id.slice(0, 8),
             email: info?.email ?? '',
             role: u.role ?? role,
-            status: u.status && KNOWN_STATUSES.has(u.status) ? (u.status as UserStatus) : null,
+            // El estado viene en el detalle del usuario; la lista por rol lo traerá a futuro.
+            status: this.knownStatus(info?.status) ?? this.knownStatus(u.status),
           };
         }),
       );

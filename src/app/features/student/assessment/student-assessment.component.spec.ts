@@ -2,9 +2,10 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, Params } from '@angular/router';
 import { vi } from 'vitest';
-import { GRADING_SPINNER_MS, REDIRECT_MS, StudentAssessmentComponent } from './student-assessment.component';
+import { GRADING_SPINNER_MS, REDIRECT_MS, SAVE_DELAY_MS, StudentAssessmentComponent } from './student-assessment.component';
 import { StudentAssessmentService } from '../../../core/assessments/student-assessment.service';
 import { GradingWatcherService } from '../../../core/assessments/grading-watcher.service';
+import { EvaluationDraftStore } from '../../../core/assessments/evaluation-draft.store';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 
@@ -49,6 +50,7 @@ describe('StudentAssessmentComponent', () => {
   }
 
   beforeEach(() => {
+    localStorage.clear();
     gradingMock.watch.mockClear();
     routerMock.navigate.mockClear();
     serviceMock = {
@@ -660,6 +662,119 @@ describe('StudentAssessmentComponent', () => {
       await new Promise((r) => setTimeout(r));
       expect(serviceMock.getResult).toHaveBeenCalledWith('u1', 'assess-9');
       expect(c.step()).toBe('result');
+    });
+  });
+
+  describe('evaluación en curso guardada', () => {
+    const stored = () => JSON.parse(localStorage.getItem('itm.evaluation-draft.u1') ?? 'null');
+
+    it('saves the evaluation as soon as it starts', async () => {
+      const c = await started();
+      expect(stored()).toMatchObject({ assessmentId: 'assess-1', currentIndex: 0 });
+      expect(stored().questions).toHaveLength(2);
+      expect(c.savedDraft()).toBeNull();
+    });
+
+    it('saves what the student writes after a short pause, not on every key', async () => {
+      vi.useFakeTimers();
+      try {
+        const c = createComponent();
+        await vi.advanceTimersByTimeAsync(0);
+        await c.startAssessment();
+        c.onAnswerChange('hol');
+        c.onAnswerChange('hola');
+        expect(stored().answers).toEqual({});
+        await vi.advanceTimersByTimeAsync(SAVE_DELAY_MS);
+        expect(stored().answers).toEqual({ q1: 'hola' });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('saves the position when moving between questions', async () => {
+      const c = await started();
+      c.onAnswerChange('uno');
+      c.next();
+      expect(stored().currentIndex).toBe(1);
+      expect(stored().answers).toEqual({ q1: 'uno' });
+      c.goTo(0);
+      expect(stored().currentIndex).toBe(0);
+    });
+
+    it('offers to resume an evaluation left in the browser, and restores answers and position', async () => {
+      const first = await started();
+      first.onAnswerChange('mi primera');
+      first.next();
+      first.onAnswerChange('mi segunda');
+      first.goTo(0);
+
+      const second = createComponent();
+      await flush();
+      expect(second.savedDraftInfo()).toMatchObject({ topic: 'POO', answered: 2, total: 2 });
+      second.resumeDraft();
+      expect(second.step()).toBe('answering');
+      expect(second.currentIndex()).toBe(0);
+      expect(second.draft()).toBe('mi primera');
+      expect(second.unansweredCount()).toBe(0);
+      second.next();
+      expect(second.draft()).toBe('mi segunda');
+    });
+
+    it('sends the restored answers with the original assessment id', async () => {
+      const first = await started();
+      first.onAnswerChange('uno');
+      first.next();
+      first.onAnswerChange('dos');
+
+      const second = createComponent();
+      await flush();
+      second.resumeDraft();
+      await second.submit();
+      expect(serviceMock.saveAnswers.mock.calls[0]![0]).toMatchObject({
+        assessment_id: 'assess-1',
+        answers: [expect.objectContaining({ answer: 'uno' }), expect.objectContaining({ answer: 'dos' })],
+      });
+    });
+
+    it('can discard the saved evaluation', async () => {
+      await started();
+      const c = createComponent();
+      await flush();
+      expect(c.savedDraft()).not.toBeNull();
+      c.discardDraft();
+      expect(c.savedDraft()).toBeNull();
+      expect(stored()).toBeNull();
+    });
+
+    it('clears the saved evaluation once it is sent', async () => {
+      const c = await started();
+      answerAll(c);
+      await c.submit();
+      expect(stored()).toBeNull();
+    });
+
+    it('starting a new evaluation replaces the saved one', async () => {
+      await started();
+      const c = createComponent();
+      await flush();
+      expect(c.savedDraft()).not.toBeNull();
+      serviceMock.generateByTopic.mockResolvedValue({ assessmentId: 'assess-2', topicId: 't', questions: [question('q9')] });
+      await c.startAssessment();
+      expect(c.savedDraft()).toBeNull();
+      expect(stored().assessmentId).toBe('assess-2');
+    });
+
+    it('does nothing when there is no saved evaluation', () => {
+      const c = createComponent();
+      c.resumeDraft();
+      expect(c.step()).toBe('history');
+    });
+
+    it('keeps the last typed text when the screen is closed before the pause ends', async () => {
+      const c = await started();
+      c.onAnswerChange('escrito a medias');
+      TestBed.resetTestingModule();
+      expect(stored().answers).toEqual({ q1: 'escrito a medias' });
     });
   });
 });

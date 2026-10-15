@@ -45,6 +45,7 @@ export const ENDPOINTS = {
       `/content/category-topic/${encodeURIComponent(category)}/${encodeURIComponent(topic)}`,
     recommendedLearningPaths: '/content/recommended/learning-paths',
     generateLearningPath: '/content/generate/learning-path',
+    completeLearningPath: '/content/complete/path',
     rate: '/content/rate',
     modifyRating: '/content/modify/rating',
     ratingsContent: '/content/ratings/content',

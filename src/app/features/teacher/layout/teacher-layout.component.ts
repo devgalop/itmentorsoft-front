@@ -25,6 +25,7 @@ import { TEACHER_NAV_ITEMS } from './teacher-nav-items';
 
     .teacher-layout__content {
       flex: 1;
+      min-width: 0;
       margin-left: 250px;
       padding: 2rem;
       background-color: var(--color-light-2);

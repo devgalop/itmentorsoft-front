@@ -2,13 +2,12 @@
   <div class="dash__banner">
     <div class="dash__banner-text">
       <h1 class="dash__greeting">Hola, {{ userName() }}</h1>
-      <p class="dash__intro">
-        Gestiona recursos, rúbricas y analiza el progreso de tus estudiantes.
-      </p>
-      <span class="dash__role">Rol: Docente</span>
+      <p class="dash__intro">Gestiona recursos y preguntas, y analiza el progreso de tus estudiantes.</p>
     </div>
     <div class="dash__banner-actions">
       <a routerLink="/teacher/resources" class="dash__btn dash__btn--solid">Nuevo recurso</a>
+      <a routerLink="/teacher/questions/new" class="dash__btn dash__btn--ghost">Nueva pregunta</a>
+      <a routerLink="/teacher/reports" class="dash__btn dash__btn--ghost">Ver reportes</a>
     </div>
   </div>
 
@@ -30,61 +29,47 @@
     </a>
   </div>
 
-  <div class="dash__grid">
-    <div class="dash__card dash__card--wide">
+  <div class="dash__row">
+    <div class="dash__card">
+      <h2 class="dash__card-title">Estudiantes por categoría</h2>
+      @if (isLoading()) {
+        <p class="dash__empty">Cargando…</p>
+      } @else if (byCategory().length === 0) {
+        <p class="dash__empty">Sin datos.</p>
+      } @else {
+        <app-column-chart [items]="categoryItems()" caption="estudiantes clasificados" />
+      }
+    </div>
+
+    <div class="dash__card">
       <div class="dash__card-head">
         <h2 class="dash__card-title">Últimos estudiantes activos</h2>
         <a routerLink="/teacher/reports" class="dash__see-all">Ver todos →</a>
       </div>
 
       @if (isLoading()) {
-        <div class="dash__empty"><p>Cargando…</p></div>
+        <p class="dash__empty">Cargando…</p>
       } @else if (recentStudents().length === 0) {
-        <div class="dash__empty"><p>Sin estudiantes registrados todavía.</p></div>
+        <p class="dash__empty">Sin estudiantes registrados todavía.</p>
       } @else {
-        <table class="dash__mini-table">
-          <tbody>
-            @for (s of recentStudents(); track s.student_id) {
-              <tr>
-                <td class="dash__mini-cell">
-                  <span class="dash__avatar">{{ initials(s.student_name) }}</span>
-                  <span class="dash__mini-name">{{ s.student_name }}</span>
-                </td>
-                <td class="dash__mini-cell">
-                  <span class="dash__badge">{{ s.knowledge_classification }}</span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-    </div>
-
-    <div class="dash__side">
-      <div class="dash__card">
-        <h2 class="dash__card-title">Por categoría</h2>
-        @if (isLoading()) {
-          <div class="dash__empty"><p>Cargando…</p></div>
-        } @else if (byCategory().length === 0) {
-          <div class="dash__empty"><p>Sin datos.</p></div>
-        } @else {
-          <ul class="dash__cat-list">
-            @for (c of byCategory(); track c.category) {
-              <li class="dash__cat-row">
-                <span class="dash__cat-name">{{ c.category }}</span>
-                <span class="dash__cat-val">{{ c.pct }}% · {{ c.count }}</span>
-              </li>
-            }
-          </ul>
-        }
-      </div>
-
-      <div class="dash__card">
-        <h2 class="dash__card-title">Alertas</h2>
-        <div class="dash__empty">
-          <p>No hay alertas por ahora.</p>
+        <div class="dash__scroll">
+          <table class="dash__mini-table">
+            <tbody>
+              @for (s of recentStudents(); track s.student_id) {
+                <tr>
+                  <td class="dash__mini-cell">
+                    <span class="dash__avatar">{{ initials(s.student_name) }}</span>
+                    <span class="dash__mini-name">{{ s.student_name }}</span>
+                  </td>
+                  <td class="dash__mini-cell">
+                    <span class="dash__badge">{{ s.knowledge_classification }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
-      </div>
+      }
     </div>
   </div>
 </section>

@@ -59,7 +59,8 @@
         }
       </p>
     } @else {
-      <table class="res__table">
+      <div class="res__table-scroll">
+        <table class="res__table table-cards">
         <thead>
           <tr>
             <th class="res__th">Título</th>
@@ -72,26 +73,27 @@
         <tbody>
           @for (r of resources(); track r.content_id) {
             <tr class="res__row">
-              <td class="res__cell">
+              <td data-label="Título" class="res__cell td-block">
                 <span class="res__name">{{ r.title }}</span>
                 <span class="res__summary">{{ r.summary }}</span>
               </td>
-              <td class="res__cell"><span class="res__badge">{{ categoryLabel(r.category) }}</span></td>
-              <td class="res__cell res__topics">
+              <td data-label="Categoría" class="res__cell"><span class="res__badge">{{ categoryLabel(r.category) }}</span></td>
+              <td data-label="Temas" class="res__cell res__topics">
                 @for (t of r.related_topics; track t) {
                   <span class="res__topic">{{ t }}</span>
                 }
               </td>
-              <td class="res__cell">
+              <td data-label="Enlace" class="res__cell">
                 <a class="res__link" [href]="r.url" target="_blank" rel="noopener">Abrir ↗</a>
               </td>
-              <td class="res__cell">
+              <td data-label="Acciones" class="res__cell">
                 <button type="button" class="res__edit" (click)="openEdit(r)">Editar</button>
               </td>
             </tr>
           }
         </tbody>
       </table>
+      </div>
 
       <app-pager [page]="page()" [totalPages]="totalPages()" (prev)="prevPage()" (next)="nextPage()" />
     }

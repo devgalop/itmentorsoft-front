@@ -2,114 +2,164 @@
   <div class="dash__banner">
     <div class="dash__banner-text">
       <h1 class="dash__greeting">Panel de Administración</h1>
-      <p class="dash__intro">
-        Control total · Usuarios, roles, recursos y configuración del sistema.
-      </p>
-      <span class="dash__role">Rol: Administrador</span>
+      <p class="dash__intro">Usuarios, roles, recursos y configuración del sistema.</p>
     </div>
     <div class="dash__banner-actions">
-      <a
-        routerLink="/admin/users"
-        [queryParams]="{ crear: 1 }"
-        class="dash__btn dash__btn--solid"
-        >Crear usuario</a
-      >
+      <a routerLink="/admin/users" [queryParams]="{ crear: 1 }" class="dash__btn dash__btn--solid">Crear usuario</a>
+      <a routerLink="/admin/content-approval" class="dash__btn dash__btn--ghost">
+        Aprobar preguntas
+        @if (pendingTotal(); as n) {
+          <span class="dash__count">{{ n }}</span>
+        }
+      </a>
+      <a routerLink="/admin/reports" class="dash__btn dash__btn--ghost">Ver reportes</a>
     </div>
   </div>
 
   <div class="dash__stats">
-    <div class="dash__stat">
-      <span class="dash__stat-value">{{ studentsTotal() ?? '—' }}</span>
-      <span class="dash__stat-label">Estudiantes</span>
-      <span class="dash__stat-hint">{{ studentsTotal() === null ? 'Sin datos' : 'Registrados' }}</span>
-    </div>
-    <div class="dash__stat">
-      <span class="dash__stat-value">{{ connectedTotal() ?? '—' }}</span>
-      <span class="dash__stat-label">Usuarios conectados</span>
-      <span class="dash__stat-hint">{{ connectedTotal() === null ? 'Sin datos' : 'Sesión activa' }}</span>
-    </div>
     <a routerLink="/admin/users" class="dash__stat dash__stat--link">
-      <span class="dash__stat-value">{{ rolesTotal() ?? '—' }}</span>
-      <span class="dash__stat-label">Roles configurados</span>
-      <span class="dash__stat-hint">{{ rolesTotal() === null ? 'Sin datos' : 'Disponibles' }}</span>
+      <div class="dash__stat-body">
+        <span class="dash__stat-value">{{ studentsTotal() ?? '—' }}</span>
+        <span class="dash__stat-label">Estudiantes</span>
+        <span class="dash__stat-hint">{{ studentsTotal() === null ? 'Sin datos' : 'Registrados' }}</span>
+      </div>
+      <span class="dash__icon dash__icon--blue" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26">
+          <path d="M2 9l10-5 10 5-10 5z" />
+          <path d="M6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5" />
+          <path d="M22 9v6" />
+        </svg>
+      </span>
     </a>
+
     <div class="dash__stat">
-      <span class="dash__stat-value">{{ resourcesTotal() ?? '—' }}</span>
-      <span class="dash__stat-label">Recursos activos</span>
-      <span class="dash__stat-hint">{{ resourcesTotal() === null ? 'Sin datos' : 'Publicados' }}</span>
+      <div class="dash__stat-body">
+        <span class="dash__stat-value">{{ connectedTotal() ?? '—' }}</span>
+        <span class="dash__stat-label">Usuarios conectados</span>
+        <span class="dash__stat-hint">{{ connectedTotal() === null ? 'Sin datos' : 'Sesión activa' }}</span>
+      </div>
+      <span class="dash__icon dash__icon--green" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26">
+          <circle cx="12" cy="12" r="2.2" />
+          <path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4" />
+          <path d="M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2" />
+        </svg>
+      </span>
     </div>
+
+    <a routerLink="/admin/users" class="dash__stat dash__stat--link">
+      <div class="dash__stat-body">
+        <span class="dash__stat-value">{{ rolesTotal() ?? '—' }}</span>
+        <span class="dash__stat-label">Roles configurados</span>
+        <span class="dash__stat-hint">{{ rolesTotal() === null ? 'Sin datos' : 'Disponibles' }}</span>
+      </div>
+      <span class="dash__icon dash__icon--purple" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26">
+          <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      </span>
+    </a>
+
+    <a routerLink="/admin/resources" class="dash__stat dash__stat--link">
+      <div class="dash__stat-body">
+        <span class="dash__stat-value">{{ resourcesTotal() ?? '—' }}</span>
+        <span class="dash__stat-label">Recursos activos</span>
+        <span class="dash__stat-hint">{{ resourcesTotal() === null ? 'Sin datos' : 'Publicados' }}</span>
+      </div>
+      <span class="dash__icon dash__icon--teal" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26">
+          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" />
+          <path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" />
+        </svg>
+      </span>
+    </a>
+
     <a routerLink="/admin/content-approval" class="dash__stat dash__stat--link">
-      <span class="dash__stat-value">{{ pendingTotal() ?? '—' }}</span>
-      <span class="dash__stat-label">Pendientes de aprobación</span>
-      <span class="dash__stat-hint">
-        @if (pendingTotal() === null) {
-          Sin datos
-        } @else if (pendingTotal()! > 0) {
-          Requiere acción
-        } @else {
-          Al día
-        }
+      <div class="dash__stat-body">
+        <span class="dash__stat-value">{{ pendingTotal() ?? '—' }}</span>
+        <span class="dash__stat-label">Pendientes de aprobación</span>
+        <span class="dash__stat-hint">
+          @if (pendingTotal() === null) {
+            Sin datos
+          } @else if (pendingTotal()! > 0) {
+            Requiere acción
+          } @else {
+            Al día
+          }
+        </span>
+      </div>
+      <span class="dash__icon" [class.dash__icon--orange]="(pendingTotal() ?? 0) > 0" [class.dash__icon--green]="pendingTotal() === 0" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26">
+          <rect x="5" y="4" width="14" height="17" rx="2" />
+          <path d="M9 4.5h6M9 13l2 2 4-4" />
+        </svg>
       </span>
     </a>
   </div>
 
-  <div class="dash__grid">
-    <div class="dash__card dash__card--wide">
-      <div class="dash__card-head">
-        <h2 class="dash__card-title">Gestión de usuarios</h2>
-        <a routerLink="/admin/users" class="dash__see-all">Ver todos →</a>
-      </div>
-
-      @if (isLoading()) {
-        <div class="dash__empty"><p>Cargando…</p></div>
-      } @else if (recentStudents().length === 0) {
-        <div class="dash__empty"><p>Sin usuarios registrados todavía.</p></div>
+  <div class="dash__row">
+    <div class="dash__card">
+      <h2 class="dash__card-title">Estudiantes por categoría</h2>
+      @if (isLoadingCharts()) {
+        <p class="dash__empty">Cargando…</p>
       } @else {
-        <table class="dash__mini-table">
-          <tbody>
-            @for (s of recentStudents(); track s.student_id) {
-              <tr>
-                <td class="dash__mini-cell">
-                  <span class="dash__avatar">{{ initials(s.student_name) }}</span>
-                  <span class="dash__mini-name">{{ s.student_name }}</span>
-                </td>
-                <td class="dash__mini-cell"><span class="dash__badge">Estudiante</span></td>
-                <td class="dash__mini-cell">
-                  <span class="dash__badge dash__badge--alt">{{ s.knowledge_classification }}</span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+        <app-column-chart [items]="levelItems()" caption="estudiantes clasificados" />
       }
     </div>
 
-    <div class="dash__side">
-      <div class="dash__card">
-        <h2 class="dash__card-title">Alertas del sistema</h2>
-        <div class="dash__empty"><p>No hay alertas por ahora.</p></div>
-      </div>
+    <div class="dash__card">
+      <h2 class="dash__card-title">Usuarios por rol</h2>
+      @if (isLoadingCharts()) {
+        <p class="dash__empty">Cargando…</p>
+      } @else if (roleItems().length === 0) {
+        <p class="dash__empty">No se pudo cargar la distribución de usuarios.</p>
+      } @else {
+        <app-stat-cards [items]="roleItems()" caption="usuarios en total" />
+      }
+    </div>
+  </div>
 
-      <div class="dash__card">
+  <div class="dash__row">
+    <div class="dash__card">
+      <h2 class="dash__card-title">Requiere tu atención</h2>
+      @if (!attentionReady()) {
+        <p class="dash__empty">Revisando…</p>
+      } @else if (attention().length === 0) {
+        <p class="dash__ok"><span aria-hidden="true">✓</span> Todo en orden: no hay nada pendiente por ahora.</p>
+      } @else {
+        <ul class="dash__alerts">
+          @for (a of attention(); track a.text) {
+            <li class="dash__alert dash__alert--{{ a.tone }}">
+              <span class="dash__alert-text">{{ a.text }}</span>
+              <a [routerLink]="a.route" class="dash__see-all">{{ a.action }} →</a>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="dash__card">
+      <div class="dash__card-head">
         <h2 class="dash__card-title">Modelos de IA actuales</h2>
-        @if (modelsInUse(); as models) {
-          <ul class="dash__models">
-            @for (m of models; track m.label) {
-              <li class="dash__model">
-                <span class="dash__model-label">{{ m.label }}</span>
-                @if (m.model) {
-                  <strong class="dash__model-name">{{ m.model }}</strong>
-                } @else {
-                  <span class="dash__model-none">Sin modelo asignado</span>
-                }
-              </li>
-            }
-          </ul>
-          <a routerLink="/admin/config" class="dash__see-all">Configurar →</a>
-        } @else {
-          <div class="dash__empty"><p>Sin datos disponibles.</p></div>
-        }
+        <a routerLink="/admin/config" class="dash__see-all">Configurar →</a>
       </div>
+      @if (modelsInUse(); as models) {
+        <ul class="dash__models">
+          @for (m of models; track m.label) {
+            <li class="dash__model">
+              <span class="dash__model-label">{{ m.label }}</span>
+              @if (m.model) {
+                <strong class="dash__model-name">{{ m.model }}</strong>
+              } @else {
+                <span class="dash__model-none">Sin modelo asignado</span>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="dash__empty">Sin datos disponibles.</p>
+      }
     </div>
   </div>
 </section>

@@ -65,3 +65,10 @@
   text-align: center;
   overflow-wrap: anywhere;
 }
+
+@media (max-width: 480px) {
+  .cc__label {
+    font-size: 0.66rem;
+    overflow-wrap: normal;
+  }
+}

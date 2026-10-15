@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, injec
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { EvaluationDraft, EvaluationDraftStore } from '@core/assessments/evaluation-draft.store';
 import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
 import { StudentAssessmentService } from '@core/assessments/student-assessment.service';
 import { environment } from '../../../../environments/environment';
-import { AssessmentHistoryComponent } from './assessment-history.component';
+import { AssessmentHistoryComponent, relativeDate } from './assessment-history.component';
 import { AssessmentQuestionComponent, QuestionItem } from './assessment-question.component';
 import { AssessmentResultComponent } from './assessment-result.component';
 import { ToastService } from '@shared/ui/toast/toast.service';
@@ -22,6 +23,8 @@ type Step = 'setup' | 'answering' | 'grading' | 'history' | 'result';
 export const GRADING_SPINNER_MS = 2000;
 /** Tiempo que se muestra el aviso antes de llevar al estudiante al principal. */
 export const REDIRECT_MS = 2500;
+/** Espera sin escribir antes de guardar la respuesta en el navegador. */
+export const SAVE_DELAY_MS = 500;
 
 /** Límite del backend por respuesta (save_assessments_answers). */
 export const MAX_ANSWER_LENGTH = 600;
@@ -43,9 +46,14 @@ export class StudentAssessmentComponent {
   private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly router = inject(Router);
   private readonly grading = inject(GradingWatcherService);
+  private readonly drafts = inject(EvaluationDraftStore);
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly timers = new Set<ReturnType<typeof setTimeout>>();
 
-  private readonly cleanup = inject(DestroyRef).onDestroy(() => this.clearTimers());
+  private readonly cleanup = inject(DestroyRef).onDestroy(() => {
+    this.persistNow();
+    this.clearTimers();
+  });
 
   /** Viene del ambiente: si es true se bloquea copiar/pegar en la respuesta. */
   readonly clipboardBlocked = environment.blockClipboardInAnswers;
@@ -55,6 +63,18 @@ export class StudentAssessmentComponent {
   readonly step = signal<Step>('history');
   readonly error = signal<string | null>(null);
   readonly isBusy = signal(false);
+  /** Evaluación empezada y sin enviar que quedó guardada en el navegador. */
+  readonly savedDraft = signal<EvaluationDraft | null>(null);
+  readonly savedDraftInfo = computed(() => {
+    const d = this.savedDraft();
+    if (!d) return null;
+    return {
+      topic: d.questions[0]?.topic ?? 'un tema',
+      answered: d.questions.filter((q) => (d.answers[q.question_id] ?? '').trim().length > 0).length,
+      total: d.questions.length,
+      relative: relativeDate(new Date(d.savedAt).toISOString()),
+    };
+  });
   /** 'working': spinner de calificando; 'sent': aviso de que se notificará y se irá al principal. */
   readonly gradingPhase = signal<'working' | 'sent'>('working');
 
@@ -98,6 +118,8 @@ export class StudentAssessmentComponent {
     // Arranca mostrando el historial; los temas se precargan para "Nueva evaluación".
     void this.loadTopics();
     void this.loadHistory();
+    const userId = this.userId;
+    if (userId) this.savedDraft.set(this.drafts.get(userId));
 
     // Si termina una calificación mientras el estudiante mira su historial, se actualiza solo.
     let seen = this.grading.completedCount();
@@ -167,6 +189,8 @@ export class StudentAssessmentComponent {
       this.draft.set('');
       this.questionStartedAt = Date.now();
       this.step.set('answering');
+      this.savedDraft.set(null);
+      this.persistNow();
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudo iniciar la evaluación');
     } finally {
@@ -182,6 +206,7 @@ export class StudentAssessmentComponent {
       this.answersVersion.update((v) => v + 1);
     }
     this.draft.set(value);
+    this.scheduleSave();
   }
 
   /** Carga en el textarea la respuesta guardada de la pregunta actual. */
@@ -239,6 +264,7 @@ export class StudentAssessmentComponent {
     this.recordTime();
     this.currentIndex.set(index);
     this.syncDraft();
+    this.persistNow();
   }
 
   next(): void {
@@ -246,6 +272,7 @@ export class StudentAssessmentComponent {
     if (!this.isLastQuestion()) {
       this.currentIndex.update((i) => i + 1);
       this.syncDraft();
+      this.persistNow();
     }
   }
 
@@ -254,6 +281,7 @@ export class StudentAssessmentComponent {
     if (this.currentIndex() > 0) {
       this.currentIndex.update((i) => i - 1);
       this.syncDraft();
+      this.persistNow();
     }
   }
 
@@ -301,6 +329,7 @@ export class StudentAssessmentComponent {
       }
       // La calificación es asíncrona: se espera en segundo plano. Un par de segundos de spinner,
       // luego el aviso de que se notificará, y de ahí al principal.
+      this.drafts.clear(userId);
       this.grading.watch(userId, this.assessmentId);
       this.gradingPhase.set('working');
       this.step.set('grading');
@@ -314,6 +343,57 @@ export class StudentAssessmentComponent {
     } finally {
       this.isBusy.set(false);
     }
+  }
+
+  /** Guarda la evaluación en curso en el navegador (para retomarla si recarga o cierra la pestaña). */
+  private persistNow(): void {
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    const userId = this.userId;
+    if (!userId || !this.assessmentId || this.step() !== 'answering') return;
+    this.recordTime();
+    this.drafts.save({
+      userId,
+      assessmentId: this.assessmentId,
+      questions: this.questions(),
+      answers: Object.fromEntries(this.answers),
+      times: Object.fromEntries(this.timePerQuestion),
+      currentIndex: this.currentIndex(),
+      savedAt: Date.now(),
+    });
+  }
+
+  /** Mientras escribe se guarda con un pequeño retardo, para no escribir en cada tecla. */
+  private scheduleSave(): void {
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => this.persistNow(), SAVE_DELAY_MS);
+  }
+
+  /** Retoma la evaluación guardada, con sus respuestas y en la pregunta donde iba. */
+  resumeDraft(): void {
+    const d = this.savedDraft();
+    if (!d) return;
+    this.assessmentId = d.assessmentId;
+    this.questions.set(d.questions);
+    this.answers.clear();
+    for (const [id, text] of Object.entries(d.answers)) this.answers.set(id, text);
+    this.timePerQuestion.clear();
+    for (const [id, secs] of Object.entries(d.times ?? {})) this.timePerQuestion.set(id, secs);
+    this.answersVersion.update((v) => v + 1);
+    this.currentIndex.set(Math.max(0, Math.min(d.currentIndex, d.questions.length - 1)));
+    this.syncDraft();
+    this.questionStartedAt = Date.now();
+    this.error.set(null);
+    this.step.set('answering');
+  }
+
+  /** Descarta la evaluación guardada. */
+  discardDraft(): void {
+    const userId = this.userId;
+    if (userId) this.drafts.clear(userId);
+    this.savedDraft.set(null);
   }
 
   /** Lleva al estudiante al principal (sin esperar al temporizador si pulsó el botón). */

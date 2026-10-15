@@ -85,6 +85,7 @@
 .profile__field {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
 }

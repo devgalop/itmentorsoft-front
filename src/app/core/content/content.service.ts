@@ -11,13 +11,15 @@ import {
   GetRatingsByUserResponse,
   GetTopContentResponse,
   GenerateLearningPathResponse,
+  GetCompleteLearningPathResponse,
   GenerateLearningPathResult,
-  GetRecommendedLearningPathsResponse,
   PagedContents,
   RateContentPayload,
   RateContentResponse,
   RecommendedTopic,
   TopicPathRef,
+  UpdatePathContentStatusPayload,
+  UpdatePathContentStatusResponse,
   RegisterContentPayload,
   RegisterContentResponse,
   TopContentItem,
@@ -34,21 +36,47 @@ export class ContentService {
 
   /** Listado paginado de recursos (page arranca en 0; el backend exige ambos params). */
   /**
-   * Un tema de la ruta del estudiante con sus recursos recomendados y su avance. Devuelve null si
-   * el tema no existe (404). Solo accesible por rol student.
+   * Todas las rutas del estudiante (un tema cada una) con sus recursos, el avance y qué recursos
+   * ya se vieron. El backend las entrega de la más reciente a la más antigua e incluye las ya
+   * completadas. Devuelve [] si no tiene ninguna.
    */
-  async getLearningPathTopic(pathId: string): Promise<RecommendedTopic | null> {
+  async getCompleteLearningPaths(userId: string, pageSize = 100): Promise<RecommendedTopic[]> {
     try {
       const response = await firstValueFrom(
-        this.http.get<GetRecommendedLearningPathsResponse>(
-          `${environment.apiUrl}${ENDPOINTS.content.recommendedLearningPaths}`,
-          { params: { path_id: pathId } },
+        this.http.get<GetCompleteLearningPathResponse>(
+          `${environment.apiUrl}${ENDPOINTS.content.completeLearningPath}`,
+          { params: { user_id: userId, page: 0, page_size: pageSize } },
         ),
       );
-      const topic = response.recommendation;
-      return topic ? { ...topic, topic_path_id: topic.topic_path_id ?? pathId } : null;
+      return response.learning_path ?? [];
     } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 404) return null;
+      // Sin rutas el backend responde "404: La ruta de aprendizaje no fue encontrada" (a veces envuelto en un 500).
+      if (error instanceof HttpErrorResponse) {
+        const detail = String(error.error?.detail ?? '');
+        if (error.status === 404 || /no fue encontrada|not found/i.test(detail)) return [];
+      }
+      throw this.mapHttpError(error);
+    }
+  }
+
+  /**
+   * Marca (o desmarca) un recurso de la ruta como visto. Devuelve el avance del tema (0–100)
+   * ya recalculado por el backend. Solo rol student.
+   */
+  async setLearningPathContentStatus(pathId: string, contentId: string, status: boolean): Promise<number> {
+    try {
+      const payload: UpdatePathContentStatusPayload = { path_id: pathId, content_id: contentId, status };
+      const response = await firstValueFrom(
+        this.http.put<UpdatePathContentStatusResponse>(
+          `${environment.apiUrl}${ENDPOINTS.content.updateLearningPathStatus}`,
+          payload,
+        ),
+      );
+      if (!response.is_success) {
+        throw new Error(response.message || 'No se pudo actualizar el recurso.');
+      }
+      return response.path_progress ?? 0;
+    } catch (error) {
       throw this.mapHttpError(error);
     }
   }

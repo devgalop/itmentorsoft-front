@@ -6,6 +6,9 @@ import { ContentService } from '@core/content/content.service';
 import { AssessmentsService } from '@core/assessments/assessments.service';
 import { UsersService } from '@core/users/users.service';
 import { StudentClassification } from '@core/reports/reports.types';
+import { levelColor } from '@shared/charts/chart-colors';
+import { ChartItem } from '@shared/charts/chart-item';
+import { ColumnChartComponent } from '@shared/charts/column-chart.component';
 
 interface CategoryCount {
   category: string;
@@ -16,7 +19,7 @@ interface CategoryCount {
 @Component({
   selector: 'app-teacher-dashboard',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ColumnChartComponent],
   templateUrl: './teacher-dashboard.component.html',
   styleUrl: './teacher-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,6 +45,16 @@ export class TeacherDashboardComponent {
   readonly recentStudents = signal<StudentClassification[]>([]);
   readonly byCategory = signal<CategoryCount[]>([]);
   readonly isLoading = signal(true);
+
+  /** Estudiantes por categoría, para la gráfica (el mismo estilo que en el panel del admin). */
+  readonly categoryItems = computed<ChartItem[]>(() =>
+    this.byCategory().map((c) => ({
+      key: c.category,
+      label: c.category.charAt(0).toUpperCase() + c.category.slice(1),
+      count: c.count,
+      color: levelColor(c.category),
+    })),
+  );
 
   constructor() {
     const id = this.authService.userId();

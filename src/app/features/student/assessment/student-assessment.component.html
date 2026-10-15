@@ -17,6 +17,9 @@
         ← Volver a mis evaluaciones
       </button>
       <h2 class="ev__card-title">Elige un tema</h2>
+      @if (savedDraftInfo()) {
+        <p class="ev__note">Tienes una evaluación en curso: si empiezas una nueva, se descartará.</p>
+      }
       @if (isLoadingTopics()) {
         <p class="ev__hint">Cargando temas…</p>
       } @else if (topics().length === 0) {
@@ -90,6 +93,9 @@
       [loading]="isLoadingHistory()"
       [pending]="gradingPending()"
       [busy]="isBusy()"
+      [draft]="savedDraftInfo()"
+      (resumeDraft)="resumeDraft()"
+      (discardDraft)="discardDraft()"
       (openResult)="viewResult($event)"
       (create)="restart()"
     />

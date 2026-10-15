@@ -8,6 +8,14 @@ import { PagerComponent } from '@shared/ui/pager/pager.component';
 
 export type HistorySort = 'recent' | 'best' | 'worst';
 
+/** Evaluación empezada y sin enviar, para ofrecer retomarla. */
+export interface DraftInfo {
+  topic: string;
+  answered: number;
+  total: number;
+  relative: string;
+}
+
 /** Evaluaciones por página. */
 export const HISTORY_PAGE_SIZE = 6;
 /** Cuántas evaluaciones recientes dibuja la mini gráfica. */
@@ -61,6 +69,10 @@ export class AssessmentHistoryComponent {
   readonly pending = input(false);
   /** Mientras se abre un resultado, se bloquean los clics. */
   readonly busy = input(false);
+  /** Evaluación en curso guardada en el navegador (null si no hay). */
+  readonly draft = input<DraftInfo | null>(null);
+  readonly resumeDraft = output<void>();
+  readonly discardDraft = output<void>();
   readonly openResult = output<string>();
   readonly create = output<void>();
 
