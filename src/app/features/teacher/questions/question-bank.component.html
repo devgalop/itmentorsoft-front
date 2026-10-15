@@ -73,7 +73,8 @@
     } @else if (rows().length === 0) {
       <p class="cuest__hint">No hay preguntas para mostrar.</p>
     } @else {
-      <table class="cuest__table">
+      <div class="cuest__table-scroll">
+        <table class="cuest__table table-cards">
         <thead>
           <tr>
             <th class="cuest__th cuest__th--id">ID</th>
@@ -86,15 +87,15 @@
         <tbody>
           @for (q of rows(); track q.question_id) {
             <tr class="cuest__row">
-              <td class="cuest__id">{{ q.question_id.slice(0, 8) }}</td>
-              <td class="cuest__text">{{ q.text }}</td>
-              <td>
+              <td data-label="ID" class="cuest__id">{{ q.question_id.slice(0, 8) }}</td>
+              <td data-label="Pregunta" class="cuest__text td-block">{{ q.text }}</td>
+              <td data-label="Dificultad">
                 <span class="cuest__badge cuest__badge--diff">{{ difficultyLabel(q.difficulty) }}</span>
               </td>
-              <td>
+              <td data-label="Categoría">
                 <span class="cuest__badge" [class.cuest__badge--muted]="!q.category">{{ categoryLabel(q.category) }}</span>
               </td>
-              <td class="cuest__actions">
+              <td data-label="Acciones" class="cuest__actions">
                 <div class="cuest__btns">
                   <button type="button" class="cuest__action" (click)="selectQuestion(q.question_id)">
                     Ver
@@ -112,6 +113,7 @@
           }
         </tbody>
       </table>
+      </div>
 
       @if (mode() === 'all') {
         <app-pager [page]="page()" [totalPages]="totalPages()" (prev)="prevPage()" (next)="nextPage()" />

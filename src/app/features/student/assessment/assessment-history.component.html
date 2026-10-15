@@ -6,6 +6,19 @@
   <button type="button" class="hst__btn" (click)="create.emit()">+ Nueva evaluación</button>
 </header>
 
+@if (draft(); as d) {
+  <div class="hst__draft" role="status">
+    <div class="hst__draft-text">
+      <strong>Tienes una evaluación en curso</strong>
+      <span>{{ d.topic }} · {{ d.answered }} de {{ d.total }} respondidas · {{ d.relative }}</span>
+    </div>
+    <div class="hst__draft-actions">
+      <button type="button" class="hst__btn" (click)="resumeDraft.emit()">Retomar</button>
+      <button type="button" class="hst__link" (click)="discardDraft.emit()">Descartar</button>
+    </div>
+  </div>
+}
+
 @if (loading() && items().length === 0) {
   <p class="hst__hint">Cargando tu historial…</p>
 } @else {

@@ -35,7 +35,9 @@
 }
 
 .sbr__label {
-  flex: 1;
+  /* Base de 9rem: si el nombre no cabe junto a la etiqueta y el porcentaje, estos bajan de línea
+     en vez de dejar el nombre en una columna angosta. */
+  flex: 1 1 9rem;
   min-width: 0;
   font-size: 0.9rem;
   font-weight: 700;

@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AuthService } from '@core/auth/auth.service';
 import { ContentService } from '@core/content/content.service';
-import { LearningPathStore } from '@core/content/learning-path-store';
-import { RecommendedTopic, TopicPathRef } from '@core/content/content.types';
+import { RecommendedContent, RecommendedTopic } from '@core/content/content.types';
+import { CATEGORY_PALETTE, FALLBACK_COLOR } from '@shared/charts/chart-colors';
 import { ToastService } from '@shared/ui/toast/toast.service';
 
 @Component({
@@ -16,19 +16,104 @@ export class StudentRouteComponent {
   private readonly auth = inject(AuthService);
   private readonly content = inject(ContentService);
   private readonly toast = inject(ToastService);
-  private readonly store = inject(LearningPathStore);
 
   readonly topics = signal<RecommendedTopic[]>([]);
   readonly isLoading = signal(true);
   readonly loadError = signal<string | null>(null);
-  /**
-   * La ruta existe pero no se puede mostrar: el backend ya la había generado y no devuelve sus
-   * ids (solo los entrega al crearla), y en este navegador no se guardaron.
-   */
+  /** El backend dice que la ruta ya existe, pero no se pudo traer (caso raro: se puede reintentar). */
   readonly unavailable = signal(false);
 
   /** content_id del recurso que se está abriendo (para mostrar el spinner en ese item). */
   readonly openingId = signal<string | null>(null);
+
+  /** Temas desplegados (por `topicKey`). Al cargar, solo el primero. */
+  readonly openTopics = signal<ReadonlySet<string>>(new Set());
+
+  /** Identificador estable de un tema dentro de la pantalla. */
+  topicKey(topic: RecommendedTopic): string {
+    return topic.topic_path_id ?? topic.topic;
+  }
+
+  isTopicOpen(topic: RecommendedTopic): boolean {
+    return this.openTopics().has(this.topicKey(topic));
+  }
+
+  toggleTopic(topic: RecommendedTopic): void {
+    const key = this.topicKey(topic);
+    this.openTopics.update((open) => {
+      const next = new Set(open);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
+
+  /** Color del tema (el mismo orden de la paleta que usan las gráficas). */
+  topicColor(index: number): string {
+    return CATEGORY_PALETTE[index] ?? FALLBACK_COLOR;
+  }
+
+  /** Cuántos recursos de un tema ya están vistos. */
+  doneCount(topic: RecommendedTopic): number {
+    return topic.contents.filter((c) => this.isDone(topic, c)).length;
+  }
+
+  /** Resumen de toda la ruta: temas, recursos, vistos y avance general (0–100). */
+  readonly overview = computed(() => {
+    const topics = this.topics();
+    const total = this.totalContents();
+    const done = topics.reduce((sum, t) => sum + this.doneCount(t), 0);
+    const reported = topics.map((t) => t.progress).filter((p): p is number => p !== undefined);
+    const overall = reported.length > 0
+      ? Math.round(reported.reduce((a, b) => a + b, 0) / reported.length)
+      : total > 0
+        ? Math.round((done / total) * 100)
+        : 0;
+    return { topics: topics.length, total, done, overall: Math.max(0, Math.min(100, overall)) };
+  });
+
+  /** Recurso cuyo estado se está guardando ("pathId|contentId"). */
+  readonly savingKey = signal<string | null>(null);
+
+  /** Clave de un recurso dentro de un tema. */
+  doneKey(topic: RecommendedTopic, contentId: string): string {
+    return `${topic.topic_path_id ?? topic.topic}|${contentId}`;
+  }
+
+  /** Un recurso está visto según lo que informa el backend. */
+  isDone(_topic: RecommendedTopic, item: RecommendedContent): boolean {
+    return item.is_completed === true;
+  }
+
+  /** Marca el recurso como visto (o lo vuelve a pendiente) y actualiza el avance del tema. */
+  async toggleDone(topic: RecommendedTopic, item: RecommendedContent): Promise<void> {
+    const userId = this.auth.userId();
+    const pathId = topic.topic_path_id;
+    if (!userId || !pathId || this.savingKey()) return;
+    const key = this.doneKey(topic, item.content_id);
+    const next = !this.isDone(topic, item);
+    this.savingKey.set(key);
+    try {
+      const progress = await this.content.setLearningPathContentStatus(pathId, item.content_id, next);
+      this.topics.update((list) =>
+        list.map((t) =>
+          t.topic_path_id === pathId
+            ? {
+                ...t,
+                progress,
+                contents: t.contents.map((c) => (c.content_id === item.content_id ? { ...c, is_completed: next } : c)),
+              }
+            : t,
+        ),
+      );
+    } catch (error) {
+      this.toast.error(
+        'No se pudo actualizar el recurso',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
+    } finally {
+      this.savingKey.set(null);
+    }
+  }
 
   /** content_id del recurso que se está calificando (deshabilita sus estrellas mientras tanto). */
   readonly ratingId = signal<string | null>(null);
@@ -55,7 +140,7 @@ export class StudentRouteComponent {
     this.loadError.set(null);
     this.unavailable.set(false);
     try {
-      await this.loadPath(id, true);
+      await this.loadPath(id);
       await this.loadMyRatings(id);
     } catch (error) {
       this.loadError.set(
@@ -73,12 +158,12 @@ export class StudentRouteComponent {
   }
 
   /**
-   * Los ids de los temas se guardan al generar la ruta. Si no hay ninguno guardado se genera; si
-   * los guardados ya no sirven (la ruta cambió), se descartan y se genera una sola vez más.
+   * Trae las rutas del estudiante; si todavía no tiene, las genera a partir de su perfil y las
+   * vuelve a pedir. De cada tema se muestra la ruta más reciente que siga sin completar.
    */
-  private async loadPath(id: string, mayRegenerate: boolean): Promise<void> {
-    let refs = this.store.get(id);
-    if (refs.length === 0) {
+  private async loadPath(id: string): Promise<void> {
+    let paths = await this.content.getCompleteLearningPaths(id);
+    if (paths.length === 0) {
       const generated = await this.content.generateLearningPath(id);
       if (!generated.created) {
         this.topics.set([]);
@@ -86,23 +171,25 @@ export class StudentRouteComponent {
         else if (generated.reason === 'failed') this.loadError.set('No se pudo generar tu ruta de aprendizaje.');
         return;
       }
-      refs = generated.paths;
-      this.store.set(id, refs);
+      paths = await this.content.getCompleteLearningPaths(id);
     }
-
-    const topics = await this.fetchTopics(refs);
-    if (topics.length === 0 && mayRegenerate) {
-      this.store.clear(id);
-      await this.loadPath(id, false);
-      return;
-    }
+    const topics = this.activePerTopic(paths);
     this.topics.set(topics);
+    this.openTopics.set(new Set(topics[0] ? [this.topicKey(topics[0])] : []));
   }
 
-  /** Consulta cada tema por su id; los que fallan se omiten (si fallan todos, queda vacío). */
-  private async fetchTopics(refs: TopicPathRef[]): Promise<RecommendedTopic[]> {
-    const results = await Promise.allSettled(refs.map((r) => this.content.getLearningPathTopic(r.topic_path_id)));
-    return results.flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : []));
+  /**
+   * El backend entrega todas las rutas (también las repetidas y las completadas), de la más
+   * reciente a la más antigua. Por tema se toma la más reciente sin completar o, si todas están
+   * completas, la más reciente.
+   */
+  private activePerTopic(paths: RecommendedTopic[]): RecommendedTopic[] {
+    const chosen = new Map<string, RecommendedTopic>();
+    for (const p of paths) {
+      const current = chosen.get(p.topic);
+      if (!current || (current.is_completed && !p.is_completed)) chosen.set(p.topic, p);
+    }
+    return [...chosen.values()];
   }
 
   /** Avance de un tema redondeado a 0–100. */

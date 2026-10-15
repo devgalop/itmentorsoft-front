@@ -334,3 +334,40 @@
     display: none;
   }
 }
+
+.hst__draft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-white));
+  border: 1px solid var(--color-accent);
+}
+
+.hst__draft-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+  color: var(--color-dark);
+}
+
+.hst__draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hst__link {
+  background: none;
+  border: none;
+  color: var(--color-mid-1);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}

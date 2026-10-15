@@ -97,7 +97,7 @@
 .res__stats {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin: 1.25rem 0 0;
   padding: 0;
@@ -335,6 +335,6 @@
 
 @media (max-width: 640px) {
   .res__stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

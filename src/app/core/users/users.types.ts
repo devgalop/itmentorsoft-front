@@ -4,6 +4,8 @@ export interface UserInfo {
   email: string;
   name: string;
   role: string;
+  /** Estado de la cuenta (active, inactive, suspended). Lo envía GET /users/{id}. */
+  status?: string | null;
 }
 
 export interface GetUserResponse {

@@ -34,7 +34,12 @@
   font-size: 0.9rem;
 }
 
+.adres__table-scroll {
+  overflow-x: auto;
+}
+
 .adres__table {
+  min-width: 620px;
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;

@@ -192,6 +192,27 @@ describe('AssessmentHistoryComponent', () => {
     });
   });
 
+  describe('evaluación en curso', () => {
+    const draft = { topic: 'POO', answered: 1, total: 3, relative: 'hoy' };
+
+    it('offers to resume or discard an evaluation left unfinished', () => {
+      const { c, el } = create(data, { draft });
+      let resumed = 0;
+      let discarded = 0;
+      c.resumeDraft.subscribe(() => resumed++);
+      c.discardDraft.subscribe(() => discarded++);
+      expect(el.querySelector('.hst__draft')?.textContent).toContain('Tienes una evaluación en curso');
+      expect(el.querySelector('.hst__draft')?.textContent).toContain('POO · 1 de 3 respondidas');
+      (el.querySelector('.hst__draft .hst__btn') as HTMLButtonElement).click();
+      (el.querySelector('.hst__draft .hst__link') as HTMLButtonElement).click();
+      expect([resumed, discarded]).toEqual([1, 1]);
+    });
+
+    it('shows nothing without an evaluation in progress', () => {
+      expect(create(data).el.querySelector('.hst__draft')).toBeNull();
+    });
+  });
+
   describe('relativeDate', () => {
     const now = new Date(2026, 9, 12, 15, 0, 0);
     it('says today, yesterday and "hace N días" up to a week', () => {

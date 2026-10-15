@@ -139,7 +139,12 @@
   padding: 1rem 0;
 }
 
+.res__table-scroll {
+  overflow-x: auto;
+}
+
 .res__table {
+  min-width: 620px;
   width: 100%;
   border-collapse: collapse;
   font-size: 0.88rem;

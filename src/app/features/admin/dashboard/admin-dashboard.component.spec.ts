@@ -11,7 +11,11 @@ import { AssessmentsService } from '../../../core/assessments/assessments.servic
 describe('AdminDashboardComponent', () => {
   let fixture: ComponentFixture<AdminDashboardComponent>;
   let component: AdminDashboardComponent;
-  let reportsMock: { getStudents: ReturnType<typeof vi.fn> };
+  let reportsMock: {
+    getStudents: ReturnType<typeof vi.fn>;
+    getCategorySummary: ReturnType<typeof vi.fn>;
+    getUsersByRoleTotal: ReturnType<typeof vi.fn>;
+  };
   let contentMock: { getAllContents: ReturnType<typeof vi.fn> };
   let usersMock: {
     getAvailableRoles: ReturnType<typeof vi.fn>;
@@ -39,8 +43,8 @@ describe('AdminDashboardComponent', () => {
     fixture = TestBed.createComponent(AdminDashboardComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let i = 0; i < 4; i++) await new Promise((r) => setTimeout(r));
+    fixture.detectChanges();
   }
 
   beforeEach(() => {
@@ -49,6 +53,8 @@ describe('AdminDashboardComponent', () => {
         students: [student('1'), student('2')],
         total: 2,
       }),
+      getCategorySummary: vi.fn().mockImplementation((c: string) => Promise.resolve(c === 'básico' ? 2 : 0)),
+      getUsersByRoleTotal: vi.fn().mockImplementation((r: string) => Promise.resolve(r === 'student' ? 2 : 1)),
     };
     contentMock = { getAllContents: vi.fn().mockResolvedValue([{}, {}, {}]) };
     assessmentsMock = {
@@ -81,11 +87,6 @@ describe('AdminDashboardComponent', () => {
     expect(component.rolesTotal()).toBe(3);
   });
 
-  it('shows recent students in the users panel', async () => {
-    await setup();
-    expect(component.recentStudents()).toHaveLength(2);
-  });
-
   it('calls the pending endpoint with a minimal page', async () => {
     await setup();
     expect(approvalMock.getPending).toHaveBeenCalledWith(0, 1);
@@ -98,11 +99,6 @@ describe('AdminDashboardComponent', () => {
     expect(component.rolesTotal()).toBe(3);
     expect(component.resourcesTotal()).toBe(3);
     expect(component.studentsTotal()).toBe(2);
-  });
-
-  it('builds initials from the student name', async () => {
-    await setup();
-    expect(component.initials('Ana Lopez')).toBe('AL');
   });
 
   it('shows the AI model in use for each process', async () => {
@@ -124,5 +120,89 @@ describe('AdminDashboardComponent', () => {
     await setup();
     expect(component.modelsInUse()).toBeNull();
     expect(component.isLoading()).toBe(false);
+  });
+
+  describe('gráficas', () => {
+    it('shows the students by category, ordered from the lowest level', async () => {
+      await setup();
+      expect(component.levelItems().map((i) => [i.label, i.count])).toEqual([
+        ['Principiante', 0],
+        ['Básico', 2],
+        ['Intermedio', 0],
+        ['Avanzado', 0],
+      ]);
+      expect(component.classifiedTotal()).toBe(2);
+    });
+
+    it('shows the users by role', async () => {
+      await setup();
+      expect(component.roleItems().map((i) => [i.key, i.count])).toEqual([
+        ['admin', 1],
+        ['teacher', 1],
+        ['student', 2],
+      ]);
+    });
+
+    it('counts a failed query as zero without breaking the chart', async () => {
+      reportsMock.getCategorySummary.mockRejectedValue(new Error('x'));
+      await setup();
+      expect(component.levelItems().every((i) => i.count === 0)).toBe(true);
+    });
+
+    it('keeps the role chart empty when the roles cannot be loaded', async () => {
+      usersMock.getAvailableRoles.mockRejectedValue(new Error('x'));
+      await setup();
+      expect(component.roleItems()).toEqual([]);
+      expect(fixture.nativeElement.textContent).toContain('No se pudo cargar la distribución de usuarios');
+    });
+  });
+
+  describe('requiere tu atención', () => {
+    const texts = () => component.attention().map((a) => a.text);
+
+    it('warns about the questions pending approval with a link to review them', async () => {
+      await setup();
+      expect(texts()).toContain('4 preguntas pendientes de aprobación');
+      expect(component.attention()[0]).toMatchObject({ route: '/admin/content-approval', action: 'Revisar' });
+    });
+
+    it('uses the singular for a single pending question', async () => {
+      approvalMock.getPending.mockResolvedValue({ questions: [], total: 1 });
+      await setup();
+      expect(texts()).toContain('1 pregunta pendiente de aprobación');
+    });
+
+    it('warns about each AI process without a model', async () => {
+      assessmentsMock.getModelSelected.mockResolvedValue([{ process: 'qualifier', model_id: 'modelo_a' }]);
+      await setup();
+      expect(texts().some((t) => t.includes('no tiene modelo asignado'))).toBe(true);
+      expect(component.attention().find((a) => a.action === 'Configurar')?.route).toBe('/admin/config');
+    });
+
+    it('says everything is in order when there is nothing to review', async () => {
+      approvalMock.getPending.mockResolvedValue({ questions: [], total: 0 });
+      await setup();
+      expect(component.attention()).toEqual([]);
+      expect(fixture.nativeElement.textContent).toContain('Todo en orden');
+    });
+
+    it('notices when no student has a category yet', async () => {
+      approvalMock.getPending.mockResolvedValue({ questions: [], total: 0 });
+      reportsMock.getCategorySummary.mockResolvedValue(0);
+      await setup();
+      expect(texts()).toContain('Ningún estudiante tiene categoría todavía');
+    });
+
+    it('does not invent alerts when the data could not be loaded', async () => {
+      approvalMock.getPending.mockRejectedValue(new Error('x'));
+      assessmentsMock.getModelSelected.mockRejectedValue(new Error('x'));
+      await setup();
+      expect(component.attention()).toEqual([]);
+    });
+  });
+
+  it('shows the number of pending questions in the quick action of the banner', async () => {
+    await setup();
+    expect(fixture.nativeElement.querySelector('.dash__count')?.textContent).toContain('4');
   });
 });

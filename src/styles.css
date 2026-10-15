@@ -32,3 +32,68 @@ html, body {
   background-color: var(--color-light-2);
   color: var(--color-primary);
 }
+/* Tablas como tarjetas en teléfonos: cada fila se vuelve una tarjeta y cada celda lleva su etiqueta
+   (el atributo data-label). Las tablas que lo usan llevan la clase table-cards. */
+@media (max-width: 640px) {
+  table.table-cards {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  table.table-cards thead {
+    display: none !important;
+  }
+
+  table.table-cards tbody,
+  table.table-cards tr {
+    display: block !important;
+  }
+
+  table.table-cards tr {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--color-light-1) !important;
+    border-radius: 0.75rem;
+    background: var(--color-white);
+  }
+
+  table.table-cards td {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0 !important;
+    border: none !important;
+    flex-wrap: wrap;
+    text-align: right;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+  }
+
+  table.table-cards td > *,
+  table.table-cards td span,
+  table.table-cards td a {
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal !important;
+  }
+
+  /* Textos largos (título, pregunta, correo): la etiqueta arriba y el texto debajo, a la izquierda. */
+  table.table-cards td.td-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    text-align: left;
+  }
+
+  table.table-cards td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-align: left;
+    text-transform: uppercase;
+    color: var(--color-mid-2);
+  }
+}

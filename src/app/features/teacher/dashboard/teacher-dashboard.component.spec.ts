@@ -122,4 +122,26 @@ describe('TeacherDashboardComponent', () => {
     await setup();
     expect(component.initials('Eider Sánchez')).toBe('ES');
   });
+
+  it('feeds the category chart with a capitalized label, the count and the color of the level', async () => {
+    await setup();
+    const novice = component.categoryItems().find((c) => c.key === 'novice');
+    expect(novice).toMatchObject({ label: 'Novice', count: 2 });
+    expect(novice?.color).toBeTruthy();
+  });
+
+  it('has no chart data when there are no students', async () => {
+    reportsMock.getStudents.mockResolvedValue({ students: [], total: 0 });
+    await setup();
+    expect(component.categoryItems()).toEqual([]);
+  });
+
+  it('offers quick actions in the banner and no placeholder alerts card', async () => {
+    await setup();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Nueva pregunta');
+    expect(text).toContain('Ver reportes');
+    expect(text).not.toContain('No hay alertas por ahora');
+    expect(text).not.toContain('Rol: Docente');
+  });
 });

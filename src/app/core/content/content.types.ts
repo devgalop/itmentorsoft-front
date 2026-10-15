@@ -41,6 +41,8 @@ export interface RecommendedContent {
   title: string;
   description: string;
   rating: number;
+  /** Si el backend lo envía, manda sobre lo que se recuerda en el navegador. */
+  is_completed?: boolean;
 }
 
 /** Un tema de la ruta: su id (para consultarlo) y su nombre. */
@@ -57,13 +59,15 @@ export interface RecommendedTopic {
   topic_path_id?: string;
   /** Avance de 0 a 100. */
   progress?: number;
+  /** La ruta de este tema ya se completó. */
+  is_completed?: boolean;
 }
 
-/** Respuesta de GET /content/recommended/learning-paths?path_id=: un solo tema. */
-export interface GetRecommendedLearningPathsResponse {
+/** Respuesta de GET /content/complete/path?user_id=: todas las rutas del estudiante, de la más reciente a la más antigua. */
+export interface GetCompleteLearningPathResponse {
   is_success: boolean;
   message: string;
-  recommendation: RecommendedTopic | null;
+  learning_path: RecommendedTopic[] | null;
 }
 
 /** Respuesta de POST /content/generate/learning-path?student_id=. */
@@ -71,6 +75,21 @@ export interface GenerateLearningPathResponse {
   is_success: boolean;
   message: string;
   learning_path: TopicPathRef[] | null;
+}
+
+/** Cuerpo de PUT /content/learning-path/update/status. */
+export interface UpdatePathContentStatusPayload {
+  path_id: string;
+  content_id: string;
+  /** true = recurso visto; false = vuelve a pendiente. */
+  status: boolean;
+}
+
+export interface UpdatePathContentStatusResponse {
+  is_success: boolean;
+  message: string;
+  /** Avance del tema (0–100) después del cambio. */
+  path_progress: number;
 }
 
 /** Resultado de pedir que se genere la ruta del estudiante. */

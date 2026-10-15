@@ -127,6 +127,17 @@
         <p class="dash__next-text">
           Refuerza <strong>{{ w.label }}</strong>: vas en {{ w.value }}%.
         </p>
+        @if (weakResources().length > 0) {
+          <ul class="dash__res">
+            @for (r of weakResources(); track r.content_id) {
+              <li>
+                <button type="button" class="dash__res-item" [disabled]="openingId() === r.content_id" (click)="openResource(r.content_id)">
+                  {{ r.title }} <span aria-hidden="true">↗</span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
         <div class="dash__next-actions">
           <a routerLink="/student/explore" class="dash__btn dash__btn--solid">Explorar recursos</a>
           <a routerLink="/student/assessments" [queryParams]="newParams" class="dash__btn dash__btn--ghost">Nueva evaluación</a>
