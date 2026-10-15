@@ -26,7 +26,12 @@ describe('StudentAssessmentComponent', () => {
   }
 
   const routerMock = { navigate: vi.fn().mockResolvedValue(true) };
-  const gradingMock = { watch: vi.fn(), completedCount: signal(0), hasPending: vi.fn(() => false) };
+  const gradingMock = {
+    watch: vi.fn(),
+    completedCount: signal(0),
+    hasPending: vi.fn(() => false),
+    isPendingId: vi.fn((_id: string) => false),
+  };
 
   const toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
 
@@ -775,6 +780,21 @@ describe('StudentAssessmentComponent', () => {
       c.onAnswerChange('escrito a medias');
       TestBed.resetTestingModule();
       expect(stored().answers).toEqual({ q1: 'escrito a medias' });
+    });
+  });
+
+  describe('historial sin evaluaciones pendientes', () => {
+    it('leaves out of the history the evaluations that are still being graded', async () => {
+      serviceMock.getAssessmentsSummary.mockResolvedValue([
+        { assessment_id: 'a1', score: 0.8, date_taken: '2026-10-01T10:00:00', classification: 'básico', feedback: null },
+        { assessment_id: 'a2', score: 0, date_taken: '2026-10-05T10:00:00', classification: null, feedback: null },
+      ]);
+      gradingMock.isPendingId.mockImplementation((id: string) => id === 'a2');
+      const c = createComponent();
+      await flush();
+      expect(c.history()).toHaveLength(2);
+      expect(c.finishedHistory().map((h) => h.assessment_id)).toEqual(['a1']);
+      gradingMock.isPendingId.mockImplementation(() => false);
     });
   });
 });

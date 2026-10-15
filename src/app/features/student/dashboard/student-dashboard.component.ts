@@ -143,6 +143,8 @@ export class StudentDashboardComponent {
   /** Evaluación más reciente, con su variación y una mini gráfica de las últimas. */
   readonly last = computed<LastEvaluation | null>(() => {
     const sorted = [...this.history()]
+      // Una evaluación que se está calificando todavía no tiene resultado: no cuenta como la última.
+      .filter((h) => !this.grading.isPendingId(h.assessment_id))
       .filter((h) => !isNaN(new Date(h.date_taken).getTime()))
       .sort((a, b) => new Date(a.date_taken).getTime() - new Date(b.date_taken).getTime());
     if (sorted.length === 0) return null;

@@ -15,6 +15,19 @@ data "aws_iam_openid_connect_provider" "github" {
 
 locals {
   github_oidc_arn = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.github[0].arn
+
+  github_repo_owner = split("/", var.github_repository)[0]
+  github_repo_name  = split("/", var.github_repository)[1]
+
+  # GitHub envía el "sub" del token en dos formatos, y el rol acepta ambos:
+  #   - clásico:    repo:<dueño>/<repo>:ref:refs/heads/<rama>
+  #   - con ids:    repo:<dueño>@<id del dueño>/<repo>@<id del repo>:ref:refs/heads/<rama>
+  # Desde octubre de 2026 el repositorio envía el segundo; con solo el clásico, el despliegue
+  # falla con "Not authorized to perform sts:AssumeRoleWithWebIdentity".
+  github_subjects = compact([
+    "repo:${var.github_repository}:ref:refs/heads/${var.github_deploy_branch}",
+    var.github_owner_id != "" && var.github_repository_id != "" ? "repo:${local.github_repo_owner}@${var.github_owner_id}/${local.github_repo_name}@${var.github_repository_id}:ref:refs/heads/${var.github_deploy_branch}" : "",
+  ])
 }
 
 data "aws_iam_policy_document" "github_assume" {
@@ -35,7 +48,7 @@ data "aws_iam_policy_document" "github_assume" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/${var.github_deploy_branch}"]
+      values   = local.github_subjects
     }
   }
 }

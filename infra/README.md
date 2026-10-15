@@ -94,6 +94,11 @@ Cosas a tener en cuenta:
 - Como el API se sirve bajo el mismo dominio que el front, no se necesita CORS.
 - Rutas que llegan al API: `/users`, `/assessments`, `/content` y `/reports` (ver `api_path_prefixes`). `/docs` y `/openapi.json` no pasan por CloudFront; se consultan directo en el puerto del servidor.
 - Comprobar después del `apply` (la distribución tarda unos minutos en actualizarse): `curl -i https://itmentorsoft.com/users/available-roles` debe responder `401` (la respuesta del API) y no la página web.
+- **Guarda estos valores en `infra/terraform.tfvars`** (está ignorado por git). Si un `apply` posterior no los trae, vuelve a dejar el API desconectado.
+
+## Si el despliegue de GitHub falla con `Not authorized to perform sts:AssumeRoleWithWebIdentity`
+
+El rol compara el `sub` del token de GitHub con lo que permite. GitHub puede enviarlo en dos formatos: el clásico (`repo:dueño/repo:ref:refs/heads/master`) o con ids numéricos (`repo:dueño@<id>/repo@<id>:ref:refs/heads/master`). El rol acepta ambos (`github_subjects` en `github_oidc.tf`); los ids están en las variables `github_owner_id` y `github_repository_id`. Si el repositorio se transfiere o se recrea, hay que actualizar esos ids. Para ver lo que GitHub envía, el workflow tiene el paso `Debug OIDC claims`.
 
 ## Notas
 
