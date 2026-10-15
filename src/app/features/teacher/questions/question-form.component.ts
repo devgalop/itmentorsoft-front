@@ -110,7 +110,7 @@ export class QuestionFormComponent {
 
   private newRubric(score = 0, criteria = ''): FormGroup {
     return this.fb.nonNullable.group({
-      score: [score, [Validators.required, Validators.min(0), Validators.max(3)]],
+      score: [score, [Validators.required, Validators.min(0), Validators.max(5)]],
       criteria: [
         criteria,
         [Validators.required, Validators.minLength(10), Validators.maxLength(300)],
