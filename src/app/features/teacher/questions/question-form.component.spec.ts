@@ -259,9 +259,9 @@ describe('QuestionFormComponent', () => {
 
       it('maps the rubric score limits', () => {
         const score = component.rubric.at(0).get('score')!;
-        score.setValue(5);
+        score.setValue(6);
         score.markAsTouched();
-        expect(component.fieldError(score)).toBe('Máximo 3');
+        expect(component.fieldError(score)).toBe('Máximo 5');
         score.setValue(-1);
         expect(component.fieldError(score)).toBe('Mínimo 0');
       });
