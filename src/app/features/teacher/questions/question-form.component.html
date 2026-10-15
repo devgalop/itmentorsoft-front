@@ -132,7 +132,7 @@
 
     <!-- Rúbrica (mín. 1) -->
     <fieldset class="qform__array" formArrayName="rubric">
-      <legend>Rúbrica <span class="qform__hint">(puntaje 0–3 · criterio 10–300)</span></legend>
+      <legend>Rúbrica <span class="qform__hint">(puntaje 0–5 · criterio 10–300)</span></legend>
       @for (group of rubric.controls; track group) {
         <div class="qform__rubric-row" [formGroupName]="$index">
           <select formControlName="score" class="qform__score" aria-label="Puntaje">
@@ -140,6 +140,8 @@
             <option [value]="1">1</option>
             <option [value]="2">2</option>
             <option [value]="3">3</option>
+            <option [value]="4">4</option>
+            <option [value]="5">5</option>
           </select>
           <textarea formControlName="criteria" rows="2" placeholder="Criterio de evaluación"></textarea>
           <button
