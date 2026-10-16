@@ -276,8 +276,8 @@ describe('StudentDashboardComponent', () => {
         quantity: 1,
         classification: 'Básico',
         profile: [
-          { topic: 'A', score: 0.9 },
-          { topic: 'B', score: 0.2 },
+          { topic: 'A', score: 90 },
+          { topic: 'B', score: 20 },
         ],
       });
       const next = Array.from(el().querySelectorAll('a')).find((a) => a.textContent?.includes('Nueva evaluación'));
@@ -292,8 +292,8 @@ describe('StudentDashboardComponent', () => {
 
   describe('knowledge profile and next step', () => {
     const profile = [
-      { topic: 'POO', score: 0.9 },
-      { topic: 'APIs', score: 0.3 },
+      { topic: 'POO', score: 90 },
+      { topic: 'APIs', score: 30 },
     ];
     const knowledge = [
       { topic: 'POO', score: 90, index: 0 },
@@ -324,8 +324,8 @@ describe('StudentDashboardComponent', () => {
         quantity: 1,
         classification: 'Básico',
         profile: [
-          { topic: 'A', score: 0.5 },
-          { topic: 'B', score: 0.5 },
+          { topic: 'A', score: 50 },
+          { topic: 'B', score: 50 },
         ],
       });
       expect(component.weakest()).toBeNull();
@@ -425,8 +425,8 @@ describe('StudentDashboardComponent', () => {
 
   describe('recursos para el tema más débil', () => {
     const profile = [
-      { topic: 'POO', score: 0.9 },
-      { topic: 'APIs', score: 0.3 },
+      { topic: 'POO', score: 90 },
+      { topic: 'APIs', score: 30 },
     ];
     const route = [
       {

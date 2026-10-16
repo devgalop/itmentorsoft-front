@@ -51,7 +51,7 @@ export function buildTopicSeries(profile: { topic: string; score: number; index:
 }
 
 /**
- * Perfil de conocimiento actual (puntaje 0–1 por tema) como barras 0–100. Cada tema lleva el
+ * Perfil de conocimiento actual (puntaje 0–100 por tema, ya en porcentaje) como barras. Cada tema lleva el
  * mismo color que su línea en las series, si ya se conoce.
  */
 export function buildProfileItems(profile: { topic: string; score: number }[], series: LineSeries[]): ScoreItem[] {
@@ -59,7 +59,7 @@ export function buildProfileItems(profile: { topic: string; score: number }[], s
   return profile.map((p) => ({
     key: p.topic,
     label: p.topic,
-    value: scoreToPct(p.score),
+    value: clampPct(p.score),
     color: colors.get(p.topic),
   }));
 }
