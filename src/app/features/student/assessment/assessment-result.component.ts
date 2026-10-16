@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { scoreColor } from '@shared/charts/chart-colors';
 import { levelMedal } from '@shared/charts/level-medal';
 import { LevelMedalComponent } from '@shared/charts/level-medal.component';
-import { scoreToPct } from '@shared/charts/topic-progress';
+import { rubricGrade, rubricScoreToPct } from '@shared/charts/topic-progress';
 import { StudentAssessmentResult } from '@core/assessments/student-assessment.types';
 
 /** Por debajo de este puntaje (0–100) una respuesta se marca "por reforzar". */
@@ -16,6 +17,9 @@ interface AnswerView {
   question: string;
   answer: string;
   feedback: string;
+  /** Nota 0–5. */
+  grade: number;
+  /** Puntaje 0–100, para la barra y el color. */
   score: number;
   color: string;
   keyConcepts: string[];
@@ -26,7 +30,7 @@ interface AnswerView {
 @Component({
   selector: 'app-assessment-result',
   standalone: true,
-  imports: [RouterLink, LevelMedalComponent],
+  imports: [DecimalPipe, RouterLink, LevelMedalComponent],
   templateUrl: './assessment-result.component.html',
   styleUrl: './assessment-result.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,7 +40,10 @@ export class AssessmentResultComponent {
   readonly back = output<void>();
   readonly again = output<void>();
 
-  readonly score = computed(() => scoreToPct(this.result().avg_score));
+  /** Nota promedio 0–5. */
+  readonly grade = computed(() => rubricGrade(this.result().avg_score));
+  /** Lo mismo en 0–100, para el aro y el color. */
+  readonly score = computed(() => rubricScoreToPct(this.result().avg_score));
   readonly scoreColor = computed(() => scoreColor(this.score()));
   /** Cuánto del aro se pinta: proporcional al puntaje. */
   readonly ringDash = computed(() => `${(this.score() / 100) * RING_LENGTH} ${RING_LENGTH}`);
@@ -46,12 +53,13 @@ export class AssessmentResultComponent {
 
   readonly answers = computed<AnswerView[]>(() =>
     this.result().answer_scores.map((a, i) => {
-      const score = scoreToPct(a.score);
+      const score = rubricScoreToPct(a.score);
       return {
         number: i + 1,
         question: a.question_text,
         answer: a.answer,
         feedback: a.feedback,
+        grade: rubricGrade(a.score),
         score,
         color: scoreColor(score),
         keyConcepts: a.key_concepts ?? [],
@@ -84,9 +92,10 @@ export class AssessmentResultComponent {
   /** Resumen rápido: cuántas preguntas hubo, la mejor respuesta y cuántas hay por reforzar. */
   readonly summary = computed(() => {
     const scores = this.answers().map((a) => a.score);
+    const grades = this.answers().map((a) => a.grade);
     return {
       total: scores.length,
-      best: scores.length > 0 ? Math.max(...scores) : null,
+      best: grades.length > 0 ? Math.max(...grades) : null,
       toReinforce: scores.filter((s) => s < WEAK_BELOW).length,
     };
   });

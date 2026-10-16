@@ -7,12 +7,12 @@ describe('AssessmentResultComponent', () => {
   const base: StudentAssessmentResult = {
     assessment_id: 'a1',
     user_id: 'u1',
-    avg_score: 0.6,
+    avg_score: 3,
     classification: 'intermedio',
     feedback: 'Buen avance.',
     answer_scores: [
-      { question_id: 'q1', question_text: 'Pregunta uno', answer: 'resp 1', score: 0.9, feedback: 'Muy bien', key_concepts: ['clases'], misconceptions: [] },
-      { question_id: 'q2', question_text: 'Pregunta dos', answer: 'resp 2', score: 0.3, feedback: 'Falta detalle', key_concepts: null, misconceptions: ['herencia'] },
+      { question_id: 'q1', question_text: 'Pregunta uno', answer: 'resp 1', score: 4.5, feedback: 'Muy bien', key_concepts: ['clases'], misconceptions: [] },
+      { question_id: 'q2', question_text: 'Pregunta dos', answer: 'resp 2', score: 1.5, feedback: 'Falta detalle', key_concepts: null, misconceptions: ['herencia'] },
       { question_id: 'q3', question_text: 'Pregunta tres', answer: 'no sé', score: 0, feedback: 'Vacía' },
     ],
   };
@@ -29,7 +29,7 @@ describe('AssessmentResultComponent', () => {
   it('shows the average as a percentage and a ring proportional to it', () => {
     const { component, el } = create();
     expect(component.score()).toBe(60);
-    expect(el.querySelector('.res__ring-value')?.textContent).toContain('60%');
+    expect(el.querySelector('.res__ring-value')?.textContent).toContain('3.0');
     const [filled, total] = component.ringDash().split(' ').map(Number);
     expect(filled! / total!).toBeCloseTo(0.6, 5);
   });
@@ -50,7 +50,7 @@ describe('AssessmentResultComponent', () => {
 
   it('summarizes the questions: total, best answer and how many need reinforcement', () => {
     const { component, el } = create();
-    expect(component.summary()).toEqual({ total: 3, best: 90, toReinforce: 2 });
+    expect(component.summary()).toEqual({ total: 3, best: 4.5, toReinforce: 2 });
     expect(el.querySelectorAll('.res__stat')).toHaveLength(3);
   });
 
@@ -67,7 +67,7 @@ describe('AssessmentResultComponent', () => {
     expect(cards).toHaveLength(3);
     expect(cards[0]!.textContent).toContain('Pregunta uno');
     expect(cards[0]!.querySelector('.res__answer-num')?.textContent?.trim()).toBe('1');
-    expect(cards[0]!.querySelector('.res__answer-score')?.textContent).toContain('90%');
+    expect(cards[0]!.querySelector('.res__answer-score')?.textContent).toContain('4.5');
     expect(cards[1]!.textContent).toContain('resp 2');
     expect(cards[1]!.textContent).toContain('Falta detalle');
   });
@@ -109,7 +109,7 @@ describe('AssessmentResultComponent', () => {
       expect(el.querySelectorAll('.res__body')).toHaveLength(0);
       const first = el.querySelector('.res__answer')!;
       expect(first.textContent).toContain('Pregunta uno');
-      expect(first.textContent).toContain('90%');
+      expect(first.textContent).toContain('4.5');
       expect(first.textContent).not.toContain('resp 1');
       expect(first.querySelector('.res__answer-head')?.getAttribute('aria-expanded')).toBe('false');
     });

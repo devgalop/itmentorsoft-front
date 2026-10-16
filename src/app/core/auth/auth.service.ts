@@ -76,6 +76,11 @@ export class AuthService {
     } catch (error) {
       const blocked = this.extractBlockedLogin(error);
       if (blocked) return blocked;
+      // Si el correo o la contraseña no cumplen el formato, el backend responde 422 con un mensaje
+      // genérico en inglés. Para el usuario es lo mismo que unas credenciales incorrectas.
+      if (error instanceof HttpErrorResponse && error.status === 422) {
+        throw new Error('Credenciales inválidas');
+      }
       throw this.mapHttpError(error);
     }
   }

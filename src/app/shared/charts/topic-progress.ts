@@ -7,6 +7,24 @@ function clampPct(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value * 10) / 10));
 }
 
+/** Puntaje máximo de una respuesta en la rúbrica (escala 0–5). */
+export const MAX_RUBRIC_SCORE = 5;
+
+/** Puntaje de la rúbrica (0–5, también promedios) a porcentaje entero 0–100. */
+export function rubricScoreToPct(score: number): number {
+  return Math.max(0, Math.min(100, Math.round((score / MAX_RUBRIC_SCORE) * 100)));
+}
+
+/** Nota de la rúbrica (0–5, también promedios) con un decimal. */
+export function rubricGrade(score: number): number {
+  return Math.round(Math.max(0, Math.min(MAX_RUBRIC_SCORE, score)) * 10) / 10;
+}
+
+/** Diferencia entre dos notas, con un decimal. */
+export function gradeDelta(current: number, previous: number): number {
+  return Math.round((current - previous) * 10) / 10;
+}
+
 /** Score (0–1) a porcentaje entero 0–100. */
 export function scoreToPct(score: number): number {
   return Math.max(0, Math.min(100, Math.round(score * 100)));
@@ -33,7 +51,7 @@ export function buildTopicSeries(profile: { topic: string; score: number; index:
 }
 
 /**
- * Perfil de conocimiento actual (puntaje 0–1 por tema) como barras 0–100. Cada tema lleva el
+ * Perfil de conocimiento actual (puntaje 0–100 por tema, ya en porcentaje) como barras. Cada tema lleva el
  * mismo color que su línea en las series, si ya se conoce.
  */
 export function buildProfileItems(profile: { topic: string; score: number }[], series: LineSeries[]): ScoreItem[] {
@@ -41,7 +59,7 @@ export function buildProfileItems(profile: { topic: string; score: number }[], s
   return profile.map((p) => ({
     key: p.topic,
     label: p.topic,
-    value: scoreToPct(p.score),
+    value: clampPct(p.score),
     color: colors.get(p.topic),
   }));
 }

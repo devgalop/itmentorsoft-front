@@ -178,7 +178,7 @@ describe('LoginComponent', () => {
     expect(toastMock.error).toHaveBeenCalled();
   });
 
-  it('on 401 error, shows an error toast', async () => {
+  it('on 401 error, shows a toast and the register invitation', async () => {
     authServiceMock.login.mockRejectedValue(new Error('Credenciales inválidas'));
     component.loginForm.setValue({
       email: 'test@example.com',
@@ -187,7 +187,45 @@ describe('LoginComponent', () => {
 
     await component.onSubmit();
 
-    expect(toastMock.error).toHaveBeenCalledWith('No se pudo iniciar sesión', 'Credenciales inválidas');
+    expect(component.credentialsFailed()).toBe(true);
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo iniciar sesión', 'Correo o contraseña incorrectos.');
+  });
+
+  it('shows the credentials notice when the API answers without success and no block', async () => {
+    authServiceMock.login.mockResolvedValue({ ...SUCCESS, is_successful: false, user_id: null });
+    component.loginForm.setValue({ email: 'nadie@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(component.credentialsFailed()).toBe(true);
+  });
+
+  it('hides the notice as soon as the user edits the form', async () => {
+    authServiceMock.login.mockRejectedValue(new Error('Credenciales inválidas'));
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+    await component.onSubmit();
+
+    component.loginForm.controls.email.setValue('otro@example.com');
+
+    expect(component.credentialsFailed()).toBe(false);
+  });
+
+  it('passes the typed email to the register page when it is valid', () => {
+    component.loginForm.controls.email.setValue('nuevo@example.com');
+    expect(component.registerQuery).toEqual({ email: 'nuevo@example.com' });
+
+    component.loginForm.controls.email.setValue('no-es-correo');
+    expect(component.registerQuery).toEqual({});
+  });
+
+  it('shows a toast for errors other than wrong credentials', async () => {
+    authServiceMock.login.mockRejectedValue(new Error('Sin conexión al servidor'));
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(component.credentialsFailed()).toBe(false);
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo iniciar sesión', 'Sin conexión al servidor');
   });
 
   it('on error, does not redirect', async () => {

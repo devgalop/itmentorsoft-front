@@ -17,8 +17,8 @@ describe('StudentDetailComponent', () => {
     name: 'Eider Sánchez',
     knowledge_classification: 'average',
     profile: [
-      { topic: 'POO', score: 0.8 },
-      { topic: 'APIs', score: 0.4 },
+      { topic: 'POO', score: 80 },
+      { topic: 'APIs', score: 40 },
     ],
     feedback: 'Buen avance en POO, reforzar APIs.',
   };

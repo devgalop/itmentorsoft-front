@@ -27,13 +27,13 @@
       <div class="dash__stat-body">
         <span class="dash__stat-label">Última evaluación</span>
         @if (last(); as l) {
-          <span class="dash__stat-value">{{ l.score }}%</span>
+          <span class="dash__stat-value">{{ l.grade | number: '1.1-1' }}</span>
           <span class="dash__stat-hint">
             {{ formatDate(l.date) }}
             @if (l.delta !== null && l.delta !== 0) {
               ·
               <span [class]="l.delta > 0 ? 'dash__up' : 'dash__down'">
-                {{ l.delta > 0 ? '▲ +' : '▼ −' }}{{ l.delta > 0 ? l.delta : -l.delta }} pts
+                {{ l.delta > 0 ? '▲ +' : '▼ −' }}{{ (l.delta > 0 ? l.delta : -l.delta) | number: '1.1-1' }}
               </span>
             } @else if (l.delta === 0) {
               · = igual que la anterior

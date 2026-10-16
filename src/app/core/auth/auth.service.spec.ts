@@ -193,7 +193,7 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
-  it('login() surfaces the backend validation message on 422', async () => {
+  it('login() treats a 422 (credentials that do not meet the format) as invalid credentials', async () => {
     const loginPromise = service.login(validCredentials);
 
     const req = httpMock.expectOne(sessionUrl);
@@ -203,14 +203,14 @@ describe('AuthService', () => {
           {
             type: 'value_error',
             loc: ['body', 'password'],
-            msg: 'Value error, La contraseña debe incluir al menos una letra',
+            msg: 'Value error, Invalid email or password',
           },
         ],
       },
       { status: 422, statusText: 'Unprocessable Entity' },
     );
 
-    await expect(loginPromise).rejects.toThrow('La contraseña debe incluir al menos una letra');
+    await expect(loginPromise).rejects.toThrow('Credenciales inválidas');
   });
 
   it('login() throws connection error message on network error', async () => {
@@ -680,6 +680,21 @@ describe('AuthService', () => {
       );
     }
 
+    // El login trata el 422 como credenciales inválidas; el mapeo genérico se prueba con el registro.
+    async function failRegister(status: number, body: unknown): Promise<Error> {
+      const promise = service.register({
+        name: 'Ana Pérez',
+        username: 'ana',
+        email: 'ana@example.com',
+        password: 'Password1!',
+      } as never);
+      httpMock.expectOne(`${apiUrl}/users/`).flush(body, { status, statusText: 'error' });
+      return promise.then(
+        () => new Error('no falló'),
+        (error: Error) => error,
+      );
+    }
+
     it('maps 403 to "Acceso denegado"', async () => {
       expect((await failLogin(403, { detail: 'x' })).message).toBe('Acceso denegado');
     });
@@ -700,11 +715,11 @@ describe('AuthService', () => {
     });
 
     it('maps a 422 without validation details to a generic message', async () => {
-      expect((await failLogin(422, { detail: 'x' })).message).toBe('Datos inválidos');
+      expect((await failRegister(422, { detail: 'x' })).message).toBe('Datos inválidos');
     });
 
     it('maps a 422 whose first detail has no message to a generic message', async () => {
-      expect((await failLogin(422, { detail: [{}] })).message).toBe('Datos inválidos');
+      expect((await failRegister(422, { detail: [{}] })).message).toBe('Datos inválidos');
     });
 
     it('keeps an Error that did not come from HTTP and names unknown failures', () => {

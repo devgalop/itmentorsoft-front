@@ -202,17 +202,17 @@ describe('StudentDashboardComponent', () => {
 
   describe('last evaluation card', () => {
     const history = [
-      { assessment_id: 'a1', score: 0.5, date_taken: '2026-10-01T10:00:00', classification: 'básico' },
-      { assessment_id: 'a3', score: 0.8, date_taken: '2026-10-05T10:00:00', classification: 'intermedio' },
-      { assessment_id: 'a2', score: 0.62, date_taken: '2026-10-03T10:00:00', classification: 'básico' },
+      { assessment_id: 'a1', score: 2.5, date_taken: '2026-10-01T10:00:00', classification: 'básico' },
+      { assessment_id: 'a3', score: 4, date_taken: '2026-10-05T10:00:00', classification: 'intermedio' },
+      { assessment_id: 'a2', score: 3.1, date_taken: '2026-10-03T10:00:00', classification: 'básico' },
     ];
 
     it('shows the score of the most recent evaluation and the change versus the previous one', async () => {
       await setup(undefined, { quantity: 3, classification: 'Intermedio', history });
-      expect(component.last()?.score).toBe(80);
-      expect(component.last()?.delta).toBe(18);
-      expect(text()).toContain('80%');
-      expect(text()).toContain('+18 pts');
+      expect(component.last()?.grade).toBe(4);
+      expect(component.last()?.delta).toBe(0.9);
+      expect(text()).toContain('4.0');
+      expect(text()).toContain('+0.9');
     });
 
     it('draws a mini chart only when there are at least two evaluations', async () => {
@@ -226,7 +226,7 @@ describe('StudentDashboardComponent', () => {
     it('shows a drop with its own sign', async () => {
       await setup(undefined, { quantity: 2, history: [history[1]!, history[0]!] });
       // la más reciente por fecha es a3 (80) y la anterior a1 (50): sube
-      expect(component.last()?.delta).toBe(30);
+      expect(component.last()?.delta).toBe(1.5);
       await setup(undefined, {
         quantity: 2,
         history: [
@@ -234,8 +234,8 @@ describe('StudentDashboardComponent', () => {
           { ...history[1]!, date_taken: '2026-10-02T10:00:00' },
         ],
       });
-      expect(component.last()?.delta).toBe(-30);
-      expect(text()).toContain('30 pts');
+      expect(component.last()?.delta).toBe(-1.5);
+      expect(text()).toContain('1.5');
     });
 
     it('links the card straight to the result of the most recent evaluation', async () => {
@@ -276,8 +276,8 @@ describe('StudentDashboardComponent', () => {
         quantity: 1,
         classification: 'Básico',
         profile: [
-          { topic: 'A', score: 0.9 },
-          { topic: 'B', score: 0.2 },
+          { topic: 'A', score: 90 },
+          { topic: 'B', score: 20 },
         ],
       });
       const next = Array.from(el().querySelectorAll('a')).find((a) => a.textContent?.includes('Nueva evaluación'));
@@ -292,8 +292,8 @@ describe('StudentDashboardComponent', () => {
 
   describe('knowledge profile and next step', () => {
     const profile = [
-      { topic: 'POO', score: 0.9 },
-      { topic: 'APIs', score: 0.3 },
+      { topic: 'POO', score: 90 },
+      { topic: 'APIs', score: 30 },
     ];
     const knowledge = [
       { topic: 'POO', score: 90, index: 0 },
@@ -324,8 +324,8 @@ describe('StudentDashboardComponent', () => {
         quantity: 1,
         classification: 'Básico',
         profile: [
-          { topic: 'A', score: 0.5 },
-          { topic: 'B', score: 0.5 },
+          { topic: 'A', score: 50 },
+          { topic: 'B', score: 50 },
         ],
       });
       expect(component.weakest()).toBeNull();
@@ -357,12 +357,12 @@ describe('StudentDashboardComponent', () => {
   });
 
   describe('evaluación pendiente en el historial', () => {
-    const done = { assessment_id: 'a1', score: 0.8, date_taken: '2026-10-01T10:00:00', classification: 'básico' };
+    const done = { assessment_id: 'a1', score: 4, date_taken: '2026-10-01T10:00:00', classification: 'básico' };
     const pendingRow = { assessment_id: 'a2', score: 0, date_taken: '2026-10-05T10:00:00', classification: null };
 
     it('does not show the pending evaluation (score 0) as the last one', async () => {
       await setup(undefined, { quantity: 2, pending: true, pendingIds: ['a2'], history: [done, pendingRow] });
-      expect(component.last()?.score).toBe(80);
+      expect(component.last()?.grade).toBe(4);
       expect(component.last()?.delta).toBeNull();
       expect(text()).toContain('Calificando una evaluación nueva');
     });
@@ -376,7 +376,7 @@ describe('StudentDashboardComponent', () => {
 
     it('keeps an evaluation without result that is not pending (it never finished)', async () => {
       await setup(undefined, { quantity: 1, history: [pendingRow] });
-      expect(component.last()?.score).toBe(0);
+      expect(component.last()?.grade).toBe(0);
     });
   });
 
@@ -401,9 +401,9 @@ describe('StudentDashboardComponent', () => {
         quantity: 1,
         classification: 'Básico',
         pending: true,
-        history: [{ assessment_id: 'a1', score: 0.5, date_taken: '2026-10-01T10:00:00', classification: 'básico' }],
+        history: [{ assessment_id: 'a1', score: 2.5, date_taken: '2026-10-01T10:00:00', classification: 'básico' }],
       });
-      expect(text()).toContain('50%');
+      expect(text()).toContain('2.5');
       expect(text()).toContain('Calificando una evaluación nueva');
     });
 
@@ -425,8 +425,8 @@ describe('StudentDashboardComponent', () => {
 
   describe('recursos para el tema más débil', () => {
     const profile = [
-      { topic: 'POO', score: 0.9 },
-      { topic: 'APIs', score: 0.3 },
+      { topic: 'POO', score: 90 },
+      { topic: 'APIs', score: 30 },
     ];
     const route = [
       {
