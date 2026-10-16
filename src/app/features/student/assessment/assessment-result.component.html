@@ -1,7 +1,7 @@
 <button type="button" class="res__back" (click)="back.emit()">← Volver a mis evaluaciones</button>
 
 <section class="res__hero">
-  <div class="res__ring" role="img" [attr.aria-label]="'Promedio: ' + score() + '%'">
+  <div class="res__ring" role="img" [attr.aria-label]="'Nota promedio: ' + (grade() | number: '1.1-1') + ' de 5'">
     <svg viewBox="0 0 110 110" width="124" height="124" aria-hidden="true">
       <circle class="res__ring-track" cx="55" cy="55" r="46" />
       <circle
@@ -15,8 +15,8 @@
       />
     </svg>
     <span class="res__ring-text">
-      <strong class="res__ring-value">{{ score() }}%</strong>
-      <span class="res__ring-label">Promedio</span>
+      <strong class="res__ring-value">{{ grade() | number: '1.1-1' }}</strong>
+      <span class="res__ring-label">Nota de 5</span>
     </span>
   </div>
 
@@ -38,7 +38,7 @@
     <span class="res__stat-label">Preguntas</span>
   </li>
   <li class="res__stat">
-    <strong class="res__stat-value">{{ summary().best ?? '—' }}{{ summary().best !== null ? '%' : '' }}</strong>
+    <strong class="res__stat-value">{{ summary().best !== null ? (summary().best | number: '1.1-1') : '—' }}</strong>
     <span class="res__stat-label">Mejor respuesta</span>
   </li>
   <li class="res__stat">
@@ -70,7 +70,7 @@
         @if (a.misconceptions.length > 0) {
           <span class="res__flag" title="Conceptos por reforzar">{{ a.misconceptions.length }} por reforzar</span>
         }
-        <span class="res__answer-score">{{ a.score }}%</span>
+        <span class="res__answer-score">{{ a.grade | number: '1.1-1' }}</span>
         <span class="res__chevron" aria-hidden="true">{{ isOpen(a.number) ? '▾' : '▸' }}</span>
       </button>
       <div class="res__bar" aria-hidden="true">

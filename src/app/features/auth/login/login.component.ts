@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { distinctUntilChanged, map } from 'rxjs';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
@@ -25,14 +26,35 @@ export class LoginComponent {
   });
 
   readonly isLoading = signal(false);
+  /** El correo o la contraseña no coincidieron (la API no dice cuál, para no revelar qué correos existen). */
+  readonly credentialsFailed = signal(false);
 
   constructor() {
+    // Solo cuando cambian los valores: deshabilitar/habilitar el formulario al enviar también emite.
+    this.loginForm.valueChanges
+      .pipe(
+        map(() => JSON.stringify(this.loginForm.getRawValue())),
+        distinctUntilChanged(),
+      )
+      .subscribe(() => this.credentialsFailed.set(false));
     if (this.route.snapshot.queryParamMap.get('expired') === '1') {
       this.toast.info(
         'Sesión expirada',
         'Tu sesión expiró por inactividad. Inicia sesión de nuevo para continuar.',
       );
     }
+  }
+
+  /** Para llevar el correo escrito al registro, si ya es válido. */
+  get registerQuery(): { email?: string } {
+    const email = this.emailControl.value?.trim();
+    return email && this.emailControl.valid ? { email } : {};
+  }
+
+  /** Aviso flotante y, en la tarjeta, la invitación a registrarse. */
+  private showCredentialsError(): void {
+    this.credentialsFailed.set(true);
+    this.toast.error('No se pudo iniciar sesión', 'Correo o contraseña incorrectos.');
   }
 
   get emailControl(): FormControl {
@@ -84,6 +106,7 @@ export class LoginComponent {
 
     const { email, password } = this.loginForm.value;
 
+    this.credentialsFailed.set(false);
     this.isLoading.set(true);
     this.loginForm.disable();
 
@@ -110,8 +133,12 @@ export class LoginComponent {
         return;
       }
 
-      this.toast.error('No se pudo iniciar sesión', 'Revisa tus credenciales e intenta de nuevo.');
+      this.showCredentialsError();
     } catch (error) {
+      if (error instanceof Error && error.message === 'Credenciales inválidas') {
+        this.showCredentialsError();
+        return;
+      }
       this.toast.error(
         'No se pudo iniciar sesión',
         error instanceof Error ? error.message : 'Error inesperado',

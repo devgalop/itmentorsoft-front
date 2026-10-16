@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { GradingWatcherService } from '@core/assessments/grading-watcher.service';
@@ -12,18 +13,18 @@ import { UsersService } from '@core/users/users.service';
 import { ScoreBarsComponent, ScoreItem } from '@shared/charts/score-bars.component';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { buildSparkline } from '@shared/charts/sparkline';
-import { buildProfileItems, buildTopicSeries, scoreToPct } from '@shared/charts/topic-progress';
+import { buildProfileItems, buildTopicSeries, gradeDelta, rubricGrade, rubricScoreToPct, scoreToPct } from '@shared/charts/topic-progress';
 import { LevelMedal, levelMedal } from '@shared/charts/level-medal';
 import { LevelMedalComponent } from '@shared/charts/level-medal.component';
 
 /** Resumen de la evaluación más reciente. */
 interface LastEvaluation {
   id: string;
-  /** Puntaje 0–100. */
-  score: number;
+  /** Nota 0–5. */
+  grade: number;
   date: string;
   classification: string | null;
-  /** Diferencia en puntos frente a la evaluación anterior (null si es la primera). */
+  /** Diferencia de nota frente a la evaluación anterior (null si es la primera). */
   delta: number | null;
   /** Puntos de la mini gráfica (las últimas evaluaciones, de la más antigua a la más reciente). */
   spark: string | null;
@@ -47,7 +48,7 @@ function realFeedback(value: string | null | undefined): string | null {
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [RouterLink, ScoreBarsComponent, LevelMedalComponent],
+  imports: [DecimalPipe, RouterLink, ScoreBarsComponent, LevelMedalComponent],
   templateUrl: './student-dashboard.component.html',
   styleUrl: './student-dashboard.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -148,15 +149,16 @@ export class StudentDashboardComponent {
       .filter((h) => !isNaN(new Date(h.date_taken).getTime()))
       .sort((a, b) => new Date(a.date_taken).getTime() - new Date(b.date_taken).getTime());
     if (sorted.length === 0) return null;
-    const scores = sorted.map((h) => scoreToPct(h.score));
+    const scores = sorted.map((h) => rubricScoreToPct(h.score));
+    const grades = sorted.map((h) => rubricGrade(h.score));
     const latest = sorted[sorted.length - 1]!;
     const spark = buildSparkline(scores.slice(-SPARK_POINTS), SPARK_W, SPARK_H);
     return {
       id: latest.assessment_id,
-      score: scores[scores.length - 1]!,
+      grade: grades[grades.length - 1]!,
       date: latest.date_taken,
       classification: latest.classification,
-      delta: scores.length > 1 ? scores[scores.length - 1]! - scores[scores.length - 2]! : null,
+      delta: grades.length > 1 ? gradeDelta(grades[grades.length - 1]!, grades[grades.length - 2]!) : null,
       spark: spark?.points ?? null,
       lastDot: spark?.last ?? null,
     };

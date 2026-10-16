@@ -5,7 +5,7 @@ import { AssessmentSummary } from '../../../core/assessments/student-assessment.
 function item(n: number, score: number, classification: string | null, feedback: string | null = null): AssessmentSummary {
   return {
     assessment_id: 'a' + n,
-    score,
+    score: score * 5,
     date_taken: `2026-10-${String(n).padStart(2, '0')}T10:00:00`,
     classification,
     feedback,
@@ -30,10 +30,10 @@ describe('AssessmentHistoryComponent', () => {
       const { c } = create(data);
       const s = c.stats()!;
       expect(s.total).toBe(3);
-      expect(s.average).toBe(63);
-      expect(s.best).toBe(90);
-      expect(s.last.score).toBe(90);
-      expect(s.last.delta).toBe(30); // 90 contra 60 (la del día 3)
+      expect(s.average).toBe(3.2);
+      expect(s.best).toBe(4.5);
+      expect(s.last.grade).toBe(4.5);
+      expect(s.last.delta).toBe(1.5); // 4.5 contra 3 (la del día 3)
     });
 
     it('has no summary without evaluations', () => {
@@ -58,11 +58,11 @@ describe('AssessmentHistoryComponent', () => {
       const { el } = create(data);
       const rows = Array.from(el.querySelectorAll('.hst__row'));
       expect(rows).toHaveLength(3);
-      expect(rows[0]!.textContent).toContain('90%');
+      expect(rows[0]!.textContent).toContain('4.5');
       expect(rows[0]!.textContent).toContain('Intermedio');
-      expect(rows[0]!.textContent).toContain('+30 pts');
+      expect(rows[0]!.textContent).toContain('+1.5');
       expect(rows[0]!.textContent).toContain('Muy bien');
-      expect(rows[2]!.textContent).toContain('40%');
+      expect(rows[2]!.textContent).toContain('2.0');
     });
 
     it('marks only the best result, and only when there are several evaluations', () => {
@@ -77,7 +77,7 @@ describe('AssessmentHistoryComponent', () => {
 
     it('shows a drop with its own sign', () => {
       const { el } = create([item(1, 0.9, 'básico'), item(2, 0.5, 'básico')]);
-      expect(el.querySelector('.hst__row')?.textContent).toContain('−40 pts');
+      expect(el.querySelector('.hst__row')?.textContent).toContain('−2.0');
     });
 
     it('ignores evaluations with an invalid date', () => {
@@ -103,10 +103,10 @@ describe('AssessmentHistoryComponent', () => {
       const { c, el, fixture } = create(data);
       c.setSort('worst');
       fixture.detectChanges();
-      expect(el.querySelector('.hst__row')?.textContent).toContain('40%');
+      expect(el.querySelector('.hst__row')?.textContent).toContain('2.0');
       c.setSort('best');
       fixture.detectChanges();
-      expect(el.querySelector('.hst__row')?.textContent).toContain('90%');
+      expect(el.querySelector('.hst__row')?.textContent).toContain('4.5');
       c.setSort('algo raro');
       expect(c.sort()).toBe('recent');
     });
