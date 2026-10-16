@@ -10,7 +10,7 @@ import {
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
-import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
+import { AuthBrandComponent, InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
 
 // Mismo conjunto de caracteres especiales que exige el backend
 // (change_password_request.py -> SPECIAL_CHAR_PATTERN).
@@ -48,7 +48,7 @@ function passwordsMatchValidator(group: AbstractControl): ValidationErrors | nul
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [ReactiveFormsModule, InputComponent, ButtonComponent, FormFieldComponent, RouterLink],
+  imports: [ReactiveFormsModule, AuthBrandComponent, InputComponent, ButtonComponent, FormFieldComponent, RouterLink],
   templateUrl: './reset-password.component.html',
   styleUrl: './reset-password.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

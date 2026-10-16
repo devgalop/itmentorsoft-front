@@ -237,6 +237,103 @@
   cursor: pointer;
 }
 
+/* ===== RESPONSIVE: mobile =====
+   Igual que el login: fondo de la marca, el formulario flota como una tarjeta y los pasos del
+   proceso quedan debajo como etiquetas. El hero y su contenido pasan a `display: contents`
+   para poder ordenar sus piezas con `order`. */
+@media (max-width: 767px) {
+  .register-page {
+    position: relative;
+    overflow: hidden;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem 2rem;
+    background: var(--auth-gradient);
+  }
+
+  .register-hero,
+  .register-hero__content {
+    display: contents;
+  }
+
+  .register-hero__logo,
+  .register-hero__title,
+  .register-form-panel,
+  .register-hero__onboarding {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .register-hero__logo {
+    order: 1;
+    margin-bottom: 0;
+  }
+
+  .register-hero__logo-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .register-hero__logo-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .register-hero__title {
+    order: 2;
+    margin-bottom: 0;
+    font-size: 1.25rem;
+  }
+
+  .register-hero__subtitle,
+  .register-hero__onboarding-label {
+    display: none;
+  }
+
+  .register-form-panel {
+    order: 3;
+    flex: 0 0 auto;
+    display: block;
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  }
+
+  .register-hero__onboarding {
+    order: 4;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+
+  .register-hero__step {
+    gap: 0.5rem;
+    margin-bottom: 0;
+    padding: 0.3rem 0.75rem 0.3rem 0.35rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.75rem;
+  }
+
+  .register-hero__step--active {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .register-hero__step-number {
+    width: 20px;
+    height: 20px;
+    font-size: 0.625rem;
+  }
+}
+
 /* ===== RESPONSIVE: desktop split-screen ===== */
 @media (min-width: 768px) {
   .register-page {

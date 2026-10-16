@@ -18,6 +18,9 @@
   --color-success: #16A34A;
   --color-warning: #D97706;
   --color-error: #DC2626;
+
+  /* Fondo de las pantallas de acceso en teléfono (login, registro, recuperar, OTP). */
+  --auth-gradient: linear-gradient(165deg, var(--color-primary) 0%, color-mix(in srgb, var(--color-primary) 80%, var(--color-accent)) 100%);
 }
 
 * {

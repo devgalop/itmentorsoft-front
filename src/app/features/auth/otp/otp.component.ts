@@ -4,7 +4,7 @@ import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
-import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
+import { AuthBrandComponent, InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
 
 /** Segundos de espera entre reenvíos, para no gastar los intentos de bloqueo del backend. */
 const RESEND_COOLDOWN_SECONDS = 30;
@@ -12,7 +12,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
 @Component({
   selector: 'app-otp',
   standalone: true,
-  imports: [ReactiveFormsModule, InputComponent, ButtonComponent, FormFieldComponent, RouterLink],
+  imports: [ReactiveFormsModule, AuthBrandComponent, InputComponent, ButtonComponent, FormFieldComponent, RouterLink],
   templateUrl: './otp.component.html',
   styleUrl: './otp.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

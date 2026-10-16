@@ -227,15 +227,52 @@
   cursor: pointer;
 }
 
-/* ===== RESPONSIVE: mobile compacto =====
-   En pantallas chicas el hero se reduce a la marca para que el formulario
-   quede visible sin hacer scroll. */
+/* ===== RESPONSIVE: mobile =====
+   En pantallas chicas todo el fondo es de la marca y el formulario flota sobre él como una tarjeta:
+   marca arriba, título, tarjeta con el formulario y los beneficios como etiquetas debajo.
+   El hero y su contenido pasan a `display: contents` para poder ordenar sus piezas con `order`. */
 @media (max-width: 767px) {
-  .login-hero {
-    padding: 1rem 1.25rem;
+  .login-page {
+    position: relative;
+    overflow: hidden;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem 2rem;
+    background: var(--auth-gradient);
+  }
+
+  .login-hero,
+  .login-hero__content {
+    display: contents;
+  }
+
+  .login-hero__decoration--1 {
+    width: 220px;
+    height: 220px;
+    right: -70px;
+    top: -70px;
+  }
+
+  .login-hero__decoration--2 {
+    width: 200px;
+    height: 200px;
+    left: -80px;
+    bottom: 40px;
+  }
+
+  .login-hero__logo,
+  .login-hero__title,
+  .login-form-panel,
+  .login-hero__features {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .login-hero__logo {
+    order: 1;
     margin-bottom: 0;
   }
 
@@ -251,16 +288,23 @@
 
   .login-hero__brand small,
   .login-hero__tagline,
-  .login-hero__title,
-  .login-hero__subtitle,
-  .login-hero__features,
-  .login-hero__decoration--2 {
+  .login-hero__subtitle {
     display: none;
   }
 
+  .login-hero__title {
+    order: 2;
+    margin-bottom: 0;
+    font-size: 1.25rem;
+  }
+
   .login-form-panel {
-    align-items: flex-start;
-    padding: 1.5rem 1.25rem 2rem;
+    order: 3;
+    flex: 0 0 auto;
+    display: block;
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
   }
 
   .login-card__subtitle {
@@ -273,6 +317,27 @@
 
   .login-card__footer {
     margin-top: 1rem;
+  }
+
+  .login-hero__features {
+    order: 4;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .login-hero__features li {
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.75rem;
+  }
+
+  .login-hero__features li::before {
+    display: none;
   }
 }
 
