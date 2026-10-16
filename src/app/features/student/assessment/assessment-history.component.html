@@ -30,22 +30,22 @@
       </li>
       <li class="hst__stat">
         <span class="hst__stat-label">Promedio</span>
-        <strong class="hst__stat-value">{{ s.average }}%</strong>
+        <strong class="hst__stat-value">{{ s.average | number: '1.1-1' }}</strong>
       </li>
       <li class="hst__stat">
         <span class="hst__stat-label">Mejor resultado</span>
-        <strong class="hst__stat-value">{{ s.best }}%</strong>
+        <strong class="hst__stat-value">{{ s.best | number: '1.1-1' }}</strong>
       </li>
       <li class="hst__stat hst__stat--last">
         <div>
           <span class="hst__stat-label">Última</span>
-          <strong class="hst__stat-value">{{ s.last.score }}%</strong>
+          <strong class="hst__stat-value">{{ s.last.grade | number: '1.1-1' }}</strong>
           <span class="hst__stat-hint">
             {{ s.last.relative }}
             @if (s.last.delta !== null && s.last.delta !== 0) {
               ·
               <span [class]="s.last.delta > 0 ? 'hst__up' : 'hst__down'">
-                {{ s.last.delta > 0 ? '▲ +' : '▼ −' }}{{ s.last.delta > 0 ? s.last.delta : -s.last.delta }} pts
+                {{ s.last.delta > 0 ? '▲ +' : '▼ −' }}{{ (s.last.delta > 0 ? s.last.delta : -s.last.delta) | number: '1.1-1' }}
               </span>
             }
           </span>
@@ -108,7 +108,7 @@
         <li>
           <button type="button" class="hst__row" (click)="openResult.emit(r.id)" [disabled]="busy()">
             <div class="hst__score">
-              <strong [style.color]="r.color">{{ r.score }}%</strong>
+              <strong [style.color]="r.color">{{ r.grade | number: '1.1-1' }}</strong>
               <span class="hst__bar" aria-hidden="true">
                 <span [style.width.%]="r.score" [style.background]="r.color"></span>
               </span>
@@ -126,7 +126,7 @@
                 <span class="hst__date" [attr.title]="formatDate(r.date)">{{ r.relative }}</span>
                 @if (r.delta !== null && r.delta !== 0) {
                   <span [class]="r.delta > 0 ? 'hst__up' : 'hst__down'">
-                    {{ r.delta > 0 ? '▲ +' : '▼ −' }}{{ r.delta > 0 ? r.delta : -r.delta }} pts
+                    {{ r.delta > 0 ? '▲ +' : '▼ −' }}{{ (r.delta > 0 ? r.delta : -r.delta) | number: '1.1-1' }}
                   </span>
                 }
               </div>
