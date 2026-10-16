@@ -197,6 +197,22 @@
   color: var(--color-mid-2);
 }
 
+.login-form__alert {
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, white);
+  background: color-mix(in srgb, var(--color-primary) 6%, white);
+  color: var(--color-mid-2);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.login-form__alert a {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .login-form__register-link {
   text-align: center;
   margin-top: 0.875rem;

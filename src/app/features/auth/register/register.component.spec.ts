@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { RegisterComponent } from './register.component';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -25,6 +25,10 @@ describe('RegisterComponent', () => {
         { provide: AuthService, useValue: authServiceMock },
         { provide: Router, useValue: routerMock },
         { provide: ToastService, useValue: toastMock },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: () => null } } },
+        },
       ],
     });
 

@@ -29,21 +29,20 @@
 
       <h1 class="login-hero__title">Tu tutor inteligente de ingenier&iacute;a de software</h1>
       <p class="login-hero__subtitle">
-        Diagn&oacute;stico adaptativo con IA, categorizaci&oacute;n autom&aacute;tica y rutas de aprendizaje
-        personalizadas.
+        Eval&uacute;a tu nivel, recibe retroalimentaci&oacute;n personalizada y sigue una ruta de estudio hecha para ti.
       </p>
 
       <ul class="login-hero__features">
-        <li>Diagn&oacute;stico adaptativo basado en IA</li>
+        <li>Diagn&oacute;stico adaptativo con IA</li>
         <li>Rutas de aprendizaje personalizadas</li>
-        <li>Seguimiento de progreso en tiempo real</li>
+        <li>Seguimiento claro de tu progreso</li>
       </ul>
     </div>
   </section>
 
   <section class="login-form-panel">
     <div class="login-card">
-      <h2 class="login-card__title">Bienvenido de vuelta</h2>
+      <h2 class="login-card__title">Bienvenido</h2>
       <p class="login-card__subtitle">Ingres&aacute; tus credenciales para continuar</p>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
@@ -64,6 +63,13 @@
             [control]="loginForm.controls.password"
           />
         </app-form-field>
+
+        @if (credentialsFailed()) {
+          <div class="login-form__alert">
+            &iquest;A&uacute;n no tienes cuenta?
+            <a routerLink="/register" [queryParams]="registerQuery">Reg&iacute;strate</a>
+          </div>
+        }
 
         <div class="login-form__forgot-link">
           <a routerLink="/recover-password">&iquest;Olvidaste tu contrase&ntilde;a?</a>
