@@ -70,4 +70,48 @@ describe('InputComponent', () => {
     const input = fixture.debugElement.query(By.css('input'));
     expect(input.nativeElement.getAttribute('aria-invalid')).toBe('true');
   });
+
+  describe('password toggle', () => {
+    const toggle = () => fixture.debugElement.query(By.css('.app-input__toggle'));
+    const field = () => fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+
+    it('does not show the toggle for fields that are not passwords', () => {
+      createComponent({ id: 'email', type: 'email', control });
+      expect(toggle()).toBeFalsy();
+    });
+
+    it('hides the password by default and offers to show it', () => {
+      createComponent({ id: 'pwd', type: 'password', control });
+      expect(field().type).toBe('password');
+      expect(toggle().nativeElement.getAttribute('aria-label')).toBe('Mostrar contraseña');
+      expect(toggle().nativeElement.getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('shows the text when the toggle is pressed and hides it again on a second press', () => {
+      createComponent({ id: 'pwd', type: 'password', control });
+
+      toggle().nativeElement.click();
+      fixture.detectChanges();
+      expect(field().type).toBe('text');
+      expect(toggle().nativeElement.getAttribute('aria-label')).toBe('Ocultar contraseña');
+      expect(toggle().nativeElement.getAttribute('aria-pressed')).toBe('true');
+
+      toggle().nativeElement.click();
+      fixture.detectChanges();
+      expect(field().type).toBe('password');
+    });
+
+    it('does not submit the form: the toggle is a plain button', () => {
+      createComponent({ id: 'pwd', type: 'password', control });
+      expect(toggle().nativeElement.getAttribute('type')).toBe('button');
+    });
+
+    it('keeps the typed value when toggling', () => {
+      createComponent({ id: 'pwd', type: 'password', control });
+      control.setValue('secreto1!');
+      toggle().nativeElement.click();
+      fixture.detectChanges();
+      expect(field().value).toBe('secreto1!');
+    });
+  });
 });

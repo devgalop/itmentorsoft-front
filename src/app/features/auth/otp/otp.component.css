@@ -132,3 +132,19 @@
   text-decoration: none;
   cursor: pointer;
 }
+
+/* ===== RESPONSIVE: mobile =====
+   Mismo fondo de la marca que el login y el registro: la marca arriba y la tarjeta flotando. */
+@media (max-width: 767px) {
+  .otp-page {
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem 2rem;
+    background: var(--auth-gradient);
+  }
+
+  .otp-card {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  }
+}
