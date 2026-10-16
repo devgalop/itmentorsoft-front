@@ -70,13 +70,6 @@
   .cc__label {
     font-size: 0.66rem;
     overflow-wrap: normal;
-  }
-}
-
-@media (max-width: 480px) {
-  .cc__label {
-    font-size: 0.66rem;
-    overflow-wrap: normal;
     word-break: normal;
   }
 }

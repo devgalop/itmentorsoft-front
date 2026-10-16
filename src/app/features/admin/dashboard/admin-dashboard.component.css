@@ -217,19 +217,6 @@
     width: 40px;
     height: 40px;
   }
-
-  .dash__stat {
-    padding: 0.7rem 1rem;
-  }
-
-  .dash__stat-value {
-    font-size: 1.5rem;
-  }
-
-  .dash__icon {
-    width: 40px;
-    height: 40px;
-  }
 }
 
 .dash__stat--link {
