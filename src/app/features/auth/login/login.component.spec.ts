@@ -10,6 +10,7 @@ describe('LoginComponent', () => {
   let component: LoginComponent;
   let authServiceMock: { login: ReturnType<typeof vi.fn>; role: ReturnType<typeof vi.fn> };
   let routerMock: { navigate: ReturnType<typeof vi.fn> };
+  let returnUrl: string | null;
   let toastMock: {
     success: ReturnType<typeof vi.fn>;
     error: ReturnType<typeof vi.fn>;
@@ -27,6 +28,7 @@ describe('LoginComponent', () => {
   beforeEach(() => {
     authServiceMock = { login: vi.fn(), role: vi.fn().mockReturnValue(null) };
     routerMock = { navigate: vi.fn() };
+    returnUrl = null;
     toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
 
     TestBed.configureTestingModule({
@@ -38,7 +40,7 @@ describe('LoginComponent', () => {
         { provide: ToastService, useValue: toastMock },
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: { get: () => null } } },
+          useValue: { snapshot: { queryParamMap: { get: (key: string) => (key === 'returnUrl' ? returnUrl : null) } } },
         },
       ],
     });
@@ -96,6 +98,28 @@ describe('LoginComponent', () => {
       email: 'test@example.com',
       password: 'password123',
     });
+  });
+
+  it('passes the address it was asked to return to along to the OTP step', async () => {
+    returnUrl = '/student/assessments?result=abc123';
+    authServiceMock.login.mockResolvedValue(SUCCESS);
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/otp'], {
+      queryParams: { returnUrl: '/student/assessments?result=abc123' },
+    });
+  });
+
+  it('does not pass along an address that is not an internal route', async () => {
+    returnUrl = 'https://evil.example.com';
+    authServiceMock.login.mockResolvedValue(SUCCESS);
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/otp']);
   });
 
   it('on successful login (step 1), navigates to /otp for the code', async () => {

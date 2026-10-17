@@ -37,6 +37,22 @@ describe('roleGuard', () => {
     expect(routerMock.parseUrl).toHaveBeenCalledWith('/login');
   });
 
+  it('remembers the address when a visitor is sent to /login', () => {
+    authServiceMock.isAuthenticated.mockReturnValue(false);
+    const returnTree = {} as UrlTree;
+    const createUrlTree = vi.fn().mockReturnValue(returnTree);
+    (routerMock as unknown as { createUrlTree: unknown }).createUrlTree = createUrlTree;
+
+    const result = TestBed.runInInjectionContext(() =>
+      roleGuard('student')({} as never, { url: '/student/assessments?result=abc' } as never),
+    );
+
+    expect(result).toBe(returnTree);
+    expect(createUrlTree).toHaveBeenCalledWith(['/login'], {
+      queryParams: { returnUrl: '/student/assessments?result=abc' },
+    });
+  });
+
   it('redirects to /login when role does not match allowed role', () => {
     authServiceMock.isAuthenticated.mockReturnValue(true);
     authServiceMock.role.mockReturnValue('teacher');

@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { returnUrlForRole } from '@core/auth/return-url';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { AuthBrandComponent, InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
 
@@ -20,6 +21,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
 export class OtpComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -82,7 +84,14 @@ export class OtpComponent {
     try {
       const response = await this.authService.validateOtp(userId, otp.trim());
       if (response.is_successful && response.token) {
-        await this.router.navigate([this.authService.homeRoute()]);
+        const home = this.authService.homeRoute();
+        // Vuelve a la dirección que traía el enlace si es del módulo de su rol; si no, a su inicio.
+        const returnUrl = returnUrlForRole(this.route.snapshot.queryParamMap.get('returnUrl'), home);
+        if (returnUrl) {
+          await this.router.navigateByUrl(returnUrl);
+        } else {
+          await this.router.navigate([home]);
+        }
       } else {
         this.toast.error('Código incorrecto', response.message || 'Revisa el código e intenta de nuevo.');
       }

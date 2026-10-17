@@ -3,6 +3,7 @@ import { distinctUntilChanged, map } from 'rxjs';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { safeReturnUrl } from '@core/auth/return-url';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { InputComponent, ButtonComponent, FormFieldComponent } from '@shared/ui';
 
@@ -129,7 +130,13 @@ export class LoginComponent {
       }
       if (response.is_successful && response.user_id) {
         this.toast.info('Verifica tu correo', 'Te enviamos un código para completar el ingreso.');
-        await this.router.navigate(['/otp']);
+        // Si venía de un enlace (p. ej. el correo de la evaluación), el código OTP lo lleva ahí al terminar.
+        const returnUrl = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
+        if (returnUrl) {
+          await this.router.navigate(['/otp'], { queryParams: { returnUrl } });
+        } else {
+          await this.router.navigate(['/otp']);
+        }
         return;
       }
 
