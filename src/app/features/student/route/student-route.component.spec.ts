@@ -352,6 +352,34 @@ describe('StudentRouteComponent', () => {
     expect(c.ratingId()).toBeNull();
   });
 
+  it('updates the average of the resource right after rating, keeping the rest of the screen', async () => {
+    const c = createComponent();
+    await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+    c.toggleTopic(c.topics()[0]!);
+    const openBefore = new Set(c.openTopics());
+
+    contentMock.getCompleteLearningPaths.mockResolvedValue([
+      { ...topic, contents: [{ ...topic.contents[0]!, rating: 4.7 }] },
+    ]);
+    await c.rate('c1', 5);
+
+    expect(c.topics()[0]!.contents[0]!.rating).toBe(4.7);
+    expect(c.openTopics()).toEqual(openBefore);
+    expect(c.ratingId()).toBeNull();
+  });
+
+  it('keeps the previous average and the new rating when the refresh fails', async () => {
+    const c = createComponent();
+    await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+
+    contentMock.getCompleteLearningPaths.mockRejectedValue(new Error('Sin conexión al servidor'));
+    await c.rate('c1', 5);
+
+    expect(c.myRatings()['c1']).toBe(5);
+    expect(c.topics()[0]!.contents[0]!.rating).toBe(4.5);
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
   it('loads the ratings the student already made', async () => {
     contentMock.getRatingsByUser.mockResolvedValue([
       { content_id: 'c1', title: 'Capas', summary: '', rating: 3, student_id: 's1' },
