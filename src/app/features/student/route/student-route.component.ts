@@ -217,6 +217,29 @@ export class StudentRouteComponent {
     return Math.max(0, Math.min(5, Math.round(rating)));
   }
 
+  /**
+   * Al calificar, el promedio de todos los estudiantes (★ 4.5) cambia en el backend. Se vuelve a
+   * pedir solo para actualizar ese número, sin tocar el resto de la pantalla (temas abiertos,
+   * recursos vistos). No es crítico: si falla, el promedio se ve al recargar.
+   */
+  private async refreshAverages(userId: string): Promise<void> {
+    try {
+      const paths = await this.content.getCompleteLearningPaths(userId);
+      const averages = new Map<string, number>();
+      for (const path of paths) {
+        for (const c of path.contents) averages.set(c.content_id, c.rating);
+      }
+      this.topics.update((topics) =>
+        topics.map((t) => ({
+          ...t,
+          contents: t.contents.map((c) => (averages.has(c.content_id) ? { ...c, rating: averages.get(c.content_id)! } : c)),
+        })),
+      );
+    } catch {
+      // Se queda con el promedio anterior.
+    }
+  }
+
   /** Envía la calificación del estudiante (1-5); si ya había calificado el recurso, la modifica. */
   async rate(contentId: string, value: number): Promise<void> {
     const userId = this.auth.userId();
@@ -236,6 +259,7 @@ export class StudentRouteComponent {
         isEdit ? 'Calificación actualizada' : '¡Gracias por calificar!',
         'Tu opinión ayuda a mejorar la ruta.',
       );
+      await this.refreshAverages(userId);
     } catch (error) {
       this.toast.error(
         'No se pudo enviar tu calificación',

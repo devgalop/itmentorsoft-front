@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { OtpComponent } from './otp.component';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -12,7 +12,8 @@ describe('OtpComponent', () => {
     homeRoute: ReturnType<typeof vi.fn>;
     resendOtp: ReturnType<typeof vi.fn>;
   };
-  let routerMock: { navigate: ReturnType<typeof vi.fn> };
+  let routerMock: { navigate: ReturnType<typeof vi.fn>; navigateByUrl: ReturnType<typeof vi.fn> };
+  let returnUrl: string | null;
   let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 
   function createComponent(): OtpComponent {
@@ -23,6 +24,10 @@ describe('OtpComponent', () => {
         { provide: AuthService, useValue: authMock },
         { provide: Router, useValue: routerMock },
         { provide: ToastService, useValue: toastMock },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: (key: string) => (key === 'returnUrl' ? returnUrl : null) } } },
+        },
       ],
     });
     return TestBed.inject(OtpComponent);
@@ -35,7 +40,8 @@ describe('OtpComponent', () => {
       homeRoute: vi.fn().mockReturnValue('/student'),
       resendOtp: vi.fn().mockResolvedValue({ message: 'Si tu cuenta existe, te enviamos un código.' }),
     };
-    routerMock = { navigate: vi.fn() };
+    routerMock = { navigate: vi.fn(), navigateByUrl: vi.fn() };
+    returnUrl = null;
     toastMock = { success: vi.fn(), error: vi.fn() };
   });
 
@@ -73,6 +79,33 @@ describe('OtpComponent', () => {
     c.otpControl.setValue('A3F9C2');
     await c.onSubmit();
     expect(authMock.validateOtp).toHaveBeenCalledWith('u1', 'A3F9C2');
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/student']);
+  });
+
+  it('goes back to the address from the link when it belongs to the role module', async () => {
+    returnUrl = '/student/assessments?result=abc123';
+    const c = createComponent();
+    c.otpControl.setValue('A3F9C2');
+    await c.onSubmit();
+    expect(routerMock.navigateByUrl).toHaveBeenCalledWith('/student/assessments?result=abc123');
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+  });
+
+  it('ignores an address from another role module and goes to the role home', async () => {
+    returnUrl = '/admin/users';
+    const c = createComponent();
+    c.otpControl.setValue('A3F9C2');
+    await c.onSubmit();
+    expect(routerMock.navigateByUrl).not.toHaveBeenCalled();
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/student']);
+  });
+
+  it('ignores addresses that are not internal routes', async () => {
+    returnUrl = '//evil.example.com/student';
+    const c = createComponent();
+    c.otpControl.setValue('A3F9C2');
+    await c.onSubmit();
+    expect(routerMock.navigateByUrl).not.toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(['/student']);
   });
 
