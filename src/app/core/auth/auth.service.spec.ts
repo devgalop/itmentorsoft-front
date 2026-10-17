@@ -151,6 +151,22 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
+  it('login() returns the block state with the error body of the newer backend ({ status, message, path })', async () => {
+    const detail = {
+      is_successful: false,
+      user_id: null,
+      is_temporarily_blocked: true,
+      blocked_until: 1791174568,
+      is_definitively_blocked: false,
+    };
+    const loginPromise = service.login(validCredentials);
+    httpMock
+      .expectOne(sessionUrl)
+      .flush({ status: 401, message: detail, path: '/users/sessions' }, { status: 401, statusText: 'Unauthorized' });
+
+    await expect(loginPromise).resolves.toEqual(detail);
+  });
+
   it('login() returns the block state when the account is definitively blocked', async () => {
     const detail = {
       is_successful: false,

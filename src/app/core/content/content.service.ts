@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
+import { errorDetailText } from '@core/http/error-detail';
 import {
   ContentItem,
   ContentRating,
@@ -52,7 +53,7 @@ export class ContentService {
     } catch (error) {
       // Sin rutas el backend responde "404: La ruta de aprendizaje no fue encontrada" (a veces envuelto en un 500).
       if (error instanceof HttpErrorResponse) {
-        const detail = String(error.error?.detail ?? '');
+        const detail = errorDetailText(error);
         if (error.status === 404 || /no fue encontrada|not found/i.test(detail)) return [];
       }
       throw this.mapHttpError(error);
@@ -101,7 +102,7 @@ export class ContentService {
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status !== 0 && error.status !== 401 && error.status !== 403) {
         // El backend envuelve el mensaje en el detalle ("400: La ruta … ya existe …").
-        const detail = String(error.error?.detail ?? '');
+        const detail = errorDetailText(error);
         if (/ya existe|already exists/i.test(detail)) return { created: false, reason: 'exists', message: detail };
         if (/no se encontraron resultados|no results/i.test(detail)) {
           return { created: false, reason: 'no-evaluation', message: detail };
@@ -244,7 +245,13 @@ export class ContentService {
       );
       return response.rating_details ?? [];
     } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 404) return [];
+      // Sin calificaciones el backend responde un 404, o un 500 que lo trae envuelto en el mensaje.
+      if (
+        error instanceof HttpErrorResponse &&
+        (error.status === 404 || /no (fue )?encontrad|not found|no se encontr/i.test(errorDetailText(error)))
+      ) {
+        return [];
+      }
       throw this.mapHttpError(error);
     }
   }

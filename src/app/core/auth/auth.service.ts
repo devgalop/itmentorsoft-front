@@ -19,6 +19,7 @@ import {
 } from './auth.types';
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
+import { errorDetail } from '@core/http/error-detail';
 
 const TOKEN_KEY = 'auth_token';
 const USER_ID_KEY = 'auth_user_id';
@@ -92,7 +93,7 @@ export class AuthService {
    */
   private extractBlockedLogin(error: unknown): LoginResponse | null {
     if (!(error instanceof HttpErrorResponse) || error.status !== 401) return null;
-    const detail = error.error?.detail;
+    const detail = errorDetail(error) as Partial<LoginResponse> | null | undefined;
     if (!detail || typeof detail !== 'object') return null;
     if (detail.is_temporarily_blocked === true || detail.is_definitively_blocked === true) {
       return detail as LoginResponse;
@@ -332,16 +333,17 @@ export class AuthService {
   }
 
   private extractValidationMessage(error: HttpErrorResponse): string | null {
-    const detail = error.error?.detail;
+    const detail = errorDetail(error);
     if (Array.isArray(detail) && detail.length > 0) {
-      const rawMsg: string | undefined = detail[0]?.msg;
+      const rawMsg = (detail[0] as { msg?: string } | undefined)?.msg;
       return rawMsg?.replace('Value error, ', '') ?? null;
     }
     return null;
   }
 
   private extractBusinessErrorMessage(error: HttpErrorResponse): string | null {
-    const message = error.error?.detail?.message?.message;
+    const detail = errorDetail(error) as { message?: { message?: unknown } } | null | undefined;
+    const message = detail?.message?.message;
     return typeof message === 'string' ? message : null;
   }
 }
