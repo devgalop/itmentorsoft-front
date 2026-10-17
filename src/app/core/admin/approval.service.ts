@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
+import { errorDetail } from '@core/http/error-detail';
 import {
   GetPendingApprovalResponse,
   PagedPending,
@@ -64,7 +65,7 @@ export class ApprovalService {
   }
 
   private extractDetail(error: HttpErrorResponse): string | null {
-    const detail = error.error?.detail;
+    const detail = errorDetail(error);
     if (typeof detail === 'string') return detail;
     if (Array.isArray(detail) && detail.length > 0) {
       return detail[0]?.msg?.replace('Value error, ', '') ?? null;

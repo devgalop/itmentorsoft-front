@@ -57,6 +57,15 @@ describe('ContentService', () => {
       expect(await second).toEqual([]);
     });
 
+    it('also understands the error body of the newer backend ({ status, message, path })', async () => {
+      const promise = service.getCompleteLearningPaths('s1');
+      httpMock.expectOne(url).flush(
+        { status: 500, message: '404: La ruta de aprendizaje no fue encontrada', path: '/content/complete/path' },
+        { status: 500, statusText: 'x' },
+      );
+      expect(await promise).toEqual([]);
+    });
+
     it('keeps the usual messages for other errors', async () => {
       const promise = service.getCompleteLearningPaths('s1');
       httpMock.expectOne(url).flush({ detail: 'algo' }, { status: 500, statusText: 'x' });
