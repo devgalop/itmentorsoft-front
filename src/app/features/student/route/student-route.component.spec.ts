@@ -380,6 +380,110 @@ describe('StudentRouteComponent', () => {
     expect(toastMock.error).not.toHaveBeenCalled();
   });
 
+  describe('generar otra ruta', () => {
+    const doneTopic = { ...topic, contents: [{ ...topic.contents[0]!, is_completed: true }], progress: 100 };
+
+    beforeEach(() => {
+      toastMock.info.mockClear();
+    });
+
+    it('is not available while the route has pending resources, and says how many are left', async () => {
+      const c = createComponent();
+      await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+
+      expect(c.routeCompleted()).toBe(false);
+      expect(c.pendingContents()).toBe(1);
+
+      await c.generateAnother();
+      expect(contentMock.generateLearningPath).not.toHaveBeenCalled();
+    });
+
+    it('is available once every resource of every topic is seen', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([doneTopic]);
+      const c = createComponent();
+      await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+
+      expect(c.routeCompleted()).toBe(true);
+      expect(c.pendingContents()).toBe(0);
+    });
+
+    it('needs all topics completed, not just one', async () => {
+      const pending = { ...topic, topic_path_id: 'p2', topic: 'APIs' };
+      contentMock.getCompleteLearningPaths.mockResolvedValue([doneTopic, pending]);
+      const c = createComponent();
+      await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+
+      expect(c.routeCompleted()).toBe(false);
+    });
+
+    it('is never available when there is no route', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([]);
+      contentMock.generateLearningPath.mockResolvedValue({ created: false, reason: 'no-evaluation', message: '' });
+      const c = createComponent();
+      await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+
+      expect(c.routeCompleted()).toBe(false);
+    });
+
+    it('generates the new route and loads it again', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([doneTopic]);
+      const c = createComponent();
+      await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+      contentMock.generateLearningPath.mockClear();
+      contentMock.getCompleteLearningPaths.mockClear();
+
+      await c.generateAnother();
+
+      expect(contentMock.generateLearningPath).toHaveBeenCalledWith('s1');
+      expect(contentMock.getCompleteLearningPaths).toHaveBeenCalled();
+      expect(toastMock.success).toHaveBeenCalled();
+      expect(c.generating()).toBe(false);
+    });
+
+    it('explains that it is not possible yet when the backend still says the route exists', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([doneTopic]);
+      const c = createComponent();
+      await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+      contentMock.generateLearningPath.mockResolvedValue({ created: false, reason: 'exists', message: 'ya existe' });
+      contentMock.getCompleteLearningPaths.mockClear();
+
+      await c.generateAnother();
+
+      expect(toastMock.info).toHaveBeenCalled();
+      expect(toastMock.success).not.toHaveBeenCalled();
+      expect(contentMock.getCompleteLearningPaths).not.toHaveBeenCalled();
+      expect(c.generating()).toBe(false);
+    });
+
+    it('shows an error when the generation fails or the request throws', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([doneTopic]);
+      const c = createComponent();
+      await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+
+      contentMock.generateLearningPath.mockResolvedValueOnce({ created: false, reason: 'failed', message: 'x' });
+      await c.generateAnother();
+      expect(toastMock.error).toHaveBeenCalledTimes(1);
+
+      contentMock.generateLearningPath.mockRejectedValueOnce(new Error('Sin conexión al servidor'));
+      await c.generateAnother();
+      expect(toastMock.error).toHaveBeenCalledTimes(2);
+      expect(c.generating()).toBe(false);
+    });
+
+    it('ignores a second click while one is being generated', async () => {
+      contentMock.getCompleteLearningPaths.mockResolvedValue([doneTopic]);
+      const c = createComponent();
+      await vi.waitFor(() => expect(c.isLoading()).toBe(false));
+      contentMock.generateLearningPath.mockClear();
+
+      const first = c.generateAnother();
+      const second = c.generateAnother();
+      await Promise.all([first, second]);
+
+      expect(contentMock.generateLearningPath).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('loads the ratings the student already made', async () => {
     contentMock.getRatingsByUser.mockResolvedValue([
       { content_id: 'c1', title: 'Capas', summary: '', rating: 3, student_id: 's1' },

@@ -71,6 +71,57 @@ export class StudentRouteComponent {
     return { topics: topics.length, total, done, overall: Math.max(0, Math.min(100, overall)) };
   });
 
+  /** Un tema está completo si el backend lo dice o si ya se vieron todos sus recursos. */
+  isTopicDone(topic: RecommendedTopic): boolean {
+    return topic.is_completed === true || (topic.contents.length > 0 && this.doneCount(topic) === topic.contents.length);
+  }
+
+  /** Toda la ruta está completa: solo entonces se puede generar otra. */
+  readonly routeCompleted = computed(() => {
+    const topics = this.topics();
+    return topics.length > 0 && topics.every((t) => this.isTopicDone(t));
+  });
+
+  /** Recursos que faltan por ver en toda la ruta. */
+  readonly pendingContents = computed(() => this.overview().total - this.overview().done);
+
+  /** Se está generando otra ruta (deshabilita el botón para no crear rutas repetidas). */
+  readonly generating = signal(false);
+
+  /**
+   * Genera otra ruta con los resultados más recientes del estudiante. Solo se ofrece cuando la
+   * actual está completa. El backend decide si puede: mientras no marque la ruta como completada
+   * responde que "ya existe", y se le explica al estudiante sin crear nada.
+   */
+  async generateAnother(): Promise<void> {
+    const userId = this.auth.userId();
+    if (!userId || this.generating() || !this.routeCompleted()) return;
+    this.generating.set(true);
+    try {
+      const generated = await this.content.generateLearningPath(userId);
+      if (generated.created) {
+        this.toast.success('Generamos tu nueva ruta', 'Ya puedes empezar con sus recursos.');
+        await this.load(userId);
+      } else if (generated.reason === 'exists') {
+        this.toast.info(
+          'Todavía no se puede generar otra ruta',
+          'El sistema aún no reconoce tu ruta como completada. Intenta de nuevo más tarde.',
+        );
+      } else if (generated.reason === 'no-evaluation') {
+        this.toast.info('Primero haz una evaluación', 'Necesitamos tus resultados para armar una ruta.');
+      } else {
+        this.toast.error('No se pudo generar la ruta', 'Intenta de nuevo en unos segundos.');
+      }
+    } catch (error) {
+      this.toast.error(
+        'No se pudo generar la ruta',
+        error instanceof Error ? error.message : 'Error inesperado',
+      );
+    } finally {
+      this.generating.set(false);
+    }
+  }
+
   /** Recurso cuyo estado se está guardando ("pathId|contentId"). */
   readonly savingKey = signal<string | null>(null);
 
