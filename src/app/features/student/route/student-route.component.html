@@ -120,5 +120,29 @@
         </article>
       }
     </div>
+
+    <aside class="route__next" [class.route__next--ready]="routeCompleted()">
+      <div class="route__next-text">
+        <p class="route__next-title">
+          {{ routeCompleted() ? '¡Completaste tu ruta!' : 'Generar otra ruta' }}
+        </p>
+        <p class="route__next-hint">
+          @if (routeCompleted()) {
+            Genera una nueva ruta con tus resultados más recientes.
+          } @else {
+            Completa todos los recursos de tu ruta para poder generar otra. Te
+            {{ pendingContents() === 1 ? 'falta 1 recurso' : 'faltan ' + pendingContents() + ' recursos' }}.
+          }
+        </p>
+      </div>
+      <button
+        type="button"
+        class="route__next-btn"
+        [disabled]="!routeCompleted() || generating()"
+        (click)="generateAnother()"
+      >
+        {{ generating() ? 'Generando…' : 'Generar otra ruta' }}
+      </button>
+    </aside>
   }
 </section>
