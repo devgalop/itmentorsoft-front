@@ -7,4 +7,9 @@ export class SidebarService {
   toggle(): void {
     this.isCollapsed.update(v => !v);
   }
+
+  /** Despliega o contrae el menú (en teléfono, abre o cierra el panel). */
+  setCollapsed(collapsed: boolean): void {
+    this.isCollapsed.set(collapsed);
+  }
 }

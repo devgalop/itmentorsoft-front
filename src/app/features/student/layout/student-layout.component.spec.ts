@@ -7,6 +7,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { STUDENT_NAV_ITEMS } from './student-nav-items';
 import { InitialAssessmentService } from '../../../core/student/initial-assessment.service';
 import { GradingWatcherService } from '../../../core/assessments/grading-watcher.service';
+import { GuideService } from '../../../core/guide/guide.service';
 
 describe('StudentLayoutComponent', () => {
   let component: StudentLayoutComponent;
@@ -21,6 +22,7 @@ describe('StudentLayoutComponent', () => {
   let initialAssessmentMock: { hasCompleted: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
+    localStorage.clear();
     sidebarServiceMock = { isCollapsed: vi.fn(() => false) };
     authServiceMock = { logout: vi.fn(), user: vi.fn(() => null), userId: vi.fn(() => 'u1') };
     gradingMock = { resume: vi.fn() };
@@ -92,5 +94,63 @@ describe('StudentLayoutComponent', () => {
 
   it('resumes the pending gradings of the logged-in student', () => {
     expect(gradingMock.resume).toHaveBeenCalledWith('u1');
+  });
+
+  describe('guía de uso', () => {
+    const dialog = () => fixture.nativeElement.querySelector('app-guide-dialog') as HTMLElement | null;
+    const guideButton = () => fixture.nativeElement.querySelector('button.sidebar__nav-item--button') as HTMLButtonElement;
+
+    // El layout de arriba ya abrió la guía en el servicio compartido: cada prueba parte de cero.
+    beforeEach(() => {
+      fixture.destroy();
+      TestBed.inject(GuideService).close();
+      localStorage.clear();
+    });
+
+    afterEach(() => {
+      fixture.destroy();
+      localStorage.clear();
+    });
+
+    it('opens by itself the first time, with the student guide', () => {
+      fixture = TestBed.createComponent(StudentLayoutComponent);
+      fixture.detectChanges();
+      expect(dialog()).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.guide__counter').textContent).toContain('de 6');
+    });
+
+    it('remembers it was seen when it is closed and does not open again on the next visit', () => {
+      fixture = TestBed.createComponent(StudentLayoutComponent);
+      fixture.detectChanges();
+      (Array.from(fixture.nativeElement.querySelectorAll('.guide button')) as HTMLButtonElement[])
+        .find((b) => b.textContent!.trim() === 'Omitir')!
+        .click();
+      fixture.detectChanges();
+      expect(dialog()).toBeNull();
+
+      fixture.destroy();
+      fixture = TestBed.createComponent(StudentLayoutComponent);
+      fixture.detectChanges();
+      expect(dialog()).toBeNull();
+    });
+
+    it('offers the "Guía de uso" button in the menu and opens it again from there', () => {
+      localStorage.setItem('itm.guide.seen.student.u1', '1');
+      fixture = TestBed.createComponent(StudentLayoutComponent);
+      fixture.detectChanges();
+      expect(dialog()).toBeNull();
+
+      guideButton().click();
+      fixture.detectChanges();
+
+      expect(dialog()).toBeTruthy();
+    });
+
+    it('does not open without a logged-in user', () => {
+      authServiceMock.userId.mockReturnValue(null);
+      fixture = TestBed.createComponent(StudentLayoutComponent);
+      fixture.detectChanges();
+      expect(dialog()).toBeNull();
+    });
   });
 });

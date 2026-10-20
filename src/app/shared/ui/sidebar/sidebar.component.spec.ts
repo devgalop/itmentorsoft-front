@@ -147,6 +147,47 @@ describe('SidebarComponent', () => {
     expect(icons).toHaveLength(mockNavItems.length);
   });
 
+  describe('guide button', () => {
+    const guideButton = () => fixture.nativeElement.querySelector('button.sidebar__nav-item--button') as HTMLButtonElement | null;
+
+    it('is not shown by default', () => {
+      fixture.componentRef.setInput('navItems', mockNavItems);
+      fixture.detectChanges();
+      expect(guideButton()).toBeNull();
+    });
+
+    it('is shown at the end of the menu when showGuide is on, with its label and icon', () => {
+      fixture.componentRef.setInput('navItems', mockNavItems);
+      fixture.componentRef.setInput('showGuide', true);
+      fixture.detectChanges();
+
+      expect(guideButton()!.textContent).toContain('Guía de uso');
+      expect(guideButton()!.querySelector('app-sidebar-icon')).toBeTruthy();
+      expect(guideButton()!.getAttribute('type')).toBe('button');
+      expect(guideButton()!.getAttribute('title')).toBe('Guía de uso');
+    });
+
+    it('asks to open the guide when it is pressed', () => {
+      fixture.componentRef.setInput('showGuide', true);
+      fixture.detectChanges();
+      const requested = vi.fn();
+      component.guideRequested.subscribe(requested);
+
+      guideButton()!.click();
+
+      expect(requested).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps only the icon when the sidebar is collapsed', () => {
+      sidebarServiceMock.isCollapsed.mockReturnValue(true);
+      fixture.componentRef.setInput('showGuide', true);
+      fixture.detectChanges();
+
+      expect(guideButton()!.textContent!.trim()).toBe('');
+      expect(guideButton()!.querySelector('app-sidebar-icon')).toBeTruthy();
+    });
+  });
+
   it('shows the logout button at the bottom, with its icon, even when collapsed', () => {
     sidebarServiceMock.isCollapsed.mockReturnValue(true);
     fixture.detectChanges();

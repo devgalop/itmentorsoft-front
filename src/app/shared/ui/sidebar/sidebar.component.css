@@ -155,6 +155,20 @@
   border: 1px solid rgba(26, 188, 176, 0.25);
 }
 
+.sidebar__nav-item--button {
+  width: 100%;
+  border: 1px solid transparent;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar__nav-item--button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
 .sidebar__nav-icon {
   width: 18px;
   height: 18px;

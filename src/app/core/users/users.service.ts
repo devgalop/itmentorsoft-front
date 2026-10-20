@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
+import { rateLimitMessage } from '@core/http/rate-limit';
 import {
   AssignRoleResponse,
   CreateUserPayload,
@@ -139,6 +140,8 @@ export class UsersService {
           return new Error('No se encontró el usuario');
         case 422:
           return new Error('Datos inválidos');
+        case 429:
+          return new Error(rateLimitMessage(error));
         default:
           return new Error('Error en el servidor, intenta más tarde');
       }

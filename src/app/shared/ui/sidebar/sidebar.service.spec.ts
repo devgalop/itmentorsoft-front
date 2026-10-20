@@ -18,6 +18,15 @@ describe('SidebarService', () => {
     expect(service.isCollapsed()).toBe(false);
   });
 
+  it('setCollapsed sets the state directly, whatever it was', () => {
+    service.setCollapsed(false);
+    expect(service.isCollapsed()).toBe(false);
+    service.setCollapsed(false);
+    expect(service.isCollapsed()).toBe(false);
+    service.setCollapsed(true);
+    expect(service.isCollapsed()).toBe(true);
+  });
+
   it('toggle collapses it again', () => {
     service.toggle();
     service.toggle();

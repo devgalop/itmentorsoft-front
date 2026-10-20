@@ -711,6 +711,21 @@ describe('AuthService', () => {
       );
     }
 
+    it('maps 429 to a "too many requests" message with the wait time the backend asks for', async () => {
+      const promise = service.login(validCredentials);
+      httpMock
+        .expectOne(sessionUrl)
+        .flush(
+          { status: 429, message: 'x', path: '/users/sessions' },
+          { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '45' } },
+        );
+      await expect(promise).rejects.toThrow('Espera 45 segundos');
+    });
+
+    it('maps 429 without a wait time to a general "too many requests" message', async () => {
+      expect((await failLogin(429, { status: 429, message: 'x' })).message).toContain('Espera un momento');
+    });
+
     it('maps 403 to "Acceso denegado"', async () => {
       expect((await failLogin(403, { detail: 'x' })).message).toBe('Acceso denegado');
     });
