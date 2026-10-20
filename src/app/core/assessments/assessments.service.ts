@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
+import { rateLimitMessage } from '@core/http/rate-limit';
 import {
   EvaluativeQuestion,
   GetAllQuestionsResponse,
@@ -246,6 +247,8 @@ export class AssessmentsService {
           return new Error('No tienes permisos para ver este contenido');
         case 404:
           return new Error('No se encontraron resultados');
+        case 429:
+          return new Error(rateLimitMessage(error));
         default:
           return new Error('Error en el servidor, intenta más tarde');
       }

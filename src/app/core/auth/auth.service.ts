@@ -19,6 +19,7 @@ import {
 } from './auth.types';
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
+import { rateLimitMessage } from '@core/http/rate-limit';
 import { errorDetail } from '@core/http/error-detail';
 
 const TOKEN_KEY = 'auth_token';
@@ -325,6 +326,8 @@ export class AuthService {
           return new Error('Acceso denegado');
         case 422:
           return new Error(this.extractValidationMessage(error) ?? 'Datos inválidos');
+        case 429:
+          return new Error(rateLimitMessage(error));
         default:
           return new Error('Error en el servidor, intenta más tarde');
       }
