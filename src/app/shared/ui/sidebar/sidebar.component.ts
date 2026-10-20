@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ButtonComponent } from '@shared/ui';
 import { AuthService } from '@core/auth/auth.service';
@@ -24,6 +24,9 @@ export class SidebarComponent {
   @Input() roleLabel: string = '';
   /** Ruta a "Mi perfil" (varía por rol). Si no se pasa, no se muestra el avatar. */
   @Input() profileRoute: string = '';
+  /** Muestra el botón "Guía de uso" al final del menú (solo los perfiles que tienen guía). */
+  @Input() showGuide: boolean = false;
+  @Output() guideRequested = new EventEmitter<void>();
 
   private readonly authService = inject(AuthService);
   private readonly sidebarService = inject(SidebarService);

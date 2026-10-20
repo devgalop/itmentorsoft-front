@@ -13,25 +13,46 @@ import {
 } from '@angular/core';
 import { GuideStep } from '@core/guide/guide.types';
 import { SidebarIconComponent } from '../sidebar/sidebar-icon.component';
+import { SidebarService } from '../sidebar/sidebar.service';
 
 /**
  * Ventana de bienvenida con pasos (guía de uso). Muestra un paso a la vez, con puntos de avance y
  * botones Anterior / Siguiente / Omitir; el último paso cierra con "Entendido". Se maneja con el
  * teclado (flechas para avanzar o volver, Esc para cerrar, Tab se queda dentro de la ventana),
  * bloquea el scroll de la página mientras está abierta y devuelve el foco a donde estaba al cerrarse.
+ *
+ * Si un paso trae `target` (una opción del menú lateral), el menú se despliega, esa opción se resalta
+ * (el resto de la pantalla se oscurece) y la tarjeta se coloca junto a ella. Si la opción no existe,
+ * el paso se muestra centrado, sin resaltar.
  */
 @Component({
   selector: 'app-guide-dialog',
   standalone: true,
   imports: [SidebarIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown)': 'onKeydown($event)' },
+  host: { '(document:keydown)': 'onKeydown($event)', '(window:resize)': 'schedule()' },
   template: `
     @if (step(); as s) {
-      <div class="guide__backdrop">
+      <div class="guide__backdrop" [class.guide__backdrop--spot]="spot() !== null">
+        @if (spot(); as sp) {
+          <div
+            class="guide__spot"
+            aria-hidden="true"
+            [style.left.px]="sp.left"
+            [style.top.px]="sp.top"
+            [style.width.px]="sp.width"
+            [style.height.px]="sp.height"
+          ></div>
+        }
         <div
           #dialog
           class="guide"
+          [class.guide--anchored]="anchored() !== null"
+          [class.guide--mobile]="mobile()"
+          [style.left.px]="anchored()?.left"
+          [style.top.px]="anchored()?.top"
+          [style.bottom.px]="anchored()?.bottom"
+          [style.max-height.px]="anchored()?.maxHeight"
           role="dialog"
           aria-modal="true"
           aria-labelledby="guide-title"
@@ -86,6 +107,20 @@ import { SidebarIconComponent } from '../sidebar/sidebar-icon.component';
       background: rgba(13, 43, 110, 0.55);
     }
 
+    .guide__backdrop--spot {
+      background: transparent;
+    }
+
+    /* El "hueco" iluminado sobre la opción del menú: su sombra gigante oscurece todo lo demás. */
+    .guide__spot {
+      position: fixed;
+      border-radius: 0.75rem;
+      box-shadow: 0 0 0 9999px rgba(13, 43, 110, 0.6);
+      outline: 2px solid var(--color-accent);
+      pointer-events: none;
+      transition: left 0.2s, top 0.2s, width 0.2s, height 0.2s;
+    }
+
     .guide {
       width: 100%;
       max-width: 28rem;
@@ -96,6 +131,20 @@ import { SidebarIconComponent } from '../sidebar/sidebar-icon.component';
       border-radius: 1.25rem;
       box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
       animation: guide-in 0.2s ease-out;
+    }
+
+    /* Con un elemento resaltado, la tarjeta se coloca junto a él en lugar de ir centrada. */
+    .guide--anchored {
+      position: fixed;
+      width: 28rem;
+      max-width: calc(100vw - 2rem);
+    }
+
+    .guide--anchored.guide--mobile {
+      left: 1rem;
+      right: 1rem;
+      width: auto;
+      max-width: none;
     }
 
     .guide:focus {
@@ -224,6 +273,45 @@ import { SidebarIconComponent } from '../sidebar/sidebar-icon.component';
       .guide {
         animation: none;
       }
+
+      .guide__spot {
+        transition: none;
+      }
+    }
+
+    @media (max-width: 480px) and (min-height: 701px) {
+      .guide__step {
+        min-height: 10rem;
+      }
+    }
+
+    /* Pantallas bajas: la tarjeta se compacta (sin icono) para no tapar la opción resaltada. */
+    @media (max-height: 700px) {
+      .guide {
+        padding: 1rem 1.25rem;
+      }
+
+      .guide__icon {
+        display: none;
+      }
+
+      .guide__step {
+        min-height: 0;
+        padding-top: 0.5rem;
+      }
+
+      .guide__title {
+        font-size: 1.1rem;
+      }
+
+      .guide__text {
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      .guide__actions {
+        margin-top: 0.9rem;
+      }
     }
 
     @media (max-width: 480px) {
@@ -247,6 +335,17 @@ import { SidebarIconComponent } from '../sidebar/sidebar-icon.component';
         width: 100%;
       }
     }
+
+    /* Teléfono bajo: Omitir comparte la fila con los otros botones para que todo quepa a la vista. */
+    @media (max-width: 480px) and (max-height: 700px) {
+      .guide__actions {
+        flex-wrap: nowrap;
+      }
+
+      .guide__skip {
+        width: auto;
+      }
+    }
   `,
 })
 export class GuideDialogComponent {
@@ -259,31 +358,126 @@ export class GuideDialogComponent {
   protected readonly isFirst = computed(() => this.index() === 0);
   protected readonly isLast = computed(() => this.index() >= this.steps().length - 1);
 
+  /** Hueco iluminado sobre la opción del menú que explica el paso (null si no hay). */
+  protected readonly spot = signal<{ left: number; top: number; width: number; height: number } | null>(null);
+  /** Posición de la tarjeta cuando va junto al elemento resaltado (null = centrada). */
+  protected readonly anchored = signal<{ left?: number; top?: number; bottom?: number; maxHeight?: number } | null>(null);
+  protected readonly mobile = signal(false);
+
   private readonly dialog = viewChild<ElementRef<HTMLElement>>('dialog');
+  private readonly sidebar = inject(SidebarService);
+  private menuOpenedByGuide = false;
+  private timers: ReturnType<typeof setTimeout>[] = [];
 
   constructor() {
     const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     // Mientras está abierta, la página de atrás no se desplaza.
     document.body.style.overflow = 'hidden';
-    afterNextRender(() => this.dialog()?.nativeElement.focus());
+    afterNextRender(() => {
+      this.dialog()?.nativeElement.focus();
+      this.schedule();
+    });
 
     inject(DestroyRef).onDestroy(() => {
+      this.clearTimers();
+      // Si la guía desplegó el menú, lo deja como estaba.
+      if (this.menuOpenedByGuide) this.sidebar.setCollapsed(true);
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus?.();
     });
   }
 
   next(): void {
-    if (!this.isLast()) this.index.update((i) => i + 1);
+    if (this.isLast()) return;
+    this.index.update((i) => i + 1);
+    this.schedule();
   }
 
   previous(): void {
-    if (!this.isFirst()) this.index.update((i) => i - 1);
+    if (this.isFirst()) return;
+    this.index.update((i) => i - 1);
+    this.schedule();
   }
 
   close(): void {
     this.closed.emit();
+  }
+
+  /**
+   * Prepara el menú para el paso actual y mide dónde resaltar. El menú se despliega con una
+   * animación, así que se mide al empezar y de nuevo cuando termina.
+   */
+  protected schedule(): void {
+    this.syncMenu();
+    this.clearTimers();
+    this.timers = [setTimeout(() => this.measure(), 0), setTimeout(() => this.measure(), 350)];
+  }
+
+  /** Despliega el menú en los pasos que resaltan una opción y lo devuelve a como estaba en los demás. */
+  private syncMenu(): void {
+    const needsMenu = !!this.step()?.target;
+    if (needsMenu && this.sidebar.isCollapsed()) {
+      this.sidebar.setCollapsed(false);
+      this.menuOpenedByGuide = true;
+    } else if (!needsMenu && this.menuOpenedByGuide) {
+      this.sidebar.setCollapsed(true);
+      this.menuOpenedByGuide = false;
+    }
+  }
+
+  private measure(): void {
+    const route = this.step()?.target;
+    const target = route ? document.querySelector<HTMLElement>(`a.sidebar__nav-item[href="${route}"]`) : null;
+    if (!target || target.getBoundingClientRect().height === 0) {
+      // La opción no está (o no se ve): el paso se muestra centrado, sin resaltar.
+      this.spot.set(null);
+      this.anchored.set(null);
+      return;
+    }
+
+    target.scrollIntoView?.({ block: 'nearest' });
+    const rect = target.getBoundingClientRect();
+    const pad = 6;
+    const gap = 16;
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const isMobile = viewportW <= 900;
+
+    this.mobile.set(isMobile);
+    this.spot.set({ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 });
+
+    const card = this.dialog()?.nativeElement;
+    // scrollHeight es la altura natural de la tarjeta, aunque se haya achicado en una medición anterior.
+    const cardHeight = card?.scrollHeight || 300;
+
+    if (isMobile) {
+      // En teléfono la tarjeta va abajo o arriba de la opción, del lado donde quepa sin taparla.
+      const margin = 16;
+      const breathing = 8;
+      const below = viewportH - (rect.bottom + pad) - breathing - margin;
+      const above = rect.top - pad - breathing - margin;
+      if (cardHeight <= below) {
+        this.anchored.set({ bottom: margin });
+      } else if (cardHeight <= above) {
+        this.anchored.set({ top: margin });
+      } else if (below >= above) {
+        // No cabe en ninguno: se achica al espacio mayor y su contenido se desplaza.
+        this.anchored.set({ bottom: margin, maxHeight: Math.max(below, 120) });
+      } else {
+        this.anchored.set({ top: margin, maxHeight: Math.max(above, 120) });
+      }
+      return;
+    }
+    const cardWidth = Math.min(448, viewportW - 32);
+    const left = Math.min(rect.right + pad + gap, viewportW - cardWidth - 16);
+    const top = Math.min(Math.max(rect.top + rect.height / 2 - cardHeight / 2, 16), Math.max(16, viewportH - cardHeight - 16));
+    this.anchored.set({ left, top });
+  }
+
+  private clearTimers(): void {
+    this.timers.forEach(clearTimeout);
+    this.timers = [];
   }
 
   protected onKeydown(event: KeyboardEvent): void {
@@ -311,7 +505,7 @@ export class GuideDialogComponent {
     const buttons = Array.from(root.querySelectorAll<HTMLElement>('button'));
     if (buttons.length === 0) return;
     const first = buttons[0]!;
-    const last = buttons[buttons.length - 1]!;
+    const last = buttons.at(-1)!;
     const active = document.activeElement;
     if (event.shiftKey && (active === first || active === root)) {
       event.preventDefault();
