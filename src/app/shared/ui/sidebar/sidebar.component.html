@@ -63,6 +63,19 @@
         </a>
       }
     }
+    @if (showGuide) {
+      <button
+        type="button"
+        class="sidebar__nav-item sidebar__nav-item--button"
+        title="Guía de uso"
+        (click)="guideRequested.emit()"
+      >
+        <span class="sidebar__nav-icon"><app-sidebar-icon name="help" /></span>
+        @if (!isCollapsed()) {
+          <span class="sidebar__nav-label">Guía de uso</span>
+        }
+      </button>
+    }
   </nav>
 
   <div class="sidebar__footer">

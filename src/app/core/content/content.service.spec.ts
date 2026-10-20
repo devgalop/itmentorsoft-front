@@ -66,6 +66,14 @@ describe('ContentService', () => {
       expect(await promise).toEqual([]);
     });
 
+    it('tells the student to wait when the backend limits the requests (429)', async () => {
+      const promise = service.getCompleteLearningPaths('s1');
+      httpMock
+        .expectOne(url)
+        .flush({ status: 429, message: 'x' }, { status: 429, statusText: 'x', headers: { 'Retry-After': '120' } });
+      await expect(promise).rejects.toThrow('Espera 2 minutos');
+    });
+
     it('keeps the usual messages for other errors', async () => {
       const promise = service.getCompleteLearningPaths('s1');
       httpMock.expectOne(url).flush({ detail: 'algo' }, { status: 500, statusText: 'x' });

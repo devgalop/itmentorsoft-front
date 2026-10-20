@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { GuideDialogComponent } from '@shared/ui/guide-dialog/guide-dialog.component';
+import { GuideService } from '@core/guide/guide.service';
 import { SidebarComponent } from '@shared/ui/sidebar/sidebar.component';
 import { SidebarService } from '@shared/ui/sidebar/sidebar.service';
 import { AuthService } from '@core/auth/auth.service';
@@ -13,15 +15,24 @@ const GATED_ROUTES = ['/student/route', '/student/progress'];
 @Component({
   selector: 'app-student-layout',
   standalone: true,
-  imports: [SidebarComponent, RouterOutlet],
+  imports: [SidebarComponent, GuideDialogComponent, RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="student-layout">
-      <app-sidebar [navItems]="navItems()" roleLabel="Estudiante" profileRoute="/student/profile" />
+      <app-sidebar
+        [navItems]="navItems()"
+        roleLabel="Estudiante"
+        profileRoute="/student/profile"
+        [showGuide]="true"
+        (guideRequested)="openGuide()"
+      />
       <main class="student-layout__content" [class.student-layout__content--collapsed]="isCollapsed()">
         <router-outlet />
       </main>
     </div>
+    @if (guide.isOpen()) {
+      <app-guide-dialog [steps]="guide.steps()" (closed)="guide.close()" />
+    }
   `,
   styles: `
     .student-layout {
@@ -56,6 +67,7 @@ export class StudentLayoutComponent {
   private readonly initialAssessment = inject(InitialAssessmentService);
   private readonly auth = inject(AuthService);
   private readonly grading = inject(GradingWatcherService);
+  protected readonly guide = inject(GuideService);
 
   protected readonly isCollapsed = this.sidebarService.isCollapsed;
 
@@ -71,7 +83,16 @@ export class StudentLayoutComponent {
     void this.loadStatus();
     // Si el estudiante recarga con una evaluación en calificación, se retoma la espera.
     const userId = this.auth.userId?.();
-    if (userId) this.grading.resume(userId);
+    if (userId) {
+      this.grading.resume(userId);
+      // La primera vez que entra, se le explica cómo funciona la aplicación.
+      this.guide.startIfFirstTime('student', userId);
+    }
+  }
+
+  protected openGuide(): void {
+    const userId = this.auth.userId?.();
+    if (userId) this.guide.open('student', userId);
   }
 
   private async loadStatus(): Promise<void> {

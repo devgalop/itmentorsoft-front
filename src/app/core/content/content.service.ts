@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
 import { ENDPOINTS } from '@core/config/endpoints';
+import { rateLimitMessage } from '@core/http/rate-limit';
 import { errorDetailText } from '@core/http/error-detail';
 import {
   ContentItem,
@@ -327,6 +328,8 @@ export class ContentService {
           return new Error('No tienes permisos para esta acción');
         case 422:
           return new Error('Datos inválidos');
+        case 429:
+          return new Error(rateLimitMessage(error));
         default:
           return new Error('Error en el servidor, intenta más tarde');
       }

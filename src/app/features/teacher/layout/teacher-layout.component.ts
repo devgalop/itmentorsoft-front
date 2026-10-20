@@ -2,20 +2,32 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '@shared/ui/sidebar/sidebar.component';
 import { SidebarService } from '@shared/ui/sidebar/sidebar.service';
+import { GuideDialogComponent } from '@shared/ui/guide-dialog/guide-dialog.component';
+import { AuthService } from '@core/auth/auth.service';
+import { GuideService } from '@core/guide/guide.service';
 import { TEACHER_NAV_ITEMS } from './teacher-nav-items';
 
 @Component({
   selector: 'app-teacher-layout',
   standalone: true,
-  imports: [SidebarComponent, RouterOutlet],
+  imports: [SidebarComponent, GuideDialogComponent, RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="teacher-layout">
-      <app-sidebar [navItems]="navItems" roleLabel="Docente" profileRoute="/teacher/profile" />
+      <app-sidebar
+        [navItems]="navItems"
+        roleLabel="Docente"
+        profileRoute="/teacher/profile"
+        [showGuide]="true"
+        (guideRequested)="openGuide()"
+      />
       <main class="teacher-layout__content" [class.teacher-layout__content--collapsed]="isCollapsed()">
         <router-outlet />
       </main>
     </div>
+    @if (guide.isOpen()) {
+      <app-guide-dialog [steps]="guide.steps()" (closed)="guide.close()" />
+    }
   `,
   styles: `
     .teacher-layout {
@@ -47,6 +59,19 @@ import { TEACHER_NAV_ITEMS } from './teacher-nav-items';
 })
 export class TeacherLayoutComponent {
   private readonly sidebarService = inject(SidebarService);
+  private readonly auth = inject(AuthService);
+  protected readonly guide = inject(GuideService);
   protected readonly isCollapsed = this.sidebarService.isCollapsed;
   protected readonly navItems = TEACHER_NAV_ITEMS;
+
+  constructor() {
+    // La primera vez que entra, se le explica cómo funciona la aplicación.
+    const userId = this.auth.userId?.();
+    if (userId) this.guide.startIfFirstTime('teacher', userId);
+  }
+
+  protected openGuide(): void {
+    const userId = this.auth.userId?.();
+    if (userId) this.guide.open('teacher', userId);
+  }
 }
