@@ -14,7 +14,7 @@ describe('OtpComponent', () => {
   };
   let routerMock: { navigate: ReturnType<typeof vi.fn>; navigateByUrl: ReturnType<typeof vi.fn> };
   let returnUrl: string | null;
-  let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
+  let toastMock: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn> };
 
   function createComponent(): OtpComponent {
     TestBed.resetTestingModule();
@@ -42,7 +42,7 @@ describe('OtpComponent', () => {
     };
     routerMock = { navigate: vi.fn(), navigateByUrl: vi.fn() };
     returnUrl = null;
-    toastMock = { success: vi.fn(), error: vi.fn() };
+    toastMock = { success: vi.fn(), error: vi.fn(), clear: vi.fn() };
   });
 
   it('redirects to /login when there is no pending login', () => {
@@ -107,6 +107,20 @@ describe('OtpComponent', () => {
     await c.onSubmit();
     expect(routerMock.navigateByUrl).not.toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(['/student']);
+  });
+
+  it('clears the notices of the previous attempt before verifying a new code', async () => {
+    const c = createComponent();
+    c.otpControl.setValue('A3F9C2');
+    await c.onSubmit();
+    expect(toastMock.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not clear anything when the code is invalid and nothing is sent', async () => {
+    const c = createComponent();
+    c.otpControl.setValue('xx');
+    await c.onSubmit();
+    expect(toastMock.clear).not.toHaveBeenCalled();
   });
 
   it('shows an error toast when the code is wrong', async () => {

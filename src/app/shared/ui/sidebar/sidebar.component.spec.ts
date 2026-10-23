@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { SidebarComponent } from './sidebar.component';
 import { SidebarService } from './sidebar.service';
@@ -10,7 +10,11 @@ describe('SidebarComponent', () => {
   let component: SidebarComponent;
   let fixture: ComponentFixture<SidebarComponent>;
   let authServiceMock: { logout: ReturnType<typeof vi.fn>; user: ReturnType<typeof vi.fn> };
-  let sidebarServiceMock: { isCollapsed: ReturnType<typeof vi.fn>; toggle: ReturnType<typeof vi.fn> };
+  let sidebarServiceMock: {
+    isCollapsed: ReturnType<typeof vi.fn>;
+    toggle: ReturnType<typeof vi.fn>;
+    setCollapsed: ReturnType<typeof vi.fn>;
+  };
 
   const mockNavItems: NavItem[] = [
     { label: 'Dashboard', route: '/student/dashboard', icon: 'home' },
@@ -28,6 +32,7 @@ describe('SidebarComponent', () => {
     sidebarServiceMock = {
       isCollapsed: vi.fn(() => false),
       toggle: vi.fn(),
+      setCollapsed: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -145,6 +150,58 @@ describe('SidebarComponent', () => {
 
     const icons = fixture.nativeElement.querySelectorAll('.sidebar__nav-icon app-sidebar-icon');
     expect(icons).toHaveLength(mockNavItems.length);
+  });
+
+  describe('cerrar el menú al elegir una opción', () => {
+    const setViewport = (mobile: boolean) =>
+      vi.stubGlobal('matchMedia', (query: string) => ({ matches: mobile, media: query }));
+    const firstLink = () => fixture.nativeElement.querySelector('a.sidebar__nav-item') as HTMLAnchorElement;
+
+    beforeEach(() => {
+      // Los enlaces son reales pero no hay rutas definidas: se evita navegar de verdad.
+      vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+      fixture.componentRef.setInput('navItems', mockNavItems);
+      fixture.componentRef.setInput('profileRoute', '/student/profile');
+      fixture.componentRef.setInput('showGuide', true);
+      fixture.detectChanges();
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('closes the panel when an option is chosen on a phone', () => {
+      setViewport(true);
+      firstLink().click();
+      expect(sidebarServiceMock.setCollapsed).toHaveBeenCalledWith(true);
+    });
+
+    it('also closes it when the profile is chosen on a phone', () => {
+      setViewport(true);
+      (fixture.nativeElement.querySelector('a.sidebar__profile') as HTMLAnchorElement).click();
+      expect(sidebarServiceMock.setCollapsed).toHaveBeenCalledWith(true);
+    });
+
+    it('closes it and asks for the guide when the guide button is pressed on a phone', () => {
+      setViewport(true);
+      const requested = vi.fn();
+      component.guideRequested.subscribe(requested);
+
+      (fixture.nativeElement.querySelector('button.sidebar__nav-item--button') as HTMLButtonElement).click();
+
+      expect(sidebarServiceMock.setCollapsed).toHaveBeenCalledWith(true);
+      expect(requested).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the bar as it is on a computer', () => {
+      setViewport(false);
+      firstLink().click();
+      expect(sidebarServiceMock.setCollapsed).not.toHaveBeenCalled();
+    });
+
+    it('does not fail when the browser cannot tell the screen size', () => {
+      vi.stubGlobal('matchMedia', undefined);
+      expect(() => firstLink().click()).not.toThrow();
+      expect(sidebarServiceMock.setCollapsed).not.toHaveBeenCalled();
+    });
   });
 
   describe('guide button', () => {

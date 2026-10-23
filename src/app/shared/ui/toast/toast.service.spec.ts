@@ -31,10 +31,38 @@ describe('ToastService', () => {
     expect(service.toasts()).toHaveLength(0);
   });
 
-  it('does not auto-dismiss error toasts by default', () => {
+  it('auto-dismisses error toasts too, after a longer time than the others', () => {
     service.error('Falló');
-    vi.advanceTimersByTime(10000);
+    vi.advanceTimersByTime(4000);
     expect(service.toasts()).toHaveLength(1);
+    vi.advanceTimersByTime(3000);
+    expect(service.toasts()).toHaveLength(0);
+  });
+
+  it('keeps a toast until it is closed by hand when its duration is 0', () => {
+    service.error('Falló', 'Detalle', 0);
+    vi.advanceTimersByTime(60000);
+    expect(service.toasts()).toHaveLength(1);
+  });
+
+  it('replaces an identical toast instead of stacking it, and restarts its time', () => {
+    service.error('Código incorrecto', 'Revisa el código');
+    vi.advanceTimersByTime(5000);
+    service.error('Código incorrecto', 'Revisa el código');
+    expect(service.toasts()).toHaveLength(1);
+
+    // El primero ya habría vencido a los 7 s; el segundo empezó hace 3 s y sigue a la vista.
+    vi.advanceTimersByTime(3000);
+    expect(service.toasts()).toHaveLength(1);
+    vi.advanceTimersByTime(4000);
+    expect(service.toasts()).toHaveLength(0);
+  });
+
+  it('keeps toasts that only look alike: different title or message', () => {
+    service.error('Código incorrecto', 'A');
+    service.error('Código incorrecto', 'B');
+    service.error('Otro', 'A');
+    expect(service.toasts()).toHaveLength(3);
   });
 
   it('dismisses a toast by id', () => {

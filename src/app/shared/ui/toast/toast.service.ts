@@ -20,6 +20,8 @@ export interface Toast {
 }
 
 const DEFAULT_DURATION = 4000;
+/** Los errores se leen con más calma, pero tampoco se quedan para siempre. */
+const ERROR_DURATION = 7000;
 
 @Injectable({ providedIn: 'root' })
 export class ToastService {
@@ -27,10 +29,16 @@ export class ToastService {
   readonly toasts = signal<Toast[]>([]);
   private timers = new Map<number, ReturnType<typeof setTimeout>>();
 
-  /** Toast genérico. Los de tipo 'error' no se cierran solos por defecto. */
+  /**
+   * Toast genérico. Todos se cierran solos: 4 s los normales y 7 s los de error (una duración de 0
+   * lo deja hasta que se cierre a mano). Si ya hay uno idéntico a la vista, se reemplaza en vez de apilarlos.
+   */
   show(type: ToastType, title: string, message?: string, duration?: number, action?: ToastAction): number {
+    this.toasts()
+      .filter((t) => t.type === type && t.title === title && t.message === message)
+      .forEach((t) => this.dismiss(t.id));
     const id = this.nextId++;
-    const finalDuration = duration ?? (type === 'error' ? 0 : DEFAULT_DURATION);
+    const finalDuration = duration ?? (type === 'error' ? ERROR_DURATION : DEFAULT_DURATION);
     const toast: Toast = { id, type, title, message, duration: finalDuration, action };
     this.toasts.update((list) => [...list, toast]);
     if (finalDuration > 0) {
