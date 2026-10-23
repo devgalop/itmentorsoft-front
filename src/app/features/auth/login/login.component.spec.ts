@@ -15,6 +15,7 @@ describe('LoginComponent', () => {
     success: ReturnType<typeof vi.fn>;
     error: ReturnType<typeof vi.fn>;
     info: ReturnType<typeof vi.fn>;
+    clear: ReturnType<typeof vi.fn>;
   };
 
   const SUCCESS = {
@@ -29,7 +30,7 @@ describe('LoginComponent', () => {
     authServiceMock = { login: vi.fn(), role: vi.fn().mockReturnValue(null) };
     routerMock = { navigate: vi.fn() };
     returnUrl = null;
-    toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
+    toastMock = { success: vi.fn(), error: vi.fn(), info: vi.fn(), clear: vi.fn() };
 
     TestBed.configureTestingModule({
       imports: [ReactiveFormsModule],
@@ -200,6 +201,15 @@ describe('LoginComponent', () => {
 
     expect(routerMock.navigate).not.toHaveBeenCalled();
     expect(toastMock.error).toHaveBeenCalled();
+  });
+
+  it('clears the notices of the previous attempt when it tries again', async () => {
+    authServiceMock.login.mockResolvedValue(SUCCESS);
+    component.loginForm.setValue({ email: 'test@example.com', password: 'password123' });
+
+    await component.onSubmit();
+
+    expect(toastMock.clear).toHaveBeenCalledTimes(1);
   });
 
   it('on 401 error, shows a toast and the register invitation', async () => {

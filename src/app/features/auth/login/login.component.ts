@@ -107,6 +107,8 @@ export class LoginComponent {
 
     const { email, password } = this.loginForm.value;
 
+    // Los avisos del intento anterior no deben quedarse mientras se verifica el nuevo.
+    this.toast.clear();
     this.credentialsFailed.set(false);
     this.isLoading.set(true);
     this.loginForm.disable();
