@@ -33,7 +33,12 @@
   </div>
 
   @if (profileRoute) {
-    <a class="sidebar__profile" [routerLink]="profileRoute" routerLinkActive="sidebar__profile--active">
+    <a
+      class="sidebar__profile"
+      [routerLink]="profileRoute"
+      routerLinkActive="sidebar__profile--active"
+      (click)="closeOnMobile()"
+    >
       <span class="sidebar__avatar">{{ userInitials() }}</span>
       @if (!isCollapsed()) {
         <span class="sidebar__profile-text">
@@ -52,6 +57,7 @@
       @for (item of group.items; track item.route) {
         <a
           class="sidebar__nav-item"
+          (click)="closeOnMobile()"
           [routerLink]="item.route"
           routerLinkActive="sidebar__nav-item--active"
           [title]="item.label"
@@ -68,7 +74,7 @@
         type="button"
         class="sidebar__nav-item sidebar__nav-item--button"
         title="Guía de uso"
-        (click)="guideRequested.emit()"
+        (click)="onGuide()"
       >
         <span class="sidebar__nav-icon"><app-sidebar-icon name="help" /></span>
         @if (!isCollapsed()) {

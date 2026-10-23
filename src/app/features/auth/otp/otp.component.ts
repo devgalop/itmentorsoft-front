@@ -78,6 +78,8 @@ export class OtpComponent {
 
     const otp = this.otpControl.value as string;
 
+    // Los avisos del intento anterior ("código incorrecto", "venció") no deben quedarse mientras se verifica el nuevo.
+    this.toast.clear();
     this.isLoading.set(true);
     this.otpForm.disable();
 
@@ -110,6 +112,7 @@ export class OtpComponent {
     const userId = this.authService.pendingOtpUserId();
     if (!userId || this.isResending() || this.resendCooldown() > 0) return;
 
+    this.toast.clear();
     this.isResending.set(true);
     try {
       const response = await this.authService.resendOtp(userId);

@@ -6,6 +6,9 @@ import { SidebarService } from './sidebar.service';
 import { SidebarIconComponent } from './sidebar-icon.component';
 import { NavItem } from './nav-item.model';
 
+/** Mismo punto de corte que el CSS del menú: por debajo, el menú es un panel. */
+const MOBILE_QUERY = '(max-width: 900px)';
+
 interface NavGroup {
   title: string | null;
   items: NavItem[];
@@ -62,6 +65,19 @@ export class SidebarComponent {
 
   protected toggle(): void {
     this.sidebarService.toggle();
+  }
+
+  /**
+   * En teléfono el menú es un panel superpuesto: al elegir una opción se cierra para dejar ver la
+   * pantalla. En computador es una barra fija y se queda como la persona la dejó.
+   */
+  protected closeOnMobile(): void {
+    if (window.matchMedia?.(MOBILE_QUERY).matches) this.sidebarService.setCollapsed(true);
+  }
+
+  protected onGuide(): void {
+    this.closeOnMobile();
+    this.guideRequested.emit();
   }
 
   protected onLogout(): void {
